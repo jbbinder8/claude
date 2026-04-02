@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_excel('Nomes2.xlsx')
+df = pd.read_excel('data/Nomes2.xlsx')
 
 print('=== RESUMO DO ARQUIVO ===')
 print(f'Linhas: {len(df):,}')

@@ -1,9 +1,8 @@
 # Dados de entrada
-*.xlsx
+data/
 
 # Saídas geradas pelos scripts
-*.txt
-*.png
+output/
 
 # Cache Python
 __pycache__/

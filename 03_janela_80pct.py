@@ -13,7 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-df = pd.read_excel('Nomes2.xlsx')
+df = pd.read_excel('data/Nomes2.xlsx')
 df = df[(df['Ano'] >= 1900) & (df['Ano'] <= 2019)]
 
 total_ano = df.groupby('Ano')['Q'].sum().rename('Total_Ano')
@@ -57,7 +57,7 @@ for nome in pivot.columns:
 results_df = pd.DataFrame(results).sort_values('Total_Norm', ascending=False)
 
 # Arquivo 1: todos
-with open('janela_80pct_todos_norm.txt', 'w', encoding='utf-8') as f:
+with open('output/janela_80pct_todos_norm.txt', 'w', encoding='utf-8') as f:
     f.write(f'{"Nome":<25}{"Total_Bruto":>12}  {"Total_Norm":>12}  {"Ano_Ini":>8}  {"Ano_Fim":>8}  {"Duracao":>8}\n')
     f.write('-' * 80 + '\n')
     for _, r in results_df.iterrows():
@@ -66,7 +66,7 @@ print(f'Arquivo 1: {len(results_df)} nomes')
 
 # Arquivo 2: janela < 20 anos
 curtos = results_df[results_df['Duracao'] < 20].copy()
-with open('janela_80pct_curtos_norm.txt', 'w', encoding='utf-8') as f:
+with open('output/janela_80pct_curtos_norm.txt', 'w', encoding='utf-8') as f:
     f.write(f'{"Nome":<25}{"Total_Bruto":>12}  {"Total_Norm":>12}  {"Ano_Ini":>8}  {"Ano_Fim":>8}  {"Duracao":>8}\n')
     f.write('-' * 80 + '\n')
     for _, r in curtos.iterrows():
@@ -114,5 +114,5 @@ fig.text(0.5, 0.005, metodologia, ha='center', va='bottom', fontsize=8, style='i
          bbox=dict(boxstyle='round,pad=0.4', facecolor='#f5f5f5', edgecolor='#cccccc'))
 
 plt.tight_layout(rect=[0, 0.09, 1, 1])
-plt.savefig('nomes_pico_popularidade_norm.png', dpi=150)
+plt.savefig('output/nomes_pico_popularidade_norm.png', dpi=150)
 print('Gráfico salvo: nomes_pico_popularidade_norm.png')

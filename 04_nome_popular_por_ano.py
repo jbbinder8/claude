@@ -11,13 +11,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-df = pd.read_excel('Nomes2.xlsx')
+df = pd.read_excel('data/Nomes2.xlsx')
 df = df[(df['Ano'] >= 1900) & (df['Ano'] <= 2019)]
 total_ano = df.groupby('Ano')['Q'].sum().rename('Total_Ano')
 df = df.join(total_ano, on='Ano')
 df['Freq'] = df['Q'] / df['Total_Ano']
 
-lines = open('janela_80pct_curtos_norm.txt', encoding='utf-8').readlines()[2:]
+lines = open('output/janela_80pct_curtos_norm.txt', encoding='utf-8').readlines()[2:]
 nomes_curtos = set()
 for l in lines:
     parts = l.split()
@@ -62,5 +62,5 @@ ax.legend(handles=legend_patches, loc='upper left', fontsize=7.5, ncol=2,
           framealpha=0.8, title='Nome dominante', title_fontsize=8)
 
 plt.tight_layout()
-plt.savefig('nome_popular_por_ano.png', dpi=150, bbox_inches='tight')
+plt.savefig('output/nome_popular_por_ano.png', dpi=150, bbox_inches='tight')
 print('Gráfico salvo: nome_popular_por_ano.png')

@@ -2,13 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 
-df = pd.read_excel('Nomes2.xlsx')
+df = pd.read_excel('data/Nomes2.xlsx')
 df_valido = df[(df['Ano'] >= 1880) & (df['Ano'] <= 2024)]
 total_por_ano = df_valido.groupby('Ano')['Q'].sum().reset_index()
 total_por_ano.columns = ['Ano', 'Total']
 
 # Exportar TXT
-with open('total_nomes_por_ano.txt', 'w', encoding='utf-8') as f:
+with open('output/total_nomes_por_ano.txt', 'w', encoding='utf-8') as f:
     f.write(f'{"Ano":<8}{"Total":>15}\n')
     f.write('-' * 23 + '\n')
     for _, row in total_por_ano.iterrows():
@@ -30,5 +30,5 @@ ax.grid(axis='y', linestyle='--', alpha=0.5)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-plt.savefig('total_nomes_por_ano.png', dpi=150)
+plt.savefig('output/total_nomes_por_ano.png', dpi=150)
 print('Arquivos salvos: total_nomes_por_ano.txt e total_nomes_por_ano.png')
