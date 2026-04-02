@@ -1,0 +1,13 @@
+# Dados de entrada
+*.xlsx
+
+# Saídas geradas pelos scripts
+*.txt
+*.png
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Claude
+.claude/
