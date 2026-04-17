@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Patrimônio Líquido</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #f0f4ff;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.5rem;
+      max-width: 1260px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .panel h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 1.2rem;
+    }
+
+    .slider-group { margin-bottom: 1.2rem; }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.4rem;
+    }
+
+    .slider-label span:first-child { font-size: 0.82rem; color: #a0aec0; }
+
+    .slider-value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #7c9ef5;
+      min-width: 85px;
+      text-align: right;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: #2d3748;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #7c9ef5;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    .divider { border: none; border-top: 1px solid #2d3748; margin: 1.2rem 0; }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .tag-green  { background: #1a3a2e; color: #4ade80; }
+    .tag-red    { background: #3a1a1a; color: #f87171; }
+    .tag-blue   { background: #1a2a3a; color: #7c9ef5; }
+    .tag-orange { background: #3a2a1a; color: #fb923c; }
+
+    .slider-note {
+      font-size: 0.7rem;
+      color: #4a5568;
+      margin-top: 0.25rem;
+    }
+
+    .right-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .chart-box {
+      background: #1a1f2e;
+      border: 1px solid #2d3748;
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .chart-box h2 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat-card {
+      background: #0f1117;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin-bottom: 0.3rem;
+      line-height: 1.3;
+    }
+
+    .stat-card .value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f0f4ff;
+    }
+
+    .stat-card .value.positive { color: #4ade80; }
+    .stat-card .value.negative { color: #f87171; }
+    .stat-card .value.neutral  { color: #7c9ef5; }
+    .stat-card .value.warn     { color: #fbbf24; }
+
+    /* What-if panel */
+    .whatif-panel {
+      background: #151a27;
+      border: 1px solid #2a3a50;
+    }
+
+    .whatif-panel h2 { color: #fb923c; }
+
+    .whatif-panel .stat-card {
+      background: #0d1320;
+      border-color: #2a3a50;
+    }
+
+    .whatif-ok   { color: #4ade80 !important; }
+    .whatif-bad  { color: #f87171 !important; }
+    .whatif-na   { color: #64748b !important; }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .badge-ok  { background: #1a3a2e; color: #4ade80; }
+    .badge-bad { background: #3a1a1a; color: #f87171; }
+
+    .warning {
+      background: #3a2a1a;
+      border: 1px solid #7c4a1a;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-size: 0.82rem;
+      color: #fbbf24;
+      display: none;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Simulador de Patrimônio Líquido</h1>
+<p class="subtitle">Valores reais (poder de compra de hoje, já descontada a inflação)</p>
+
+<div class="layout">
+
+  <!-- PAINEL DE SLIDERS -->
+  <div class="panel">
+
+    <h2>Investimentos</h2>
+
+    <span class="tag tag-green">Retorno</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Taxa de juros real (a.a.)</span>
+        <span class="slider-value" id="v-juros">3,0%</span>
+      </div>
+      <input type="range" id="juros" min="0" max="6" step="0.1" value="3" />
+    </div>
+
+    <hr class="divider" />
+    <h2>Fase de Acumulação</h2>
+
+    <span class="tag tag-blue">Patrimônio</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Patrimônio inicial</span>
+        <span class="slider-value" id="v-patrimonio">R$ 100.000</span>
+      </div>
+      <input type="range" id="patrimonio" min="0" max="5000000" step="10000" value="100000" />
+    </div>
+
+    <span class="tag tag-green">Poupança</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Economia mensal do salário</span>
+        <span class="slider-value" id="v-economia">R$ 3.000</span>
+      </div>
+      <input type="range" id="economia" min="0" max="50000" step="500" value="3000" />
+      <div class="slider-note">Aportado ao patrimônio todo mês até a aposentadoria</div>
+    </div>
+
+    <hr class="divider" />
+    <h2>Fase de Aposentadoria</h2>
+
+    <span class="tag tag-red">Despesas</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Gasto mensal (líquido)</span>
+        <span class="slider-value" id="v-gasto">R$ 5.000</span>
+      </div>
+      <input type="range" id="gasto" min="500" max="50000" step="500" value="5000" />
+      <div class="slider-note">Retirado do patrimônio somente após a aposentadoria</div>
+    </div>
+
+    <span class="tag tag-orange">Tributação</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>IR sobre retiradas</span>
+        <span class="slider-value" id="v-ir">15,0%</span>
+      </div>
+      <input type="range" id="ir" min="0" max="27.5" step="0.5" value="15" />
+      <div class="slider-note">Retirada bruta = gasto ÷ (1 − IR)</div>
+    </div>
+
+    <span class="tag tag-blue">Planejamento</span>
+    <div class="slider-group">
+      <div class="slider-label">
+        <span>Ano de aposentadoria</span>
+        <span class="slider-value" id="v-apos">2045</span>
+      </div>
+      <input type="range" id="apos" min="2026" max="2099" step="1" value="2045" />
+    </div>
+
+  </div>
+
+  <!-- COLUNA DIREITA -->
+  <div class="right-col">
+
+    <!-- CARDS DE RESUMO -->
+    <div class="panel">
+      <h2>Resumo da Simulação</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Patrimônio na aposentadoria</div>
+          <div class="value neutral" id="s-apos">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Renda passiva mensal líquida</div>
+          <div class="value positive" id="s-renda">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Patrimônio em 2100</div>
+          <div class="value neutral" id="s-final">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Anos até aposentadoria</div>
+          <div class="value neutral" id="s-anos">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Saldo mensal na aposentadoria</div>
+          <div class="value" id="s-saldo">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Ruína estimada</div>
+          <div class="value" id="s-ruina">Nunca</div>
+        </div>
+      </div>
+      <div class="warning" id="warning">
+        ⚠️ Atenção: com os parâmetros atuais o patrimônio entra em colapso. Ajuste os sliders ou veja as sugestões abaixo.
+      </div>
+    </div>
+
+    <!-- WHAT-IF -->
+    <div class="panel whatif-panel">
+      <h2>O que precisa mudar para durar até 2100?</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Taxa de juros real mínima</div>
+          <div class="value neutral" id="wi-juros">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Gasto mensal máximo</div>
+          <div class="value neutral" id="wi-gasto">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Aposentar no mínimo em</div>
+          <div class="value neutral" id="wi-apos">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRÁFICO -->
+    <div class="chart-box">
+      <h2>Evolução do Patrimônio Líquido — 2026 a 2100 (valores reais)</h2>
+      <canvas id="chart" height="300"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const ANO_INICIO = 2026;
+  const ANO_FIM    = 2100;
+  const MESES      = (ANO_FIM - ANO_INICIO) * 12; // 888
+  const MES_2100   = MESES;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  function fmt(n) { return Math.round(n).toLocaleString('pt-BR'); }
+  function get(id) { return parseFloat(document.getElementById(id).value); }
+
+  function pct(v) { return `${v.toFixed(1).replace('.', ',')}%`; }
+
+  const ids = ['juros', 'patrimonio', 'economia', 'gasto', 'ir', 'apos'];
+  const displays = {
+    juros:     v => pct(v),
+    patrimonio:v => `R$ ${fmt(v)}`,
+    economia:  v => `R$ ${fmt(v)}`,
+    gasto:     v => `R$ ${fmt(v)}`,
+    ir:        v => pct(v),
+    apos:      v => `${Math.round(v)}`,
+  };
+
+  ids.forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById('v-' + id).textContent = displays[id](get(id));
+      update();
+    });
+  });
+
+  // ── Core Simulation ───────────────────────────────────────────────────────────
+  //
+  // Pre-retirement : patrimônio += monthly_return + econMes
+  // Post-retirement: patrimônio += monthly_return − (gastoMes / (1 − ir))
+  //
+  // This function is unclamped (allows negative values) so it stays monotone
+  // for binary-search use.
+
+  function runSim(pat0, juros, gastoMes, econMes, anoApos, ir, nMeses) {
+    const r       = Math.pow(1 + juros, 1 / 12) - 1;
+    const mesApos = Math.max(0, (anoApos - ANO_INICIO) * 12);
+    const saida   = ir < 1 ? gastoMes / (1 - ir) : gastoMes * 100; // gross withdrawal
+    let p = pat0;
+    for (let m = 0; m < nMeses; m++) {
+      p = p * (1 + r) + (m >= mesApos ? -saida : econMes);
+    }
+    return p;
+  }
+
+  // For the chart: clamped at 0, returns labels + per-phase arrays + metadata
+  function runChart(pat0, juros, gastoMes, econMes, anoApos, ir) {
+    const r       = Math.pow(1 + juros, 1 / 12) - 1;
+    const mesApos = Math.max(0, (anoApos - ANO_INICIO) * 12);
+    const saida   = ir < 1 ? gastoMes / (1 - ir) : gastoMes * 100;
+
+    const labels = [], preData = [], postData = [];
+    const ttJuros = [], ttDeposito = [], ttRetirada = [];
+    let p = pat0;
+    let patAtApos = null, ruinaAno = null;
+
+    for (let m = 0; m <= MESES; m++) {
+      labels.push(m % 12 === 0 ? String(ANO_INICIO + m / 12 | 0) : '');
+
+      if (m === mesApos) patAtApos = Math.max(0, p);
+      if (p <= 0 && !ruinaAno) ruinaAno = ANO_INICIO + m / 12;
+
+      const clamped = Math.max(0, Math.round(p));
+      preData.push(m <= mesApos ? clamped : null);
+      postData.push(m >= mesApos ? clamped : null);
+
+      ttJuros.push(Math.round(Math.max(0, p) * r));
+      ttDeposito.push(m < mesApos ? econMes : 0);
+      ttRetirada.push(m >= mesApos ? Math.round(saida) : 0);
+
+      p = p * (1 + r) + (m >= mesApos ? -saida : econMes);
+    }
+
+    return { labels, preData, postData, patAtApos: patAtApos ?? 0, ruinaAno,
+             ttJuros, ttDeposito, ttRetirada };
+  }
+
+  // ── Binary Searches ───────────────────────────────────────────────────────────
+
+  function findMinJuros2100(pat0, gastoMes, econMes, anoApos, ir) {
+    if (runSim(pat0, 0, gastoMes, econMes, anoApos, ir, MES_2100) >= 0) return 0;
+    if (runSim(pat0, 0.5, gastoMes, econMes, anoApos, ir, MES_2100) < 0) return null;
+    let lo = 0, hi = 0.5;
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (runSim(pat0, mid, gastoMes, econMes, anoApos, ir, MES_2100) >= 0) hi = mid;
+      else lo = mid;
+    }
+    return hi;
+  }
+
+  function findMaxGasto2100(pat0, juros, econMes, anoApos, ir) {
+    if (runSim(pat0, juros, 0, econMes, anoApos, ir, MES_2100) < 0) return 0;
+    let lo = 0, hi = 10_000_000;
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      if (runSim(pat0, juros, mid, econMes, anoApos, ir, MES_2100) >= 0) lo = mid;
+      else hi = mid;
+    }
+    return lo;
+  }
+
+  function findMinAposAno2100(pat0, juros, gastoMes, econMes, ir) {
+    if (runSim(pat0, juros, gastoMes, econMes, ANO_INICIO, ir, MES_2100) >= 0) return ANO_INICIO;
+    if (runSim(pat0, juros, gastoMes, econMes, 2099, ir, MES_2100) < 0) return null;
+    let lo = ANO_INICIO, hi = 2099;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (runSim(pat0, juros, gastoMes, econMes, mid, ir, MES_2100) >= 0) hi = mid;
+      else lo = mid + 1;
+    }
+    return lo;
+  }
+
+  // ── Chart Setup ───────────────────────────────────────────────────────────────
+
+  let ttJuros = [], ttDeposito = [], ttRetirada = [];
+
+  const ctx = document.getElementById('chart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Acumulação (pré-aposentadoria)',
+          data: [],
+          borderColor: '#7c9ef5',
+          backgroundColor: 'rgba(124,158,245,0.10)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.25,
+          spanGaps: false,
+        },
+        {
+          label: 'Aposentadoria',
+          data: [],
+          borderColor: '#fb923c',
+          backgroundColor: 'rgba(251,146,60,0.08)',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          tension: 0.25,
+          spanGaps: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#a0aec0', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#1a1f2e',
+          borderColor: '#2d3748',
+          borderWidth: 1,
+          titleColor: '#f0f4ff',
+          bodyColor: '#a0aec0',
+          callbacks: {
+            title: items => `${ANO_INICIO + Math.floor(items[0].dataIndex / 12)}`,
+            label: c => c.parsed.y != null ? ` R$ ${fmt(c.parsed.y)}` : null,
+            afterBody: items => {
+              const i = items[0]?.dataIndex;
+              if (i == null) return [];
+              const lines = [`  Juros do mês:  R$ ${fmt(ttJuros[i])}`];
+              if (ttDeposito[i] > 0) lines.push(`  Depósito (salário):  R$ ${fmt(ttDeposito[i])}`);
+              if (ttRetirada[i] > 0) lines.push(`  Retirada bruta:  R$ ${fmt(ttRetirada[i])}`);
+              return lines;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#64748b', maxTicksLimit: 16 },
+          grid:  { color: '#1e2535' },
+        },
+        y: {
+          ticks: {
+            color: '#64748b',
+            callback: v => v >= 1e6 ? 'R$ ' + (v / 1e6).toFixed(1) + 'M'
+                        : v >= 1e3 ? 'R$ ' + (v / 1e3).toFixed(0) + 'k'
+                        : 'R$ ' + v,
+          },
+          grid: { color: '#1e2535' },
+        },
+      },
+    },
+  });
+
+  // ── Update ────────────────────────────────────────────────────────────────────
+
+  function update() {
+    const pat0    = get('patrimonio');
+    const juros   = get('juros') / 100;
+    const gastoMes= get('gasto');
+    const econMes = get('economia');
+    const anoApos = Math.round(get('apos'));
+    const ir      = get('ir') / 100;
+
+    // Chart
+    const { labels, preData, postData, patAtApos, ruinaAno,
+            ttJuros: tj, ttDeposito: td, ttRetirada: tr } =
+      runChart(pat0, juros, gastoMes, econMes, anoApos, ir);
+    ttJuros = tj; ttDeposito = td; ttRetirada = tr;
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = preData;
+    chart.data.datasets[1].data = postData;
+    chart.update('none');
+
+    // ── Stats cards ────────────────────────────────────────────────────────────
+    const r = Math.pow(1 + juros, 1 / 12) - 1;
+    const rendaLiq   = patAtApos * r * (1 - ir);         // net passive income/month
+    const saldo      = rendaLiq - gastoMes;
+    const patEm2100  = Math.max(0, postData[MESES] ?? 0);
+    const anosAteApos = anoApos - ANO_INICIO;
+
+    document.getElementById('s-apos').textContent = `R$ ${fmt(patAtApos)}`;
+    document.getElementById('s-renda').textContent = `R$ ${fmt(rendaLiq)}/mês`;
+    document.getElementById('s-anos').textContent  = `${anosAteApos} anos`;
+
+    const finalEl = document.getElementById('s-final');
+    finalEl.textContent = ruinaAno && ruinaAno <= 2100 ? '—' : `R$ ${fmt(patEm2100)}`;
+    finalEl.className = 'value ' + (ruinaAno && ruinaAno <= 2100 ? 'negative' : 'neutral');
+
+    const saldoEl = document.getElementById('s-saldo');
+    saldoEl.textContent = `R$ ${fmt(Math.abs(saldo))}/mês ${saldo >= 0 ? '▲' : '▼'}`;
+    saldoEl.className = 'value ' + (saldo >= 0 ? 'positive' : 'negative');
+
+    const ruinaEl = document.getElementById('s-ruina');
+    if (ruinaAno) {
+      ruinaEl.textContent = Math.round(ruinaAno).toString();
+      ruinaEl.className = 'value negative';
+    } else {
+      ruinaEl.textContent = 'Nunca';
+      ruinaEl.className = 'value positive';
+    }
+
+    const ok2100 = !ruinaAno || ruinaAno > 2100;
+    document.getElementById('warning').style.display = ok2100 ? 'none' : 'block';
+
+    // ── What-if cards ──────────────────────────────────────────────────────────
+    const minJuros = findMinJuros2100(pat0, gastoMes, econMes, anoApos, ir);
+    const maxGasto = findMaxGasto2100(pat0, juros, econMes, anoApos, ir);
+    const minApos  = findMinAposAno2100(pat0, juros, gastoMes, econMes, ir);
+
+    const curJuros = juros * 100;
+
+    // Juros card
+    const wiJurosEl = document.getElementById('wi-juros');
+    if (minJuros === null) {
+      wiJurosEl.textContent = 'Inviável';
+      wiJurosEl.className = 'value whatif-na';
+    } else {
+      const mjPct = minJuros * 100;
+      const ok = curJuros >= mjPct - 0.01;
+      wiJurosEl.innerHTML = pct(mjPct) +
+        `<span class="badge ${ok ? 'badge-ok' : 'badge-bad'}">${ok ? 'OK' : 'Insuficiente'}</span>`;
+      wiJurosEl.className = 'value ' + (ok ? 'whatif-ok' : 'whatif-bad');
+    }
+
+    // Gasto card
+    const wiGastoEl = document.getElementById('wi-gasto');
+    if (maxGasto === 0) {
+      wiGastoEl.textContent = 'Inviável';
+      wiGastoEl.className = 'value whatif-na';
+    } else {
+      const ok = gastoMes <= maxGasto + 1;
+      wiGastoEl.innerHTML = `R$ ${fmt(maxGasto)}/mês` +
+        `<span class="badge ${ok ? 'badge-ok' : 'badge-bad'}">${ok ? 'OK' : 'Excessivo'}</span>`;
+      wiGastoEl.className = 'value ' + (ok ? 'whatif-ok' : 'whatif-bad');
+    }
+
+    // Aposentadoria card
+    const wiAposEl = document.getElementById('wi-apos');
+    if (minApos === null) {
+      wiAposEl.textContent = 'Inviável';
+      wiAposEl.className = 'value whatif-na';
+    } else {
+      const ok = anoApos >= minApos;
+      wiAposEl.innerHTML = `${minApos}` +
+        (minApos === ANO_INICIO
+          ? `<span class="badge badge-ok">Qualquer ano</span>`
+          : `<span class="badge ${ok ? 'badge-ok' : 'badge-bad'}">${ok ? 'OK' : 'Muito cedo'}</span>`);
+      wiAposEl.className = 'value ' + (ok ? 'whatif-ok' : 'whatif-bad');
+    }
+  }
+
+  update();
+</script>
+</body>
+</html>
