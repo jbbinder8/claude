@@ -360,6 +360,12 @@
       <canvas id="chart" height="300"></canvas>
     </div>
 
+    <!-- GRÁFICO DE COMPOSIÇÃO ANUAL -->
+    <div class="chart-box">
+      <h2>Composição anual do crescimento — aportes de salário vs. rendimentos (valores reais)</h2>
+      <canvas id="chart2" height="220"></canvas>
+    </div>
+
   </div>
 </div>
 
@@ -481,6 +487,32 @@
     return lo;
   }
 
+  // ── Annual aggregation ────────────────────────────────────────────────────────
+
+  function buildAnnualData(pat0, juros, gastoMes, econMes, anoApos, ir) {
+    const r       = Math.pow(1 + juros, 1 / 12) - 1;
+    const mesApos = Math.max(0, (anoApos - ANO_INICIO) * 12);
+    const saida   = ir < 1 ? gastoMes / (1 - ir) : gastoMes * 100;
+
+    const labels = [], salary = [], returns = [];
+    let p = pat0;
+
+    for (let year = 0; year < ANO_FIM - ANO_INICIO; year++) {
+      let salThisYear = 0, retThisYear = 0;
+      for (let mo = 0; mo < 12; mo++) {
+        const m = year * 12 + mo;
+        retThisYear += Math.max(0, p) * r;
+        if (m < mesApos) { salThisYear += econMes; p = p * (1 + r) + econMes; }
+        else              {                          p = p * (1 + r) - saida;   }
+      }
+      const apoYear = ANO_INICIO + year >= anoApos;
+      labels.push(String(ANO_INICIO + year));
+      salary.push(Math.round(salThisYear));
+      returns.push(Math.round(retThisYear));
+    }
+    return { labels, salary, returns };
+  }
+
   // ── Chart Setup ───────────────────────────────────────────────────────────────
 
   let ttJuros = [], ttDeposito = [], ttRetirada = [];
@@ -558,6 +590,64 @@
     },
   });
 
+  // ── Annual Chart Setup ────────────────────────────────────────────────────────
+
+  const ctx2 = document.getElementById('chart2').getContext('2d');
+  const annualChart = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: 'Rendimentos',
+          data: [],
+          backgroundColor: 'rgba(124,158,245,0.75)',
+          stack: 'annual',
+        },
+        {
+          label: 'Aportes de salário',
+          data: [],
+          backgroundColor: 'rgba(74,222,128,0.70)',
+          stack: 'annual',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#a0aec0', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#1a1f2e',
+          borderColor: '#2d3748',
+          borderWidth: 1,
+          titleColor: '#f0f4ff',
+          bodyColor: '#a0aec0',
+          callbacks: {
+            label: c => ` R$ ${fmt(c.parsed.y)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#64748b', maxTicksLimit: 16 },
+          grid:  { color: '#1e2535' },
+        },
+        y: {
+          stacked: true,
+          ticks: {
+            color: '#64748b',
+            callback: v => v >= 1e6 ? 'R$ ' + (v / 1e6).toFixed(1) + 'M'
+                        : v >= 1e3 ? 'R$ ' + (v / 1e3).toFixed(0) + 'k'
+                        : 'R$ ' + v,
+          },
+          grid: { color: '#1e2535' },
+        },
+      },
+    },
+  });
+
   // ── Update ────────────────────────────────────────────────────────────────────
 
   function update() {
@@ -578,6 +668,14 @@
     chart.data.datasets[0].data = preData;
     chart.data.datasets[1].data = postData;
     chart.update('none');
+
+    // Annual stacked bar chart
+    const { labels: aLabels, salary: aSalary, returns: aReturns } =
+      buildAnnualData(pat0, juros, gastoMes, econMes, anoApos, ir);
+    annualChart.data.labels = aLabels;
+    annualChart.data.datasets[0].data = aReturns;
+    annualChart.data.datasets[1].data = aSalary;
+    annualChart.update('none');
 
     // ── Stats cards ────────────────────────────────────────────────────────────
     const r = Math.pow(1 + juros, 1 / 12) - 1;
