@@ -3,6 +3,7 @@ data/
 
 # Saídas geradas pelos scripts
 output/
+siconfi_dca/
 
 # Cache Python
 __pycache__/
