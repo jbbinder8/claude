@@ -219,6 +219,36 @@
       display: none;
       margin-top: 1rem;
     }
+
+    .sensitivity-control {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .sensitivity-control label {
+      display: flex;
+      align-items: center;
+      font-size: 0.72rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #2d3748;
+      user-select: none;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .sensitivity-control label:hover { color: #a0aec0; border-color: #4a5568; }
+
+    .sensitivity-control input[type=radio] { display: none; }
+
+    .sensitivity-control label:has(input:checked) {
+      color: #7c9ef5;
+      border-color: #7c9ef5;
+      background: rgba(124,158,245,0.08);
+    }
   </style>
 </head>
 <body>
@@ -251,7 +281,7 @@
         <span>Patrimônio inicial</span>
         <span class="slider-value" id="v-patrimonio">R$ 100.000</span>
       </div>
-      <input type="range" id="patrimonio" min="0" max="5000000" step="10000" value="100000" />
+      <input type="range" id="patrimonio" min="0" max="5000000" step="100000" value="100000" />
     </div>
 
     <span class="tag tag-green">Poupança</span>
@@ -357,6 +387,11 @@
     <!-- GRÁFICO -->
     <div class="chart-box">
       <h2>Evolução do Patrimônio Líquido — 2026 a 2100 (valores reais)</h2>
+      <div class="sensitivity-control">
+        <label><input type="radio" name="sensitivity" value="none" checked /><span>Sem variações</span></label>
+        <label><input type="radio" name="sensitivity" value="juros" /><span>±1 p.p. juros</span></label>
+        <label><input type="radio" name="sensitivity" value="apos" /><span>±5 anos aposentadoria</span></label>
+      </div>
       <canvas id="chart" height="300"></canvas>
     </div>
 
@@ -397,6 +432,10 @@
       document.getElementById('v-' + id).textContent = displays[id](get(id));
       update();
     });
+  });
+
+  document.querySelectorAll('input[name="sensitivity"]').forEach(el => {
+    el.addEventListener('change', update);
   });
 
   // ── Core Simulation ───────────────────────────────────────────────────────────
@@ -448,6 +487,19 @@
 
     return { labels, preData, postData, patAtApos: patAtApos ?? 0, ruinaAno,
              ttJuros, ttDeposito, ttRetirada };
+  }
+
+  function runChartFlat(pat0, juros, gastoMes, econMes, anoApos, ir) {
+    const r       = Math.pow(1 + juros, 1 / 12) - 1;
+    const mesApos = Math.max(0, (anoApos - ANO_INICIO) * 12);
+    const saida   = ir < 1 ? gastoMes / (1 - ir) : gastoMes * 100;
+    const data = [];
+    let p = pat0;
+    for (let m = 0; m <= MESES; m++) {
+      data.push(Math.max(0, Math.round(p)));
+      p = p * (1 + r) + (m >= mesApos ? -saida : econMes);
+    }
+    return data;
   }
 
   // ── Binary Searches ───────────────────────────────────────────────────────────
@@ -545,6 +597,32 @@
           tension: 0.25,
           spanGaps: false,
         },
+        {
+          label: '',
+          data: [],
+          borderColor: 'rgba(74,222,128,0.40)',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.25,
+          spanGaps: false,
+          hidden: true,
+        },
+        {
+          label: '',
+          data: [],
+          borderColor: 'rgba(248,113,113,0.40)',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.25,
+          spanGaps: false,
+          hidden: true,
+        },
       ],
     },
     options: {
@@ -553,13 +631,18 @@
       plugins: {
         legend: { labels: { color: '#a0aec0', font: { size: 12 } } },
         tooltip: {
+          filter: item => item.datasetIndex < 2,
           backgroundColor: '#1a1f2e',
           borderColor: '#2d3748',
           borderWidth: 1,
           titleColor: '#f0f4ff',
           bodyColor: '#a0aec0',
           callbacks: {
-            title: items => `${ANO_INICIO + Math.floor(items[0].dataIndex / 12)}`,
+            title: items => {
+              const m = items[0].dataIndex;
+              const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+              return `${meses[m % 12]} ${ANO_INICIO + Math.floor(m / 12)}`;
+            },
             label: c => c.parsed.y != null ? ` R$ ${fmt(c.parsed.y)}` : null,
             afterBody: items => {
               const i = items[0]?.dataIndex;
@@ -667,6 +750,31 @@
     chart.data.labels = labels;
     chart.data.datasets[0].data = preData;
     chart.data.datasets[1].data = postData;
+
+    // Sensitivity lines
+    const mode = document.querySelector('input[name="sensitivity"]:checked').value;
+    if (mode === 'juros') {
+      const jUp   = Math.min(juros + 0.01, 0.5);
+      const jDown = Math.max(juros - 0.01, 0);
+      chart.data.datasets[2].data  = runChartFlat(pat0, jUp,   gastoMes, econMes, anoApos, ir);
+      chart.data.datasets[3].data  = runChartFlat(pat0, jDown, gastoMes, econMes, anoApos, ir);
+      chart.data.datasets[2].label = `Juros ${pct(jUp * 100)}`;
+      chart.data.datasets[3].label = `Juros ${pct(jDown * 100)}`;
+    } else if (mode === 'apos') {
+      const aUp   = Math.min(anoApos + 5, 2099);
+      const aDown = Math.max(anoApos - 5, ANO_INICIO);
+      chart.data.datasets[2].data  = runChartFlat(pat0, juros, gastoMes, econMes, aUp,   ir);
+      chart.data.datasets[3].data  = runChartFlat(pat0, juros, gastoMes, econMes, aDown, ir);
+      chart.data.datasets[2].label = `Aposen. ${aUp}`;
+      chart.data.datasets[3].label = `Aposen. ${aDown}`;
+    } else {
+      chart.data.datasets[2].data  = [];
+      chart.data.datasets[3].data  = [];
+      chart.data.datasets[2].label = '';
+      chart.data.datasets[3].label = '';
+    }
+    chart.data.datasets[2].hidden = (mode === 'none');
+    chart.data.datasets[3].hidden = (mode === 'none');
     chart.update('none');
 
     // Annual stacked bar chart
