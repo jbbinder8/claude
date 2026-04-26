@@ -20,7 +20,7 @@ from requests.adapters import HTTPAdapter, Retry
 from .common import (
     ANOS, SALVAR_A_CADA,
     obter_entes,
-    ler_checkpoint, gravar_checkpoint, salvar_csv, imprimir_resumo,
+    ler_checkpoint, gravar_checkpoint, ler_csv, salvar_csv, imprimir_resumo,
 )
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ def baixar(entes_df=None) -> list:
     """
     DIR_SAIDA.mkdir(parents=True, exist_ok=True)
     feitos = ler_checkpoint(CHECKPOINT)
-    linhas: list = []
+    linhas: list = ler_csv(CSV_SAIDA)
     n_novos = 0
 
     if entes_df is None:

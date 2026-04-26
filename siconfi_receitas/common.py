@@ -120,6 +120,13 @@ def gravar_checkpoint(path: Path, feitos: set):
     path.write_text(json.dumps({"feitos": list(feitos)}), encoding="utf-8")
 
 
+def ler_csv(path: Path) -> list:
+    """Lê CSV existente e retorna lista de dicts. Retorna [] se não existir."""
+    if path.exists():
+        return pd.read_csv(path, sep=";", decimal=",").to_dict("records")
+    return []
+
+
 def salvar_csv(path: Path, linhas: list):
     if linhas:
         pd.DataFrame(linhas).to_csv(
