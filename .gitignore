@@ -2,7 +2,9 @@
 data/
 
 # Saídas geradas pelos scripts
-output/
+output/*
+!output/receitas/
+!output/receitas/**
 siconfi_dca/
 
 # Cache Python
