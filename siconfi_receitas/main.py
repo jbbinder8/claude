@@ -14,7 +14,10 @@ Uso:
 """
 
 import argparse
+import csv
 import time
+from datetime import datetime
+from pathlib import Path
 
 from .common import obter_entes
 from . import dca, rreo, siops, consolidar as _consolidar
@@ -25,6 +28,23 @@ MODULOS_DISPONIVEIS = {
     "rreo" : rreo.baixar,
     "siops": siops.baixar,
 }
+
+_LOG = Path("output/receitas/log_execucao.csv")
+
+
+def _gravar_log(modulo: str, inicio: float, registros: int):
+    _LOG.parent.mkdir(parents=True, exist_ok=True)
+    novo = not _LOG.exists()
+    with open(_LOG, "a", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f, delimiter=";")
+        if novo:
+            w.writerow(["data_hora", "modulo", "duracao_min", "registros"])
+        w.writerow([
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            modulo.upper(),
+            f"{(time.time() - inicio) / 60:.1f}",
+            registros,
+        ])
 
 
 def main(modulos: list[str] = None):
@@ -40,7 +60,6 @@ def main(modulos: list[str] = None):
     print(f"Módulos selecionados: {modulos}")
     print("=" * 70)
 
-    # Carrega entes uma única vez e repassa a todos os módulos
     entes_df = obter_entes()
 
     resultados = {}
@@ -48,8 +67,9 @@ def main(modulos: list[str] = None):
         t0 = time.time()
         fn = MODULOS_DISPONIVEIS[nome]
         resultados[nome] = fn(entes_df=entes_df)
-        elapsed = time.time() - t0
-        print(f"\n[{nome.upper()}] Tempo: {elapsed/60:.1f} min\n")
+        duracao = time.time() - t0
+        _gravar_log(nome, t0, len(resultados[nome]))
+        print(f"\n[{nome.upper()}] Tempo: {duracao/60:.1f} min\n")
 
     print("=" * 70)
     print("Resumo geral:")

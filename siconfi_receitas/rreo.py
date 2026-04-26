@@ -29,6 +29,8 @@ Saída  : output/rreo/receitas_rreo.csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+from tqdm import tqdm
+
 from .common import (
     ANOS, MAX_WORKERS, SALVAR_A_CADA,
     paginar, obter_entes,
@@ -131,25 +133,24 @@ def baixar(entes_df=None) -> list:
 
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futuros = {executor.submit(_processar, t): t for t in tarefas}
-        for futuro in as_completed(futuros):
-            try:
-                chave, resultado, no_ente, uf, ano = futuro.result()
-            except Exception as exc:
-                print(f"\n  [RREO] Erro: {exc}")
-                continue
+        with tqdm(total=pendentes, desc="RREO", unit="req", disable=not tarefas) as pbar:
+            for futuro in as_completed(futuros):
+                try:
+                    chave, resultado, no_ente, uf, ano = futuro.result()
+                except Exception as exc:
+                    tqdm.write(f"  [RREO] Erro: {exc}")
+                    continue
 
-            linhas.extend(resultado)
-            feitos.add(chave)
-            concluidos += 1
-            n_novos    += 1
+                linhas.extend(resultado)
+                feitos.add(chave)
+                n_novos += 1
 
-            pct   = concluidos / total * 100
-            achou = f"[{len(resultado)}]" if resultado else ""
-            print(f"  [RREO {pct:5.1f}%] {uf} {no_ente[:35]:<35} {ano}  {achou}   ", end="\r")
+                pbar.set_postfix(uf=uf, ente=no_ente[:20], ano=ano, n=len(resultado))
+                pbar.update(1)
 
-            if n_novos % SALVAR_A_CADA == 0:
-                gravar_checkpoint(CHECKPOINT, feitos)
-                salvar_csv(CSV_SAIDA, linhas)
+                if n_novos % SALVAR_A_CADA == 0:
+                    gravar_checkpoint(CHECKPOINT, feitos)
+                    salvar_csv(CSV_SAIDA, linhas)
 
     gravar_checkpoint(CHECKPOINT, feitos)
     salvar_csv(CSV_SAIDA, linhas)

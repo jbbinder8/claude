@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 import requests
+from tqdm import tqdm
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter, Retry
 
@@ -209,23 +210,22 @@ def baixar(entes_df=None) -> list:
 
     sessao = _criar_sessao()
     try:
-        for uf, cod_ibge, no_ente, ano, chave in tarefas:
-            resultado = _buscar(sessao, uf, cod_ibge, no_ente, ano)
+        with tqdm(total=pendentes, desc="SIOPS", unit="req", disable=not tarefas) as pbar:
+            for uf, cod_ibge, no_ente, ano, chave in tarefas:
+                resultado = _buscar(sessao, uf, cod_ibge, no_ente, ano)
 
-            linhas.extend(resultado)
-            feitos.add(chave)
-            concluidos += 1
-            n_novos    += 1
+                linhas.extend(resultado)
+                feitos.add(chave)
+                n_novos += 1
 
-            pct   = concluidos / total * 100 if total else 100
-            achou = f"[{len(resultado)}]" if resultado else ""
-            print(f"  [SIOPS {pct:5.1f}%] {uf} {no_ente[:35]:<35} {ano}  {achou}   ", end="\r")
+                pbar.set_postfix(uf=uf, ente=no_ente[:20], ano=ano, n=len(resultado))
+                pbar.update(1)
 
-            if n_novos % SALVAR_A_CADA == 0:
-                gravar_checkpoint(CHECKPOINT, feitos)
-                salvar_csv(CSV_SAIDA, linhas)
+                if n_novos % SALVAR_A_CADA == 0:
+                    gravar_checkpoint(CHECKPOINT, feitos)
+                    salvar_csv(CSV_SAIDA, linhas)
 
-            time.sleep(_PAUSA)
+                time.sleep(_PAUSA)
     finally:
         sessao.close()
 
