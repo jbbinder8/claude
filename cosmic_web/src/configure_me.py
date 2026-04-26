@@ -16,8 +16,8 @@ N_SAVE_FILES     = 10   # Number of save files/plotsteps/projections
 N_PLOTS          = 10   # Number of plots saved to disk
 
 PLOT_STEPS       = False
-PLOT_PROJECTIONS = True
-PLOT_GRF         = True
+PLOT_PROJECTIONS = False
+PLOT_GRF         = False
 SAVE_DATA        = False
 SAVE_DENSITY     = False
 PRINT_STATUS     = True

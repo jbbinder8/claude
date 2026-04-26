@@ -1,6 +1,7 @@
 import numba as nb
+import numpy as np
 
-from time import time  
+from time import time
 
 from density import density
 from integrate import advance_time
@@ -75,7 +76,9 @@ def simulator():
 
 		if PRINT_STATUS:
 			print_status(a_current, start_time)
-						
+
+	print('Saving final density field...')
+	np.save('Data/final_density.npy', rho)
 	return
 
 def print_status(a_current, start_time):
