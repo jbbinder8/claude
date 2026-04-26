@@ -10,20 +10,20 @@ Uso:
 
     # Apenas um ou dois módulos
     python -m siconfi_receitas.main --modulos dca rreo
-    python -m siconfi_receitas.main --modulos siope
+    python -m siconfi_receitas.main --modulos siops
 """
 
 import argparse
 import time
 
 from .common import obter_entes
-from . import dca, rreo, siope
+from . import dca, rreo, siops, consolidar as _consolidar
 
 
 MODULOS_DISPONIVEIS = {
     "dca"  : dca.baixar,
     "rreo" : rreo.baixar,
-    "siope": siope.baixar,
+    "siops": siops.baixar,
 }
 
 
@@ -57,9 +57,11 @@ def main(modulos: list[str] = None):
         print(f"  {nome.upper():<8}: {len(linhas):>8} registros")
     print("=" * 70)
 
+    _consolidar.consolidar()
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Extrator de receitas SICONFI/SIOPE")
+    parser = argparse.ArgumentParser(description="Extrator de receitas SICONFI/SIOPS")
     parser.add_argument(
         "--modulos", nargs="+",
         choices=list(MODULOS_DISPONIVEIS.keys()),

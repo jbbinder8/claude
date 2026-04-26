@@ -39,8 +39,8 @@ from .common import (
 # Configurações do módulo
 # ---------------------------------------------------------------------------
 
-DIR_SAIDA  = Path("output/rreo")
-CHECKPOINT = DIR_SAIDA / "checkpoint.json"
+DIR_SAIDA  = Path("output/receitas")
+CHECKPOINT = DIR_SAIDA / "checkpoint_rreo.json"
 CSV_SAIDA  = DIR_SAIDA / "receitas_rreo.csv"
 
 BIMESTRE_ALVO = 6                          # 6.º bimestre = jan–dez acumulado

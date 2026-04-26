@@ -24,8 +24,8 @@ from .common import (
 # Configurações do módulo
 # ---------------------------------------------------------------------------
 
-DIR_SAIDA  = Path("output/dca")
-CHECKPOINT = DIR_SAIDA / "checkpoint.json"
+DIR_SAIDA  = Path("output/receitas")
+CHECKPOINT = DIR_SAIDA / "checkpoint_dca.json"
 CSV_SAIDA  = DIR_SAIDA / "receitas_dca.csv"
 
 COLUNA_ALVO = "Receitas Brutas Realizadas"
