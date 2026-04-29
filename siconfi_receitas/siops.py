@@ -21,7 +21,11 @@ from .common import (
     ANOS, SALVAR_A_CADA,
     obter_entes,
     ler_checkpoint, gravar_checkpoint, ler_csv, salvar_csv, imprimir_resumo,
+    gravar_log_execucao,
 )
+
+# Chave natural de uma linha SIOPS — usada para deduplicar ao reler.
+_CHAVES_LINHA = ["cod_ibge", "ano", "cod_conta"]
 
 # ---------------------------------------------------------------------------
 # Configurações do módulo
@@ -32,7 +36,7 @@ CHECKPOINT = DIR_SAIDA / "checkpoint_siops.json"
 CSV_SAIDA  = DIR_SAIDA / "receitas_siops.csv"
 
 _URL_POST = "http://siops.datasus.gov.br/rel_LRF.php"
-_PERIODO  = "2"
+_PERIODO  = "2"   # código interno SIOPS para período anual (dados consolidados jan-dez)
 _PAUSA    = 0.5   # mais conservador que a API SICONFI — servidor legado
 
 _ROTULOS_ISS = [
@@ -111,8 +115,24 @@ def _parse_valor(texto: str | None) -> float:
 # ---------------------------------------------------------------------------
 
 def _buscar(sessao: requests.Session, uf: str, cod_ibge: int, no_ente: str, ano: int) -> list:
-    cod_uf  = _UF_COD.get(uf, "")
-    cod_mun = str(cod_ibge)[:-1]   # SIOPS usa 6 dígitos (IBGE 7d sem o dígito verificador)
+    """
+    Consulta o SIOPS para um município/ano. Levanta exceção em caso de falha
+    de rede ou dados inválidos — o chamador decide se marca a tarefa como feita.
+    Retornar [] é reservado para "consulta OK, mas município sem dados no período".
+    """
+    # Validações preventivas: erros aqui indicam problema nos dados de entrada,
+    # não falha de rede — o registro de erro ajuda a identificar a origem.
+    cod_uf = _UF_COD.get(uf, "")
+    if not cod_uf:
+        raise ValueError(f"UF desconhecida ou ausente: {uf!r} (cod_ibge={cod_ibge})")
+
+    cod_ibge_str = str(cod_ibge)
+    if len(cod_ibge_str) != 7:
+        raise ValueError(
+            f"cod_ibge com formato inesperado: {cod_ibge!r} "
+            f"(esperado 7 dígitos, recebido {len(cod_ibge_str)})"
+        )
+    cod_mun = cod_ibge_str[:-1]   # SIOPS usa 6 dígitos (IBGE 7d sem o dígito verificador)
 
     payload = {
         "cmbAno"         : str(ano),
@@ -132,11 +152,9 @@ def _buscar(sessao: requests.Session, uf: str, cod_ibge: int, no_ente: str, ano:
         "Upgrade-Insecure-Requests": "1",
     }
 
-    try:
-        r = sessao.post(_URL_POST, data=payload, headers=headers_extra, timeout=60)
-        r.raise_for_status()
-    except Exception:
-        return []
+    # Falhas de rede propagam como exceção — o chamador não marcará como feito.
+    r = sessao.post(_URL_POST, data=payload, headers=headers_extra, timeout=60)
+    r.raise_for_status()
 
     soup = BeautifulSoup(r.text, "html.parser")
 
@@ -146,7 +164,7 @@ def _buscar(sessao: requests.Session, uf: str, cod_ibge: int, no_ente: str, ano:
         "cod_ibge" : cod_ibge,
         "no_ente"  : no_ente,
         "ano"      : ano,
-        "populacao": 0,
+        "populacao": None,
     }
 
     resultados = []
@@ -181,11 +199,23 @@ def baixar(entes_df=None) -> list:
     Executa o scraping do SIOPS/LRF para municípios e anos configurados.
     Aceita entes_df pré-carregado para evitar chamada duplicada ao orquestrador.
     Retorna lista de registros.
+
+    Robustez:
+      - _buscar() levanta exceção em falha de rede/HTTP; o try/except abaixo
+        faz `continue` sem adicionar à `feitos`, garantindo re-tentativa.
+      - CSV é gravado antes do checkpoint; queda entre os dois é coberta pela
+        sincronização de feitos a partir das linhas existentes no CSV.
     """
+    t_inicio = time.time()
     DIR_SAIDA.mkdir(parents=True, exist_ok=True)
     feitos = ler_checkpoint(CHECKPOINT)
-    linhas: list = ler_csv(CSV_SAIDA)
+    linhas: list = ler_csv(CSV_SAIDA, chaves_unicas=_CHAVES_LINHA)
+    # Sincroniza checkpoint com CSV (SIOPS só tem municípios → prefixo "M_").
+    for ln in linhas:
+        if ln.get("cod_ibge") is not None and ln.get("ano") is not None:
+            feitos.add(f"M_{ln['cod_ibge']}_{ln['ano']}")
     n_novos = 0
+    n_erros = 0
 
     if entes_df is None:
         entes_df = obter_entes()
@@ -206,13 +236,20 @@ def baixar(entes_df=None) -> list:
     total     = len(muns_df) * len(ANOS)
     pendentes = len(tarefas)
     print(f"\n[SIOPS] Total: {total} | Já feitos: {total - pendentes} | Pendentes: {pendentes}")
-    concluidos = total - pendentes
 
     sessao = _criar_sessao()
     try:
         with tqdm(total=pendentes, desc="SIOPS", unit="req", disable=not tarefas) as pbar:
             for uf, cod_ibge, no_ente, ano, chave in tarefas:
-                resultado = _buscar(sessao, uf, cod_ibge, no_ente, ano)
+                try:
+                    resultado = _buscar(sessao, uf, cod_ibge, no_ente, ano)
+                except Exception as exc:
+                    # NÃO adiciona à `feitos`: a tarefa será re-tentada.
+                    tqdm.write(f"  [SIOPS] Erro em {no_ente}/{ano}: {exc}")
+                    n_erros += 1
+                    pbar.update(1)
+                    time.sleep(_PAUSA)
+                    continue
 
                 linhas.extend(resultado)
                 feitos.add(chave)
@@ -222,15 +259,17 @@ def baixar(entes_df=None) -> list:
                 pbar.update(1)
 
                 if n_novos % SALVAR_A_CADA == 0:
-                    gravar_checkpoint(CHECKPOINT, feitos)
                     salvar_csv(CSV_SAIDA, linhas)
+                    gravar_checkpoint(CHECKPOINT, feitos)
 
                 time.sleep(_PAUSA)
     finally:
         sessao.close()
 
-    gravar_checkpoint(CHECKPOINT, feitos)
     salvar_csv(CSV_SAIDA, linhas)
-    print(f"\n[SIOPS] Concluído — {len(linhas)} registros -> {CSV_SAIDA}")
+    gravar_checkpoint(CHECKPOINT, feitos)
+    gravar_log_execucao("SIOPS", t_inicio, len(linhas), n_erros)
+    err_str = f" | erros: {n_erros}" if n_erros else ""
+    print(f"\n[SIOPS] Concluído — {len(linhas)} registros{err_str} -> {CSV_SAIDA}")
     imprimir_resumo(linhas, "SIOPS")
     return linhas

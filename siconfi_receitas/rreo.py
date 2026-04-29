@@ -26,6 +26,7 @@ Período: 2019-2025
 Saída  : output/rreo/receitas_rreo.csv
 """
 
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -35,7 +36,15 @@ from .common import (
     ANOS, MAX_WORKERS, SALVAR_A_CADA,
     paginar, obter_entes,
     ler_checkpoint, gravar_checkpoint, ler_csv, salvar_csv, imprimir_resumo,
+    gravar_log_execucao,
 )
+
+# Chave natural de uma linha no CSV — usada para deduplicar ao reler.
+_CHAVES_LINHA = ["cod_ibge", "ano", "cod_conta"]
+
+# Mapa de "esfera" (texto salvo no CSV) → código de uma letra (usado nas chaves
+# do checkpoint). Permite reconstruir o checkpoint a partir do CSV.
+_ESFERA_TXT_PARA_COD = {"Estado": "E", "Município": "M"}
 
 # ---------------------------------------------------------------------------
 # Configurações do módulo
@@ -78,6 +87,9 @@ def _buscar(cod_ibge: int, ano: int, esfera: str) -> list:
         cod_conta = item.get("cod_conta", "")
         coluna    = item.get("coluna", "")
         if cod_conta in contas_alvo and coluna == COLUNA_ALVO:
+            # `valor` e `populacao` preservam None quando a API não retornou
+            # o campo (vira vazio no CSV). Antes usávamos `or 0`, que confundia
+            # zero legítimo com ausência. Agora 0 e None são distinguíveis.
             resultados.append({
                 "esfera"    : "Estado" if esfera == "E" else "Município",
                 "co_uf"     : item.get("uf", ""),
@@ -88,8 +100,8 @@ def _buscar(cod_ibge: int, ano: int, esfera: str) -> list:
                 "indicador" : contas_alvo[cod_conta],
                 "cod_conta" : cod_conta,
                 "conta"     : item.get("conta", ""),
-                "valor"     : item.get("valor") or 0,
-                "populacao" : item.get("populacao") or 0,
+                "valor"     : item.get("valor"),
+                "populacao" : item.get("populacao"),
             })
     return resultados
 
@@ -103,11 +115,20 @@ def baixar(entes_df=None) -> list:
     Executa o download RREO (6.º bimestre) para todos os entes e anos.
     Aceita entes_df pré-carregado para evitar chamada duplicada ao orquestrador.
     Retorna lista de registros.
+
+    Robustez: mesma estratégia de dca.py — ver docstring lá para detalhes.
     """
+    t_inicio = time.time()
     DIR_SAIDA.mkdir(parents=True, exist_ok=True)
     feitos = ler_checkpoint(CHECKPOINT)
-    linhas: list = ler_csv(CSV_SAIDA)
+    linhas: list = ler_csv(CSV_SAIDA, chaves_unicas=_CHAVES_LINHA)
+    # Sincroniza checkpoint com CSV (cobre queda entre salvar_csv e gravar_checkpoint).
+    for ln in linhas:
+        esfera_cod = _ESFERA_TXT_PARA_COD.get(ln.get("esfera"))
+        if esfera_cod and ln.get("cod_ibge") is not None and ln.get("ano") is not None:
+            feitos.add(f"{esfera_cod}_{ln['cod_ibge']}_{ln['ano']}")
     n_novos = 0
+    n_erros = 0
 
     if entes_df is None:
         entes_df = obter_entes()
@@ -125,7 +146,6 @@ def baixar(entes_df=None) -> list:
     total     = len(entes_df) * len(ANOS)
     pendentes = len(tarefas)
     print(f"\n[RREO] Total: {total} | Já feitos: {total - pendentes} | Pendentes: {pendentes}")
-    concluidos = total - pendentes
 
     def _processar(args):
         cod_ibge, ano, esfera, no_ente, uf, chave = args
@@ -138,7 +158,10 @@ def baixar(entes_df=None) -> list:
                 try:
                     chave, resultado, no_ente, uf, ano = futuro.result()
                 except Exception as exc:
+                    # NÃO adiciona à `feitos`: a tarefa será re-tentada.
                     tqdm.write(f"  [RREO] Erro: {exc}")
+                    n_erros += 1
+                    pbar.update(1)
                     continue
 
                 linhas.extend(resultado)
@@ -149,11 +172,13 @@ def baixar(entes_df=None) -> list:
                 pbar.update(1)
 
                 if n_novos % SALVAR_A_CADA == 0:
-                    gravar_checkpoint(CHECKPOINT, feitos)
                     salvar_csv(CSV_SAIDA, linhas)
+                    gravar_checkpoint(CHECKPOINT, feitos)
 
-    gravar_checkpoint(CHECKPOINT, feitos)
     salvar_csv(CSV_SAIDA, linhas)
-    print(f"\n[RREO] Concluído — {len(linhas)} registros -> {CSV_SAIDA}")
+    gravar_checkpoint(CHECKPOINT, feitos)
+    gravar_log_execucao("RREO", t_inicio, len(linhas), n_erros)
+    err_str = f" | erros: {n_erros}" if n_erros else ""
+    print(f"\n[RREO] Concluído — {len(linhas)} registros{err_str} -> {CSV_SAIDA}")
     imprimir_resumo(linhas, "RREO")
     return linhas
