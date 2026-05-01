@@ -1,7 +1,7 @@
 """
 main.py — Orquestrador do projeto siconfi_receitas.
 
-Executa os três módulos em sequência, compartilhando a lista de entes
+Executa os módulos em sequência, compartilhando a lista de entes
 para evitar chamadas duplicadas à API.
 
 Uso:
@@ -19,13 +19,14 @@ import argparse
 import time
 
 from .common import obter_entes
-from . import dca, rreo, siops, consolidar as _consolidar
+from . import dca, rreo, siops, siope, consolidar as _consolidar
 
 
 MODULOS_DISPONIVEIS = {
     "dca"  : dca.baixar,
     "rreo" : rreo.baixar,
     "siops": siops.baixar,
+    "siope": siope.baixar,
 }
 
 

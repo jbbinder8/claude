@@ -1,7 +1,7 @@
 """
-consolidar.py — Agrega os CSVs de DCA, RREO e SIOPS em um único arquivo.
+consolidar.py — Agrega os CSVs de DCA, RREO, SIOPS e SIOPE em um único arquivo.
 
-Entrada : output/receitas/receitas_{dca,rreo,siops}.csv
+Entrada : output/receitas/receitas_{dca,rreo,siops,siope}.csv
 Saída   : output/receitas/receitas_consolidadas.csv
 
 Colunas de saída:
@@ -9,8 +9,11 @@ Colunas de saída:
     cod_ibge     — código IBGE do ente
     tipo_receita — "ICMS", "ISS" ou "Cota-Parte ICMS"
     ano          — exercício
-    fonte        — "DCA", "RREO" ou "SIOPS"
+    fonte        — "DCA", "RREO", "SIOPS" ou "SIOPE"
     valor        — receita em reais
+
+Nota: SIOPE usa cod_ibge de 6 dígitos (sem dígito verificador).
+Os demais módulos usam 7 dígitos.
 """
 
 from pathlib import Path
@@ -24,6 +27,7 @@ _FONTES = {
     "DCA"  : DIR_RECEITAS / "receitas_dca.csv",
     "RREO" : DIR_RECEITAS / "receitas_rreo.csv",
     "SIOPS": DIR_RECEITAS / "receitas_siops.csv",
+    "SIOPE": DIR_RECEITAS / "receitas_siope.csv",
 }
 
 _COLUNAS_SAIDA = ["tipo_ente", "cod_ibge", "tipo_receita", "ano", "fonte", "valor"]
