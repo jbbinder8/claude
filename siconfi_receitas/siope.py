@@ -4,9 +4,11 @@ Extrai ISS e Cota-Parte ICMS por UF×ano para todos os municípios.
 Scope: municípios apenas.
 
 Plano de contas muda a cada geração:
-  2019-2020  ISS=4,11,13,05,00,00  Cota=4,17,22,01,01,00  (formato com vírgulas)
-  2021-2022  ISS=11180230           Cota=17280110           (8 dígitos, série 118/172)
-  2023+      ISS=11145110           Cota=17215000           (8 dígitos, série 114/172)
+  2019-2020  formato com vírgulas; ISS é composto por múltiplos códigos
+             (principal + multas/juros + dívida ativa) que são somados
+             por município antes de retornar — mesma metodologia do DCA.
+  2021-2022  ISS=11180230  Cota=17280110  (8 dígitos, série 118/172)
+  2023+      ISS=11145110  Cota=17215000  (8 dígitos, série 114/172)
 
 Nota: COD_MUNI retornado pela API é o código IBGE de 6 dígitos
 (sem o dígito verificador). Os demais módulos usam 7 dígitos.
@@ -49,10 +51,24 @@ _BASE_URL = (
 _PERIODO = 6  # bimestre anual
 
 # Plano de contas por geração
+#
+# 2019-2020: múltiplos códigos compõem o ISS total (mesmo critério do DCA).
+#   O código principal (4,11,13,05,00,00) captura só o ISS bruto; para
+#   igualar o DCA é preciso somar também multas, juros e dívida ativa.
+#   Como os códigos contêm vírgulas, o filtro OData no servidor falha —
+#   a filtragem é feita em Python após busca geral (url_contas=None).
+#   Após coletar as linhas individuais, _buscar() agrega por município.
 _CONTAS_2019_2020 = {
-    "4,11,13,05,00,00": "ISS",
+    "4,11,13,05,00,00": "ISS",   # ISS principal
+    "4,19,11,40,00,00": "ISS",   # Multas e Juros de Mora sobre ISS
+    "4,19,13,13,00,00": "ISS",   # Multas e Juros de Mora da Dívida Ativa sobre ISS
+    "4,19,31,13,00,00": "ISS",   # Dívida Ativa de ISS
     "4,17,22,01,01,00": "Cota-Parte ICMS",
 }
+# Código sintético gravado no CSV para o ISS agregado de 2019-2020
+# (usado na chave de deduplicação no lugar dos múltiplos códigos-fonte)
+_COD_ISS_AGREGADO_2019_2020 = "4,11,13,05,agregado"
+
 _CONTAS_2021_2022 = {
     "11180230": "ISS",
     "17280110": "Cota-Parte ICMS",
@@ -193,6 +209,26 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
             "valor"    : valor,
             "populacao": None,
         })
+
+    # 2019-2020: ISS é composto por múltiplos códigos → agregar por município,
+    # igual à metodologia do DCA (Receitas Brutas Realizadas inclui tudo).
+    # Cota-Parte ICMS tem um único código e não precisa de agregação.
+    if ano <= 2020 and registros:
+        df_r = pd.DataFrame(registros)
+        # Separar ISS (multi-código) da Cota-Parte (único código)
+        df_cota = df_r[df_r["indicador"] != "ISS"]
+        df_iss  = df_r[df_r["indicador"] == "ISS"]
+        if not df_iss.empty:
+            agg = (
+                df_iss
+                .groupby(["esfera", "co_uf", "cod_ibge", "no_ente", "ano", "indicador"],
+                         as_index=False)
+                .agg(valor=("valor", "sum"))
+            )
+            agg["cod_conta"]  = _COD_ISS_AGREGADO_2019_2020
+            agg["conta"]      = "ISS (principal + multas/juros + dívida ativa)"
+            agg["populacao"]  = None
+            registros = df_cota.to_dict("records") + agg.to_dict("records")
 
     return registros
 
