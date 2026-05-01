@@ -113,8 +113,19 @@ def paginar(endpoint: str, params: dict = None, base_url: str = BASE_URL_SICONFI
 # Entes
 # ---------------------------------------------------------------------------
 
-_MIN_ESTADOS    = 27     # 26 estados + DF
+_MIN_ESTADOS    = 26     # 26 estados (DF classificado como M no SICONFI)
 _MIN_MUNICIPIOS = 5500   # ~5570 municípios — margem para entes inativos
+
+# O DF existe no SICONFI apenas como Município (Brasília, cod_ibge=5300108),
+# mas também arrecada ICMS como estado. Adicionamos uma linha extra com
+# esfera="E" para que os módulos DCA/RREO também consultem o ICMS do DF.
+_IBGE_BRASILIA = 5300108
+_DF_COMO_ESTADO = {
+    "cod_ibge": _IBGE_BRASILIA,
+    "ente":     "Distrito Federal",
+    "uf":       "DF",
+    "esfera":   "E",
+}
 
 
 def obter_entes() -> pd.DataFrame:
@@ -123,8 +134,13 @@ def obter_entes() -> pd.DataFrame:
     Em MODO_TESTE, constrói o DataFrame diretamente.
 
     Em produção, valida que a lista carregada tem o tamanho mínimo esperado
-    (27 estados + ~5570 municípios). Levanta RuntimeError se a paginação
+    (26 estados + ~5570 municípios). Levanta RuntimeError se a paginação
     devolveu lista vazia ou suspeitamente curta — sinal de falha parcial.
+
+    O DF é tratado de forma especial: o SICONFI o classifica apenas como
+    Município (Brasília), mas como também arrecada ICMS estadual, é incluído
+    duas vezes — como "M" (ISS/Cota-Parte, vindo da API) e como "E" (ICMS,
+    linha sintética adicionada aqui).
     """
     if MODO_TESTE:
         df = pd.DataFrame([
@@ -143,9 +159,15 @@ def obter_entes() -> pd.DataFrame:
         raise RuntimeError(f"Resposta da API de entes sem coluna 'esfera'. Colunas: {list(df.columns)}")
     df = df[df["esfera"].isin(["E", "M"])].copy()
     df = df.sort_values("exercicio", ascending=False).drop_duplicates("cod_ibge")
+
+    # Adiciona o DF como estado (linha sintética) para consulta de ICMS
+    exercicio_df = df.loc[df["cod_ibge"] == _IBGE_BRASILIA, "exercicio"].max()
+    df_estado = pd.DataFrame([{**_DF_COMO_ESTADO, "exercicio": exercicio_df}])
+    df = pd.concat([df, df_estado], ignore_index=True)
+
     n_e = int((df.esfera == "E").sum())
     n_m = int((df.esfera == "M").sum())
-    print(f"  Estados: {n_e} | Municípios: {n_m}")
+    print(f"  Estados: {n_e} (incl. DF) | Municípios: {n_m}")
     if n_e < _MIN_ESTADOS or n_m < _MIN_MUNICIPIOS:
         raise RuntimeError(
             f"Lista de entes parece incompleta: {n_e} estados (mín {_MIN_ESTADOS}), "
