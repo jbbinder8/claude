@@ -33,7 +33,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 from .common import (
-    ANOS, MAX_WORKERS, SALVAR_A_CADA,
+    ANOS, MAX_WORKERS, SALVAR_A_CADA, IBGE_PARA_ID_ENTE,
     paginar, obter_entes,
     ler_checkpoint, gravar_checkpoint, ler_csv, salvar_csv, imprimir_resumo,
     gravar_log_execucao,
@@ -76,8 +76,9 @@ def _contas_por_esfera(esfera: str) -> dict:
 
 def _buscar(cod_ibge: int, ano: int, esfera: str) -> list:
     contas_alvo = _contas_por_esfera(esfera)
+    id_ente = IBGE_PARA_ID_ENTE.get(cod_ibge, cod_ibge)
     items = paginar("rreo", {
-        "id_ente"              : cod_ibge,
+        "id_ente"              : id_ente,
         "an_exercicio"         : ano,
         "nr_periodo"           : BIMESTRE_ALVO,
         "co_tipo_demonstrativo": "RREO",

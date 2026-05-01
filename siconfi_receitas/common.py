@@ -114,15 +114,26 @@ def paginar(endpoint: str, params: dict = None, base_url: str = BASE_URL_SICONFI
 # Entes
 # ---------------------------------------------------------------------------
 
-_MIN_ESTADOS    = 26     # 26 estados (DF classificado como M no SICONFI)
+_MIN_ESTADOS    = 26     # 26 estados (DF classificado como esfera "D" no SICONFI)
 _MIN_MUNICIPIOS = 5500   # ~5570 municípios — margem para entes inativos
 
-# O DF existe no SICONFI apenas como Município (Brasília, cod_ibge=5300108),
-# mas também arrecada ICMS como estado. Adicionamos uma linha extra com
-# esfera="E" para que os módulos DCA/RREO também consultem o ICMS do DF.
-_IBGE_BRASILIA = 5300108
+# No SICONFI o DF aparece com duas entradas:
+#   cod_ibge=53,      esfera="D" (Distrital) — arrecada ICMS como estado
+#   cod_ibge=5300108, esfera="M" (Município) — Brasília, arrecada ISS
+#
+# Adicionamos a linha "D" como esfera="E" sintética para que DCA/RREO
+# consultem o ICMS do DF com id_ente=53 (código correto na API).
+_IBGE_BRASILIA  = 5300108   # código IBGE de Brasília / DF como município
+_IBGE_DF_ESTADO = 53        # código IBGE do DF como estado (2 dígitos)
+
+# No SICONFI, todo o dado do DF (ICMS estadual E ISS municipal) é publicado
+# sob id_ente=53. O código de Brasília (5300108) não retorna nada no DCA/RREO.
+# DCA e RREO usam este mapa para traduzir cod_ibge → id_ente antes de chamar
+# a API, preservando o cod_ibge original no CSV de saída.
+IBGE_PARA_ID_ENTE: dict[int, int] = {_IBGE_BRASILIA: _IBGE_DF_ESTADO}
+
 _DF_COMO_ESTADO = {
-    "cod_ibge": _IBGE_BRASILIA,
+    "cod_ibge": _IBGE_DF_ESTADO,
     "ente":     "Distrito Federal",
     "uf":       "DF",
     "esfera":   "E",
@@ -147,7 +158,7 @@ def obter_entes() -> pd.DataFrame:
         df = pd.DataFrame([
             {"cod_ibge": _IBGE_PARANA,    "ente": "Paraná",           "uf": "PR", "esfera": "E", "exercicio": max(ANOS)},
             {"cod_ibge": _IBGE_CURITIBA,  "ente": "Curitiba",         "uf": "PR", "esfera": "M", "exercicio": max(ANOS)},
-            {"cod_ibge": _IBGE_BRASILIA,  "ente": "Distrito Federal", "uf": "DF", "esfera": "E", "exercicio": max(ANOS)},
+            {"cod_ibge": _IBGE_DF_ESTADO, "ente": "Distrito Federal", "uf": "DF", "esfera": "E", "exercicio": max(ANOS)},
             {"cod_ibge": _IBGE_BRASILIA,  "ente": "Brasília",         "uf": "DF", "esfera": "M", "exercicio": max(ANOS)},
         ])
         print(f"  [MODO TESTE] PR (Paraná+Curitiba) + DF (Distrito Federal+Brasília) — sem chamada à API de entes")

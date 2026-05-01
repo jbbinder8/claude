@@ -189,7 +189,18 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
         if not indicador:
             continue
 
-        cod_ibge = str(row.get("COD_MUNI", "")).strip().split(".")[0].zfill(6)
+        raw_cod = str(row.get("COD_MUNI", "")).strip().split(".")[0]
+        if raw_cod.isdigit():
+            cod_ibge = raw_cod.zfill(6)
+        elif sig_uf == "DF":
+            # A API FNDE não preenche COD_MUNI para o DF — usamos o código
+            # de Brasília (6 dígitos, sem dígito verificador).
+            cod_ibge = "530010"
+        else:
+            continue  # município sem código IBGE válido — descarta a linha
+
+        raw_no_ente = str(row.get("NOM_MUNI", "")).strip()
+        no_ente = "Brasília" if (not raw_no_ente or raw_no_ente == "nan") and sig_uf == "DF" else raw_no_ente
 
         raw_valor = str(row.get("VAL_DECL", "")).strip().replace(",", ".")
         try:
@@ -201,7 +212,7 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
             "esfera"   : "Município",
             "co_uf"    : str(row.get("SIG_UF", sig_uf)).strip(),
             "cod_ibge" : cod_ibge,
-            "no_ente"  : str(row.get("NOM_MUNI", "")).strip(),
+            "no_ente"  : no_ente,
             "ano"      : ano,
             "indicador": indicador,
             "cod_conta": cod_conta,
