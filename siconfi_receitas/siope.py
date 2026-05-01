@@ -251,7 +251,7 @@ def baixar(entes_df=None) -> list:
     t_inicio = time.time()
     DIR_SAIDA.mkdir(parents=True, exist_ok=True)
 
-    uf_list = ["PR"] if common.MODO_TESTE else _UF_LIST
+    uf_list = ["PR", "DF"] if common.MODO_TESTE else _UF_LIST
 
     feitos = ler_checkpoint(CHECKPOINT)
     linhas: list = ler_csv(CSV_SAIDA, chaves_unicas=_CHAVES_LINHA)

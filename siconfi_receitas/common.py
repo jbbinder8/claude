@@ -36,6 +36,7 @@ MODO_TESTE = True
 
 _IBGE_PARANA   = 41        # Estado do Paraná
 _IBGE_CURITIBA = 4106902   # Município de Curitiba / PR
+# _IBGE_BRASILIA já definido abaixo junto ao tratamento especial do DF
 
 # ---------------------------------------------------------------------------
 # Sessão HTTP — thread-local (cada worker do ThreadPoolExecutor recebe a sua)
@@ -144,10 +145,12 @@ def obter_entes() -> pd.DataFrame:
     """
     if MODO_TESTE:
         df = pd.DataFrame([
-            {"cod_ibge": _IBGE_PARANA,   "ente": "Paraná",   "uf": "PR", "esfera": "E", "exercicio": max(ANOS)},
-            {"cod_ibge": _IBGE_CURITIBA, "ente": "Curitiba", "uf": "PR", "esfera": "M", "exercicio": max(ANOS)},
+            {"cod_ibge": _IBGE_PARANA,    "ente": "Paraná",           "uf": "PR", "esfera": "E", "exercicio": max(ANOS)},
+            {"cod_ibge": _IBGE_CURITIBA,  "ente": "Curitiba",         "uf": "PR", "esfera": "M", "exercicio": max(ANOS)},
+            {"cod_ibge": _IBGE_BRASILIA,  "ente": "Distrito Federal", "uf": "DF", "esfera": "E", "exercicio": max(ANOS)},
+            {"cod_ibge": _IBGE_BRASILIA,  "ente": "Brasília",         "uf": "DF", "esfera": "M", "exercicio": max(ANOS)},
         ])
-        print(f"  [MODO TESTE] Paraná (E) + Curitiba (M) — sem chamada à API de entes")
+        print(f"  [MODO TESTE] PR (Paraná+Curitiba) + DF (Distrito Federal+Brasília) — sem chamada à API de entes")
         return df
 
     print("Carregando lista de entes...")
