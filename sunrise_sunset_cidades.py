@@ -131,15 +131,34 @@ for c in CIDADES:
 ax1.axhline(12, color="#555", linestyle="--", lw=0.8, alpha=0.7)
 ax1.text(days[3], 12.15, "12h (equinócio)", color="#888", fontsize=7.5)
 
-ax1.set_title(f"Comparativo Solar entre Cidades — {ANO}",
+# Linhas verticais: solstícios e equinócios 2025
+EVENTOS = [
+    (date(ANO,  3, 20), "Equinócio\nmar"),
+    (date(ANO,  6, 21), "Solstício\njun"),
+    (date(ANO,  9, 22), "Equinócio\nset"),
+    (date(ANO, 12, 21), "Solstício\ndez"),
+]
+all_dur = [v for c in CIDADES for v in c["duration"] if not np.isnan(v)]
+y_top = max(all_dur) + 0.4
+
+for d_ev, rotulo in EVENTOS:
+    ax1.axvline(d_ev, color="#adb5bd", linestyle=":", lw=1.0, alpha=0.6)
+    ax1.text(d_ev, y_top - 0.1, rotulo, ha="center", va="top",
+             fontsize=7.5, color="#adb5bd", linespacing=1.3)
+
+ax1.set_title(f"Duração do dia / Hora do pôr do sol — {ANO}",
               fontsize=14, fontweight="bold", color="white", pad=10)
 ax1.set_ylabel("Duração do dia (horas)", color="#ccc", fontsize=11)
 
-all_dur = [v for c in CIDADES for v in c["duration"] if not np.isnan(v)]
-ax1.set_ylim(min(all_dur) - 0.4, max(all_dur) + 0.4)
+ax1.set_ylim(min(all_dur) - 0.4, y_top)
 ax1.yaxis.set_major_formatter(
     plt.FuncFormatter(lambda x, _: f"{int(x)}h{int(round(x % 1 * 60)):02d}")
 )
+
+# Nomes dos meses no eixo X do subplot superior
+ax1.xaxis.set_major_locator(mdates.MonthLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+ax1.tick_params(axis="x", labelbottom=True, colors="#ccc")
 
 # ── Subplot 2: Pôr do sol ─────────────────────────────────────────────────────
 for c in CIDADES:
@@ -151,6 +170,7 @@ ax2.set_xlabel("Mês", color="#ccc", fontsize=11)
 
 all_sets = [v for c in CIDADES for v in c["sets"] if not np.isnan(v)]
 ax2.set_ylim(min(all_sets) - 0.4, max(all_sets) + 0.4)
+ax2.invert_yaxis()
 ax2.yaxis.set_major_formatter(
     plt.FuncFormatter(lambda x, _: f"{int(x):02d}:{int(round(x % 1 * 60)):02d}")
 )
