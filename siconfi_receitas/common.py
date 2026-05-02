@@ -32,7 +32,7 @@ SALVAR_A_CADA  = 200  # persiste checkpoint a cada N tarefas concluídas
 # Mude para False para rodar com a lista completa de entes.
 # ---------------------------------------------------------------------------
 
-MODO_TESTE = True
+MODO_TESTE = False
 
 _IBGE_PARANA   = 41        # Estado do Paraná
 _IBGE_CURITIBA = 4106902   # Município de Curitiba / PR
