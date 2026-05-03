@@ -1,0 +1,33 @@
+======================================================================
+siconfi_receitas — extrator de receitas fiscais
+Módulos: ['siops']
+======================================================================
+Carregando lista de entes...
+  Estados: 27 (incl. DF) | Municípios: 5570
+
+[SIOPS] Total: 38990 | Já feitos: 37046 | Pendentes: 1944
+
+[SIOPS] Concluído — 66806 registros -> output\receitas\receitas_siops.csv
+
+Resumo SIOPS — por indicador × ano:
+                      entes   total_reais
+indicador       ano                      
+Cota-Parte ICMS 2020   5564  1.250352e+11
+                2021   5568  1.581425e+11
+                2022   5567  1.673541e+11
+                2023   5568  1.725440e+11
+                2024   5567  1.942508e+11
+                2025   5569  2.085998e+11
+ISS             2020   5564  7.166238e+10
+                2021   5568  8.798597e+10
+                2022   5567  1.042572e+11
+                2023   5568  1.193281e+11
+                2024   5567  1.387227e+11
+                2025   5569  1.542028e+11
+
+[SIOPS] Tempo: 29.1 min
+
+======================================================================
+Resumo:
+  SIOPS   :    66806 registros
+======================================================================
