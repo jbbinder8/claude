@@ -2,18 +2,21 @@
 consolidar.py — Agrega os CSVs de DCA, RREO, SIOPS e SIOPE em um único arquivo.
 
 Entrada : output/receitas/receitas_{dca,rreo,siops,siope}.csv
-Saída   : output/receitas/receitas_consolidadas.csv
+Saídas  :
+    output/receitas/receitas_consolidadas.csv  — formato longo (uma linha por fonte)
+    output/receitas/receitas_pivot.csv         — formato pivotado (uma coluna por fonte)
 
-Colunas de saída:
+Colunas de saída (longo):
     tipo_ente    — "Estado" ou "Município"
-    cod_ibge     — código IBGE do ente
+    cod_ibge     — código IBGE do ente (7 dígitos para municípios)
     tipo_receita — "ICMS", "ISS" ou "Cota-Parte ICMS"
     ano          — exercício
     fonte        — "DCA", "RREO", "SIOPS" ou "SIOPE"
     valor        — receita em reais
 
 Nota: SIOPE usa cod_ibge de 6 dígitos (sem dígito verificador).
-Os demais módulos usam 7 dígitos.
+No pivô, a correspondência é feita pelos 6 primeiros dígitos; a chave
+usada na tabela final é sempre o cod_ibge de 7 dígitos das demais fontes.
 """
 
 from pathlib import Path
@@ -22,6 +25,7 @@ import pandas as pd
 
 DIR_RECEITAS = Path("output/receitas")
 CSV_SAIDA    = DIR_RECEITAS / "receitas_consolidadas.csv"
+CSV_PIVOT    = DIR_RECEITAS / "receitas_pivot.csv"
 
 _FONTES = {
     "DCA"  : DIR_RECEITAS / "receitas_dca.csv",
@@ -82,5 +86,56 @@ def consolidar() -> pd.DataFrame:
         .reset_index(drop=True)
     )
     consolidado.to_csv(CSV_SAIDA, sep=";", decimal=",", index=False, encoding="utf-8-sig")
-    print(f"\n[CONSOLIDAR] {len(consolidado)} registros -> {CSV_SAIDA}")
+    print(f"[CONSOLIDAR] {len(consolidado)} registros -> {CSV_SAIDA}")
+
+    _pivotar(consolidado)
     return consolidado
+
+
+def _pivotar(consolidado: pd.DataFrame) -> pd.DataFrame:
+    """
+    Gera receitas_pivot.csv: uma linha por (tipo_ente, cod_ibge, tipo_receita, ano),
+    uma coluna por fonte (DCA, RREO, SIOPS, SIOPE).
+
+    SIOPE fornece cod_ibge de 6 dígitos; os demais usam 7. A normalização
+    é feita casando os 6 primeiros dígitos com o cod_ibge de 7 dígitos
+    encontrado nas outras fontes. Se não houver correspondência, o código
+    de 6 dígitos é mantido como está.
+    """
+    df = consolidado.copy()
+    df["cod_ibge"] = df["cod_ibge"].astype(str)
+
+    # Lookup: 6 primeiros dígitos → cod_ibge completo (7 dígitos), de fontes não-SIOPE
+    mask_ref = (df["fonte"] != "SIOPE") & (df["cod_ibge"].str.len() == 7)
+    lookup = {v[:6]: v for v in df.loc[mask_ref, "cod_ibge"].unique()}
+
+    # Normaliza registros SIOPE com 6 dígitos para o cod_ibge de 7 dígitos correspondente
+    mask_siope6 = (df["fonte"] == "SIOPE") & (df["cod_ibge"].str.len() == 6)
+    df.loc[mask_siope6, "cod_ibge"] = df.loc[mask_siope6, "cod_ibge"].map(
+        lambda c: lookup.get(c, c)
+    )
+
+    pivot = (
+        df.pivot_table(
+            index=["tipo_ente", "cod_ibge", "tipo_receita", "ano"],
+            columns="fonte",
+            values="valor",
+            aggfunc="first",
+        )
+        .reset_index()
+    )
+    pivot.columns.name = None
+
+    for fonte in ["DCA", "RREO", "SIOPS", "SIOPE"]:
+        if fonte not in pivot.columns:
+            pivot[fonte] = pd.NA
+
+    pivot = (
+        pivot[["tipo_ente", "cod_ibge", "tipo_receita", "ano", "DCA", "RREO", "SIOPS", "SIOPE"]]
+        .sort_values(["tipo_ente", "cod_ibge", "tipo_receita", "ano"])
+        .reset_index(drop=True)
+    )
+
+    pivot.to_csv(CSV_PIVOT, sep=";", decimal=",", index=False, encoding="utf-8-sig")
+    print(f"[CONSOLIDAR] {len(pivot)} linhas (pivô)  -> {CSV_PIVOT}")
+    return pivot
