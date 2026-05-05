@@ -11,5 +11,8 @@ siconfi_dca/
 __pycache__/
 *.pyc
 
+# Documentos pessoais
+documento/
+
 # Claude
 .claude/
