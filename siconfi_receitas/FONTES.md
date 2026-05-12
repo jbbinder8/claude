@@ -1,26 +1,27 @@
 # Fontes de Informação — Extrator de Receitas Fiscais
 
-Este documento descreve as quatro fontes de dados consultadas pelo sistema, os relatórios
+Este documento descreve as fontes de dados consultadas pelo sistema, os relatórios
 acessados em cada uma, os parâmetros utilizados nas consultas e as variáveis extraídas.
 
 ---
 
 ## Visão geral
 
-O sistema coleta três indicadores fiscais para todos os estados e municípios brasileiros,
+O sistema coleta indicadores fiscais para todos os estados e municípios brasileiros,
 no período de 2019 a 2025:
 
-| Indicador | Ente |
-|---|---|
-| ICMS | Estados (incluindo o Distrito Federal) |
-| ISS | Municípios |
-| Cota-Parte do ICMS | Municípios |
+| Indicador | Ente | Fontes |
+|---|---|---|
+| ICMS | Estados (incluindo o Distrito Federal) | DCA, RREO, DCA2 |
+| ISS | Municípios | DCA, RREO, SIOPS, SIOPE, DCA2 |
+| Cota-Parte do ICMS | Municípios | DCA, RREO, SIOPS, SIOPE, DCA2 |
+| LC194 | Estados e Municípios | DCA2 |
 
-Cada indicador é obtido de até duas fontes independentes, permitindo cruzamento e validação.
+Cada indicador é obtido de múltiplas fontes independentes, permitindo cruzamento e validação.
 Os arquivos de saída são:
 
 - **`receitas_consolidadas.csv`** — formato longo: uma linha por (ente, indicador, ano, fonte)
-- **`receitas_pivot.csv`** — formato pivotado: uma linha por (ente, indicador, ano), com uma coluna por fonte
+- **`receitas_pivot.csv`** — formato pivotado: uma linha por (ente, indicador, ano), com uma coluna por fonte (DCA, RREO, SIOPS, SIOPE, DCA2)
 
 ---
 
@@ -285,20 +286,138 @@ O sistema substitui por `530010` (código de Brasília sem o dígito verificador
 
 ---
 
+## Fonte 5 — DCA2 / SICONFI (Tesouro Nacional)
+
+### Sistema
+Também o **SICONFI** — mesmo sistema e mesma API do DCA (Fonte 1).
+
+### Relatório consultado
+**DCA — Declaração de Contas Anuais, Anexo I-C (Balanço Orçamentário de Receitas)**
+
+Idêntico ao DCA, mas a extração é mais detalhada: para cada rubrica são capturadas
+**duas colunas** — Receitas Brutas Realizadas (RBR) e Outras Deduções da Receita (ODR) —
+e o valor líquido é calculado pela fórmula `abs(RBR) − abs(ODR)`.
+
+Além disso, o DCA2 inclui rubricas que o DCA simples ignora:
+o **Adicional ICMS-FCP** (Fundo de Combate à Pobreza) e as
+**compensações da LC 194/2022** (que reduziram alíquotas de ICMS sobre combustíveis, gás e energia).
+
+### Arquivo de entrada (opcional)
+`output/receitas/receitas_dca_detalhado.csv` — gerado por `dca_detalhado.py`.
+Se o arquivo não existir, a consolidação produz resultado idêntico ao de antes da Fonte 5.
+
+### Acesso
+```
+GET https://apidatalake.tesouro.gov.br/ords/siconfi/tt/dca
+```
+
+Mesmos parâmetros do DCA:
+
+| Parâmetro | Valor | Descrição |
+|---|---|---|
+| `an_exercicio` | 2019 a 2025 | Exercício fiscal |
+| `no_anexo` | `DCA-Anexo I-C` | Identificador do anexo |
+| `id_ente` | código IBGE do ente | Identificador do estado ou município |
+
+### Códigos de conta consultados
+
+O plano de contas (PCASP) foi alterado em 2022. Para cada código são extraídas duas colunas:
+**RBR** (Receitas Brutas Realizadas) e **ODR** (Outras Deduções da Receita).
+
+**Estados**
+
+| Período | Código | Rubrica | Colunas geradas |
+|---|---|---|---|
+| 2019–2021 | `RO1.1.1.8.02.1.0` | ICMS | `e_icms_rbr`, `e_icms_odr` |
+| 2022–2025 | `RO1.1.1.4.50.1.0` | ICMS | `e_icms_rbr`, `e_icms_odr` |
+| 2019–2021 | `RO1.1.1.8.02.2.0` | Adicional ICMS-FCP | `e_adicional_icms_fcp_rbr`, `e_adicional_icms_fcp_odr` |
+| 2022–2025 | `RO1.1.1.4.50.2.0` | Adicional ICMS-FCP | `e_adicional_icms_fcp_rbr`, `e_adicional_icms_fcp_odr` |
+| todos os anos | `RO1.7.1.9.62.0.0` | Comp. LC 194/2022 | `e_comp_lc194_rbr`, `e_comp_lc194_odr` |
+
+**Municípios**
+
+| Período | Código | Rubrica | Colunas geradas |
+|---|---|---|---|
+| 2019–2021 | `RO1.1.1.8.02.3.0` | ISS | `m_iss_rbr`, `m_iss_odr` |
+| 2022–2025 | `RO1.1.1.4.51.1.0` | ISS | `m_iss_rbr`, `m_iss_odr` |
+| 2019–2021 | `RO1.1.1.8.02.4.0` | Adicional ISS-FCP | `m_adicional_iss_fcp_rbr`, `m_adicional_iss_fcp_odr` |
+| 2022–2025 | `RO1.1.1.4.51.2.0` | Adicional ISS-FCP | `m_adicional_iss_fcp_rbr`, `m_adicional_iss_fcp_odr` |
+| 2019–2021 | `RO1.7.2.8.01.1.0` | Cota-Parte ICMS | `m_cota_parte_icms_rbr`, `m_cota_parte_icms_odr` |
+| 2022–2025 | `RO1.7.2.1.50.0.0` | Cota-Parte ICMS | `m_cota_parte_icms_rbr`, `m_cota_parte_icms_odr` |
+| todos os anos | `RO1.7.2.9.53.0.0` | Cota-Parte Comp. LC194 | `m_cota_parte_comp_lc194_rbr`, `m_cota_parte_comp_lc194_odr` |
+| todos os anos | `RO1.7.1.9.62.0.0` | Comp. LC194 (mun) | `m_comp_lc194_mun_rbr`, `m_comp_lc194_mun_odr` |
+
+### Fórmulas de cálculo dos indicadores
+
+A consolidação aplica as seguintes fórmulas para derivar os quatro indicadores do DCA2:
+
+```
+ICMS          = abs(e_icms_rbr)              − abs(e_icms_odr)
+              + abs(e_adicional_icms_fcp_rbr) − abs(e_adicional_icms_fcp_odr)
+
+LC194         = abs(e_comp_lc194_rbr)         − abs(e_comp_lc194_odr)
+              + abs(m_comp_lc194_mun_rbr)      − abs(m_comp_lc194_mun_odr)
+              + abs(m_cota_parte_comp_lc194_rbr) − abs(m_cota_parte_comp_lc194_odr)
+
+ISS           = abs(m_iss_rbr)               − abs(m_iss_odr)
+              + abs(m_adicional_iss_fcp_rbr)  − abs(m_adicional_iss_fcp_odr)
+
+Cota-Parte ICMS = abs(m_cota_parte_icms_rbr) − abs(m_cota_parte_icms_odr)
+```
+
+Linhas em que **todos** os termos de uma fórmula são nulos (rubrica não aplicável à esfera)
+são descartadas, evitando registros artificialmente zerados — por exemplo, estados não
+geram linhas de ISS no DCA2, e municípios não geram linhas de ICMS estadual.
+
+### Indicador exclusivo: LC194
+
+O indicador **LC194** captura o efeito fiscal das compensações previstas na
+Lei Complementar 194/2022, que reduziu temporariamente as alíquotas de ICMS sobre
+combustíveis, gás natural, energia elétrica, comunicações e transporte público.
+Esta rubrica **não existe nas demais fontes** (DCA, RREO, SIOPS, SIOPE) e aparece
+no `receitas_pivot.csv` apenas nas linhas de `tipo_receita = "LC194"`.
+
+### Cobertura
+- Todos os 26 estados + Distrito Federal
+- Todos os ~5.570 municípios
+- LC194 cobre estados e municípios
+
+### Validação — comparação com RREO para o ICMS
+
+Sobre os 189 pares (estado × ano) com valores em ambas as fontes:
+
+| Métrica | DCA (Fonte 1) | DCA2 (Fonte 5) |
+|---|---|---|
+| MAE | R$ 987 milhões | R$ 53 milhões |
+| MAPE | 6,1% | 0,1% |
+| Correlação | 0,9979 | 0,9999 |
+| Casos idênticos ao RREO | — | 147 / 189 (78%) |
+| Casos com diferença real (> R$ 1) | — | 10 / 189 (5%) |
+
+A principal diferença entre DCA e DCA2 para o ICMS é a inclusão do **Adicional ICMS-FCP**
+no DCA2. As 10 divergências reais em relação ao RREO concentram-se no Rio de Janeiro
+(2019 e 2020), com diferença de ~12%, e em outros estados com variações inferiores a 2%.
+
+---
+
 ## Resumo comparativo das fontes
 
-| Atributo | DCA | RREO | SIOPS | SIOPE |
-|---|---|---|---|---|
-| Órgão responsável | Tesouro Nacional | Tesouro Nacional | DATASUS/MS | FNDE/MEC |
-| Tipo de acesso | API REST (JSON) | API REST (JSON) | Scraping HTML | API OData (CSV) |
-| Periodicidade do relatório | Anual | Bimestral | Anual | Bimestral |
-| Período consultado | Exercício completo | 6.º bimestre (jan–dez) | Consolidado anual | 6.º bimestre (jan–dez) |
-| Cobertura — estados | Sim | Sim | Não | Não |
-| Cobertura — municípios | Sim | Sim | Sim | Sim |
-| Indicadores extraídos | ICMS, ISS, Cota-Parte ICMS | ICMS, ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS |
-| Código IBGE do município | 7 dígitos | 7 dígitos | 7 dígitos (enviado 6) | 6 dígitos |
-| Plano de contas muda por ano? | Sim (2022) | Não | Não | Sim (2021 e 2023) |
-| Paralelismo na coleta | Sim (8 threads) | Sim (8 threads) | Não (sequencial) | Sim (4 threads) |
+| Atributo | DCA | RREO | SIOPS | SIOPE | DCA2 |
+|---|---|---|---|---|---|
+| Órgão responsável | Tesouro Nacional | Tesouro Nacional | DATASUS/MS | FNDE/MEC | Tesouro Nacional |
+| Tipo de acesso | API REST (JSON) | API REST (JSON) | Scraping HTML | API OData (CSV) | API REST (JSON) |
+| Periodicidade do relatório | Anual | Bimestral | Anual | Bimestral | Anual |
+| Período consultado | Exercício completo | 6.º bimestre (jan–dez) | Consolidado anual | 6.º bimestre (jan–dez) | Exercício completo |
+| Cobertura — estados | Sim | Sim | Não | Não | Sim |
+| Cobertura — municípios | Sim | Sim | Sim | Sim | Sim |
+| Indicadores extraídos | ICMS, ISS, Cota-Parte ICMS | ICMS, ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS | ICMS, ISS, Cota-Parte ICMS, LC194 |
+| Colunas por rubrica | 1 (RBR) | — | — | — | 2 (RBR e ODR) |
+| Inclui Adicional FCP (ICMS/ISS) | Não | Não | Não | Não | Sim |
+| Inclui LC194 | Não | Não | Não | Não | Sim |
+| Código IBGE do município | 7 dígitos | 7 dígitos | 7 dígitos (enviado 6) | 6 dígitos | 7 dígitos |
+| Plano de contas muda por ano? | Sim (2022) | Não | Não | Sim (2021 e 2023) | Sim (2022) |
+| Paralelismo na coleta | Sim (8 threads) | Sim (8 threads) | Não (sequencial) | Sim (4 threads) | Sim (8 threads) |
+| Obrigatoriedade para consolidar | Sim (se existir) | Sim (se existir) | Sim (se existir) | Sim (se existir) | Opcional |
 
 ---
 
