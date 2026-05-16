@@ -206,8 +206,9 @@ function getJogosEPalpites() {
         iniciado:    agoraIso >= inicioIso,
         gols1:       null,
         gols2:       null,
-        resultado1:  (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1))) ? Number(r1) : null,
-        resultado2:  (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2))) ? Number(r2) : null,
+        resultado1:    (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1))) ? Number(r1) : null,
+        resultado2:    (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2))) ? Number(r2) : null,
+        totalPalpites: 0,
       });
     }
   }
@@ -217,14 +218,17 @@ function getJogosEPalpites() {
   const lastRowP = sp.getLastRow();
   if (lastRowP >= 2) {
     const pdata = sp.getRange(2, 1, lastRowP - 1, 5).getValues();
-    const map = {};
+    const map = {}, countMap = {};
     pdata.forEach(function (r) {
-      const u = String(r[PCOL_USUARIO - 1] || '').toLowerCase();
+      const u  = String(r[PCOL_USUARIO - 1] || '').toLowerCase();
+      const g1 = r[PCOL_GOLS1 - 1];
+      const g2 = r[PCOL_GOLS2 - 1];
+      if (g1 !== '' && g1 !== null && g2 !== '' && g2 !== null) {
+        const jid = String(r[PCOL_JOGO - 1]);
+        countMap[jid] = (countMap[jid] || 0) + 1;
+      }
       if (u === email) {
-        map[String(r[PCOL_JOGO - 1])] = {
-          gols1: r[PCOL_GOLS1 - 1],
-          gols2: r[PCOL_GOLS2 - 1]
-        };
+        map[String(r[PCOL_JOGO - 1])] = { gols1: g1, gols2: g2 };
       }
     });
     jogos.forEach(function (j) {
@@ -233,6 +237,7 @@ function getJogosEPalpites() {
         j.gols1 = (p.gols1 === '' || p.gols1 === null) ? null : Number(p.gols1);
         j.gols2 = (p.gols2 === '' || p.gols2 === null) ? null : Number(p.gols2);
       }
+      j.totalPalpites = countMap[String(j.numero)] || 0;
     });
   }
 
