@@ -278,6 +278,69 @@
       padding:4px 8px;border-radius:4px;font-weight:600;
     }
 
+    /* ---------- modal de identificação ---------- */
+    .id-overlay{
+      position:fixed;inset:0;
+      background:rgba(18,36,24,.55);
+      display:flex;align-items:center;justify-content:center;
+      z-index:100;
+      padding:20px;
+    }
+    .id-box{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:32px 28px 28px;
+      max-width:400px;width:100%;
+      box-shadow:0 8px 32px rgba(18,36,24,.18);
+    }
+    .id-box h2{
+      font-family:'Archivo Black',sans-serif;
+      font-size:22px;letter-spacing:-.01em;
+      margin:0 0 6px;color:var(--ink);
+    }
+    .id-box p{
+      font-size:13px;color:var(--ink-soft);
+      margin:0 0 20px;line-height:1.5;
+    }
+    .id-box input[type="email"]{
+      width:100%;
+      font-family:'IBM Plex Sans',sans-serif;
+      font-size:15px;
+      padding:10px 12px;
+      border:2px solid var(--ink);
+      border-radius:8px;
+      background:#fffdf5;color:var(--ink);
+      outline:none;
+      box-sizing:border-box;
+      transition:border-color .15s,box-shadow .15s;
+    }
+    .id-box input[type="email"]:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(196,69,47,.18);
+    }
+    .id-btn{
+      margin-top:12px;width:100%;
+      font-family:'Archivo Black',sans-serif;
+      font-size:15px;letter-spacing:.02em;
+      padding:11px 0;
+      border:none;border-radius:8px;
+      background:var(--ink);color:#fffdf5;
+      cursor:pointer;
+      transition:background .15s;
+    }
+    .id-btn:hover{background:var(--accent)}
+    .id-err{
+      margin-top:8px;font-size:12px;
+      color:var(--err);font-family:'IBM Plex Mono',monospace;
+    }
+    .id-troca{
+      margin-top:10px;font-size:11px;text-align:right;
+      font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;
+      color:var(--ink-soft);
+    }
+    .id-troca a{color:var(--accent);cursor:pointer;text-decoration:underline}
+
     /* ---------- footer ---------- */
     footer.foot{
       margin-top:40px;padding-top:20px;
@@ -300,6 +363,20 @@
   </style>
 </head>
 <body>
+
+<!-- Modal de identificação — aparece apenas na primeira visita -->
+<div class="id-overlay" id="id-overlay" style="display:none">
+  <div class="id-box">
+    <h2>Quem é você?</h2>
+    <p>Digite seu e-mail Google para entrar no bolão.<br>
+       O browser vai lembrar nas próximas visitas.</p>
+    <input type="email" id="id-email" placeholder="seuemail@gmail.com"
+           autocomplete="email" inputmode="email">
+    <div class="id-err" id="id-err"></div>
+    <button class="id-btn" id="id-btn">Entrar</button>
+  </div>
+</div>
+
 <div class="wrap">
 
   <header class="top">
@@ -307,6 +384,9 @@
     <h1>Bolão <span class="crown">★</span> da Copa</h1>
     <div class="meta">
       <span class="pill" id="user-pill">carregando…</span>
+      <span class="id-troca" id="troca-wrap" style="display:none">
+        <a id="troca-link">não é você?</a>
+      </span>
       <span class="pill"><b id="count-done">0</b>/<span id="count-total">0</span> com palpite</span>
       <span class="pill"><b id="count-open" style="color:var(--accent)">0</b> ainda abertos</span>
     </div>
@@ -350,30 +430,71 @@
    ==================================================================== */
 const ESTADO = {
   email: '',
-  jogos: [],     // mesma struct vinda do servidor
-  saved: {},     // map jogoId -> { gols1, gols2 } (último valor confirmado)
+  jogos: [],
+  saved: {},
 };
 
-const DOW_PT = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+const LS_KEY    = 'bolao_email';
+const DOW_PT    = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
-// ---- Boot ----
+/* ---- Boot ---- */
 window.addEventListener('DOMContentLoaded', () => {
+  const emailSalvo = localStorage.getItem(LS_KEY) || '';
+  if (emailSalvo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailSalvo)) {
+    carregarJogos(emailSalvo);
+  } else {
+    abrirModal();
+  }
+
+  document.getElementById('id-btn').addEventListener('click', submeterEmail);
+  document.getElementById('id-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submeterEmail();
+  });
+  document.getElementById('troca-link').addEventListener('click', () => {
+    localStorage.removeItem(LS_KEY);
+    location.reload();
+  });
+});
+
+function carregarJogos(email) {
+  ESTADO.email = email;
+  document.getElementById('user-pill').textContent = email;
+  document.getElementById('troca-wrap').style.display = '';
   google.script.run
     .withSuccessHandler(onBootOk)
     .withFailureHandler(onBootErr)
-    .getJogosEPalpites();
-});
+    .getJogosEPalpites(email);
+}
+
+function abrirModal() {
+  const overlay = document.getElementById('id-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => document.getElementById('id-email').focus(), 50);
+}
+
+function submeterEmail() {
+  const inp = document.getElementById('id-email');
+  const err = document.getElementById('id-err');
+  const email = inp.value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'Digite um e-mail válido.';
+    inp.focus();
+    return;
+  }
+  err.textContent = '';
+  localStorage.setItem(LS_KEY, email);
+  document.getElementById('id-overlay').style.display = 'none';
+  carregarJogos(email);
+}
 
 function onBootOk(data){
-  ESTADO.email = data.email;
   ESTADO.jogos = data.jogos || [];
   ESTADO.jogos.forEach(j => {
     if (j.gols1 != null && j.gols2 != null){
       ESTADO.saved[j.numero] = { gols1: Number(j.gols1), gols2: Number(j.gols2) };
     }
   });
-  document.getElementById('user-pill').textContent = data.email;
   renderJogos();
 }
 
@@ -534,7 +655,7 @@ function tentarSalvar(card, jogoId){
   google.script.run
     .withSuccessHandler(res => onSaveOk(card, jogoId, res))
     .withFailureHandler(err => onSaveErr(card, jogoId, err))
-    .salvarPalpite(jogoId, g1, g2);
+    .salvarPalpite(ESTADO.email, jogoId, g1, g2);
 }
 
 function onSaveOk(card, jogoId, res){

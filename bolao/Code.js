@@ -5,18 +5,14 @@
  *   1. Abra a planilha no Google Sheets.
  *   2. Menu Extensões > Apps Script.
  *   3. Cole este arquivo como Code.gs e o Index.html como arquivo HTML "Index".
- *   4. Em "Configurações do projeto" defina o fuso para "(GMT-03:00) São Paulo"
- *      (afeta Utilities.formatDate quando TZ_PADRAO === 'script').
+ *   4. Em "Configurações do projeto" defina o fuso para "(GMT-03:00) São Paulo".
  *   5. Implantar > Nova implantação > Aplicativo da Web.
- *        • Executar como: "Usuário que acessa o app" (assim Session.getActiveUser()
- *          devolve o email do logado).
- *        • Acesso: "Qualquer pessoa com Conta do Google" (ou restrito ao domínio).
- *      Cada usuário precisará ter pelo menos permissão de leitura na planilha,
- *      OU você pode mudar para "Executar como: eu" + compartilhar planilha
- *      apenas comigo — mas aí o email do usuário pode vir vazio fora do mesmo
- *      Workspace. Para um bolão fechado entre amigos, o ideal é deixar
- *      "Qualquer pessoa com Conta do Google" e compartilhar a planilha como
- *      somente-leitura com todos.
+ *        • Executar como: "Eu (seu-email@gmail.com)"
+ *        • Acesso: "Qualquer pessoa com Conta do Google"
+ *      Assim o script acessa a planilha com suas credenciais. Os participantes
+ *      não precisam autorizar nenhum acesso — apenas estar logados no Google
+ *      para acessar o app. Na primeira visita digitam o e-mail uma vez;
+ *      o browser lembra nas visitas seguintes.
  */
 
 const SHEET_TABELA      = 'tabela';
@@ -99,42 +95,15 @@ function _jogoIniciado(tituloVal, dataDisplay) {
 
 
 // =========================================================================
-// Identificação do usuário
+// Validação de e-mail recebido do cliente
 // =========================================================================
-
-// Cache da execução atual — cada request do web app é uma execução nova,
-// então isso só evita chamar a API do Session várias vezes no mesmo request.
-let _emailCache = null;
-
-function _emailUsuario() {
-  if (_emailCache) return _emailCache;
-
-  const candidatos = [];
-  // Effective primeiro: em "executar como usuário que acessa" é o mais
-  // confiável. Active pode vir vazio para contas Gmail comuns.
-  try { candidatos.push(Session.getEffectiveUser().getEmail()); } catch (e) {}
-  try { candidatos.push(Session.getActiveUser().getEmail()); }    catch (e) {}
-
-  for (const bruto of candidatos) {
-    const email = _normalizaEmail(bruto);
-    if (email) {
-      _emailCache = email;
-      return email;
-    }
-  }
-
-  throw new Error('Não foi possível identificar seu e-mail Google. ' +
-    'Verifique se você está logado e se o app está configurado para ' +
-    '"Executar como: usuário que acessa".');
-}
-
 function _normalizaEmail(valor) {
   if (!valor || typeof valor !== 'string') return '';
   const email = valor.trim().toLowerCase();
-  // Validação mínima: precisa ter @ com conteúdo dos dois lados e um ponto.
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
   return email;
 }
+
 
 // =========================================================================
 // Aba de palpites — cria sob demanda
@@ -161,11 +130,14 @@ function _abaPalpites() {
 
 // =========================================================================
 // API chamada pelo front-end ao carregar a página.
+// Recebe o e-mail digitado pelo usuário no browser.
 // Devolve: { email, jogos: [ { numero, titulo, selecao1, selecao2,
 //                              inicio, iniciado, gols1, gols2 } ] }
 // =========================================================================
-function getJogosEPalpites() {
-  const email = _emailUsuario();
+function getJogosEPalpites(emailBruto) {
+  const email = _normalizaEmail(emailBruto);
+  if (!email) throw new Error('E-mail inválido.');
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tabela = ss.getSheetByName(SHEET_TABELA);
   if (!tabela) throw new Error('Aba "tabela" não encontrada.');
@@ -239,12 +211,13 @@ function getJogosEPalpites() {
 // não começou. Se já começou, descarta silenciosamente e devolve o palpite
 // original (se existir).
 // =========================================================================
-function salvarPalpite(jogoId, gols1, gols2) {
+function salvarPalpite(emailBruto, jogoId, gols1, gols2) {
+  const email = _normalizaEmail(emailBruto);
+  if (!email) return { ok: false, motivo: 'E-mail inválido.' };
+
   const lock = LockService.getDocumentLock();
   lock.waitLock(15000);
   try {
-    const email = _emailUsuario();
-
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tabela = ss.getSheetByName(SHEET_TABELA);
     const lastRow = tabela.getLastRow();
@@ -269,8 +242,6 @@ function salvarPalpite(jogoId, gols1, gols2) {
     }
 
     // ============== TRAVA DE SERVIDOR =================
-    // Mesmo que o usuário tente burlar o front (DevTools, requests manuais),
-    // qualquer alteração em jogo já iniciado é silenciosamente descartada.
     if (_jogoIniciado(jogo[COL_TITULO - 1], dataDisplay)) {
       const atual = _palpiteAtual(jogoId, email);
       return {
@@ -354,9 +325,7 @@ function _parseGols(v) {
 
 // =========================================================================
 // Diagnóstico — rode manualmente no editor (selecione "diagnostico" no
-// menu de funções e clique em Run). Mostra no Logger o que está sendo lido
-// das primeiras linhas, útil pra confirmar que o horário do jogo está sendo
-// extraído corretamente do título.
+// menu de funções e clique em Run).
 // =========================================================================
 function diagnostico() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
