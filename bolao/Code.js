@@ -353,6 +353,59 @@ function _parseGols(v) {
 
 
 // =========================================================================
+// API: retorna palpites de TODOS para um jogo — só funciona após início.
+// =========================================================================
+function getPalpitesJogo(jogoId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tabela = ss.getSheetByName(SHEET_TABELA);
+  if (!tabela) return { ok: false, motivo: 'Tabela não encontrada.' };
+
+  const lastRow = tabela.getLastRow();
+  if (lastRow < 2) return { ok: false, motivo: 'Tabela vazia.' };
+
+  const range    = tabela.getRange(2, 1, lastRow - 1, COL_FIM);
+  const values   = range.getValues();
+  const displays = range.getDisplayValues();
+
+  let jogoRow = null, dataDisplay = null;
+  for (let i = 0; i < values.length; i++) {
+    if (values[i][COL_JOGO - 1] == jogoId &&
+        values[i][COL_CONSIDERAR - 1] == 1) {
+      jogoRow     = values[i];
+      dataDisplay = displays[i][COL_DATA_BR - 1];
+      break;
+    }
+  }
+  if (!jogoRow) return { ok: false, motivo: 'Jogo não encontrado.' };
+
+  if (!_jogoIniciado(jogoRow[COL_TITULO - 1], dataDisplay)) {
+    return { ok: false, motivo: 'Jogo ainda não iniciado.' };
+  }
+
+  const sp = _abaPalpites();
+  const lastRowP = sp.getLastRow();
+  if (lastRowP < 2) return { ok: true, palpites: [] };
+
+  const pdata    = sp.getRange(2, 1, lastRowP - 1, 5).getValues();
+  const palpites = [];
+  pdata.forEach(function(r) {
+    if (r[PCOL_JOGO - 1] != jogoId) return;
+    const email = String(r[PCOL_USUARIO - 1] || '').toLowerCase();
+    const g1    = r[PCOL_GOLS1 - 1];
+    const g2    = r[PCOL_GOLS2 - 1];
+    if (!email || g1 === '' || g1 === null || g2 === '' || g2 === null) return;
+    palpites.push({ usuario: email, gols1: Number(g1), gols2: Number(g2) });
+  });
+
+  palpites.sort(function(a, b) {
+    return a.usuario.localeCompare(b.usuario);
+  });
+
+  return { ok: true, palpites: palpites };
+}
+
+
+// =========================================================================
 // Diagnóstico — rode manualmente no editor (selecione "diagnostico" no
 // menu de funções e clique em Run). Mostra no Logger o que está sendo lido
 // das primeiras linhas, útil pra confirmar que o horário do jogo está sendo

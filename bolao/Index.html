@@ -74,6 +74,39 @@
     }
     .meta .pill b{color:var(--accent-2);font-weight:600}
 
+    /* ---------- info de acesso ---------- */
+    .access-info{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-left:4px solid var(--accent-2);
+      border-radius:var(--radius);
+      padding:14px 18px 16px;
+      margin-bottom:24px;
+      box-shadow:var(--shadow);
+      font-size:13px;
+      line-height:1.55;
+      color:var(--ink-soft);
+    }
+    .access-info-label{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+      color:var(--accent-2);font-weight:600;margin-bottom:10px;
+      display:flex;align-items:center;gap:8px;
+    }
+    .access-info-label::after{
+      content:"";flex:1;height:1px;background:var(--accent-2);opacity:.3;
+    }
+    .access-info ul{
+      margin:0;padding:0 0 0 16px;
+      list-style:disc;
+    }
+    .access-info ul li{margin-bottom:4px}
+    .access-info ul li:last-child{margin-bottom:0}
+    .access-info a{
+      color:var(--accent-2);font-weight:600;
+      text-decoration:underline;text-underline-offset:2px;
+    }
+
     /* ---------- regras ---------- */
     .rules{
       background:var(--bg-card);
@@ -164,7 +197,7 @@
     /* ---------- cartão do jogo ---------- */
     .jogo{
       display:grid;
-      grid-template-columns:64px 1fr auto;
+      grid-template-columns:1fr auto;
       gap:14px;align-items:center;
       background:var(--bg-card);
       border:1px solid var(--line);
@@ -176,29 +209,23 @@
     }
     .jogo:hover:not(.locked){border-color:#b8ad94}
 
-    .jogo .hora{
-      font-family:'IBM Plex Mono', monospace;
-      font-size:18px;font-weight:600;color:var(--ink);
-      letter-spacing:.02em;
-      padding:6px 0;border-right:1px solid var(--line);
-      text-align:center;
-    }
-
     .jogo .corpo{display:flex;flex-direction:column;gap:8px;min-width:0}
     .jogo .fase{
       font-family:'IBM Plex Mono', monospace;
-      font-size:10px;text-transform:uppercase;letter-spacing:.18em;
+      font-size:11px;text-transform:uppercase;letter-spacing:.15em;
       color:var(--ink-soft);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .jogo .matchup{
       display:grid;
       grid-template-columns:1fr auto 1fr;
-      gap:10px;align-items:center;
+      row-gap:5px;column-gap:10px;align-items:end;
     }
     .team{
-      display:flex;align-items:center;gap:10px;min-width:0;
+      display:flex;flex-direction:column;gap:4px;min-width:0;
+      align-items:flex-start;
     }
-    .team.right{justify-content:flex-end;flex-direction:row-reverse}
+    .team.right{align-items:flex-end;flex-direction:column}
     .team .name{
       font-weight:600;font-size:15px;color:var(--ink);
       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -232,7 +259,72 @@
     .vs{
       font-family:'IBM Plex Mono', monospace;
       font-size:10px;letter-spacing:.2em;color:var(--ink-soft);
-      padding:0 4px;
+      padding:0 4px 14px;
+    }
+
+    /* ---------- stepper +/- ---------- */
+    .stepper{
+      display:inline-flex;align-items:stretch;
+      border:2px solid var(--ink);border-radius:8px;
+      overflow:hidden;background:#fffdf5;flex-shrink:0;
+    }
+    .step-btn{
+      width:30px;border:none;background:transparent;
+      font-family:'Archivo Black', sans-serif;font-size:18px;
+      color:var(--ink);cursor:pointer;line-height:1;padding:0;
+      transition:background .12s,color .12s;
+    }
+    .step-btn:active:not(:disabled){background:var(--ink);color:#fffdf5}
+    .step-btn:disabled{color:var(--locked-ink);cursor:not-allowed}
+    .stepper input[type="number"]{
+      border:none;
+      border-left:1px solid var(--line);
+      border-right:1px solid var(--line);
+      border-radius:0;width:44px;height:44px;
+      background:transparent;box-shadow:none;
+    }
+    .stepper input[type="number"]:focus{
+      box-shadow:none;
+      border-color:var(--accent);
+      background:rgba(196,69,47,.05);
+    }
+    .jogo.locked .stepper{border-color:var(--locked-ink)}
+    .jogo.locked .stepper input[type="number"]{border-color:var(--locked-ink)}
+    .jogo.locked .step-btn{color:var(--locked-ink)}
+
+    /* ---------- painel de palpites alheios ---------- */
+    .bets-wrap{margin-top:10px}
+    .bets-toggle{
+      display:inline-flex;align-items:center;gap:5px;
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+      color:var(--locked-ink);background:none;border:none;
+      cursor:pointer;padding:0;
+      text-decoration:underline;text-underline-offset:2px;
+      transition:color .15s;
+    }
+    .bets-toggle:hover{color:var(--ink)}
+    .bets-panel{
+      display:none;
+      margin-top:10px;
+      padding-top:10px;
+      border-top:1px dashed var(--line);
+    }
+    .bets-panel.open{display:block}
+    .bets-list{display:flex;flex-wrap:wrap;gap:5px}
+    .bet-chip{
+      display:inline-flex;align-items:center;gap:5px;
+      background:var(--bg);border:1px solid var(--line);
+      border-radius:6px;padding:3px 8px;
+      font-size:12px;line-height:1.4;
+    }
+    .bet-chip .bet-user{
+      color:var(--ink-soft);
+      max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .bet-chip .bet-score{
+      font-family:'Archivo Black', sans-serif;
+      font-size:12px;color:var(--ink);letter-spacing:.02em;
     }
 
     /* status do save */
@@ -290,12 +382,17 @@
     /* ---------- responsivo ---------- */
     @media (max-width: 640px){
       .wrap{padding:20px 14px}
-      .jogo{grid-template-columns:54px 1fr;gap:10px;padding:12px}
-      .jogo .status{grid-column:1 / -1;justify-content:flex-start;padding-left:0}
-      .jogo .hora{font-size:15px;padding:0;border-right:none;
-                  border-bottom:1px solid var(--line);padding-bottom:6px;text-align:left}
+      .jogo{gap:10px;padding:12px}
+      .status{min-width:0}
       .team .name{font-size:13px}
-      input[type="number"]{width:46px;height:40px;font-size:18px}
+      /* times empilhados verticalmente: nome à esq, stepper à dir */
+      .jogo .matchup{
+        display:flex;flex-direction:column;gap:4px;
+      }
+      .team,.team.right{
+        flex-direction:row;align-items:center;justify-content:space-between;
+      }
+      .vs{padding:2px 0;text-align:center}
     }
   </style>
 </head>
@@ -311,6 +408,14 @@
       <span class="pill"><b id="count-open" style="color:var(--accent)">0</b> ainda abertos</span>
     </div>
   </header>
+
+  <section class="access-info" aria-label="Informações de acesso">
+    <div class="access-info-label">Acesso &amp; Privacidade</div>
+    <ul>
+      <li>O <b>Loser Bolão</b> <b>não</b> acessa nem solicita permissão ao seu Google Drive — apenas identifica quem você é via login Google.</li>
+      <li>Para resetar o acesso, vá em <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener">myaccount.google.com/connections</a> e exclua o <b>Loser Bolão</b>.</li>
+    </ul>
+  </section>
 
   <section class="rules" aria-label="Regras do bolão">
     <div class="rules-label">Regras</div>
@@ -406,6 +511,7 @@ function renderJogos(){
   }
   container.innerHTML = html;
   attachHandlers();
+  attachBetsToggles();
   refreshCounters();
 }
 
@@ -439,32 +545,43 @@ function renderJogo(j){
   const v1 = j.gols1 != null ? j.gols1 : '';
   const v2 = j.gols2 != null ? j.gols2 : '';
 
+  const dis = locked ? 'disabled' : '';
   return `
     <div class="jogo${locked ? ' locked' : ''}" data-jogo="${j.numero}">
-      <div class="hora">${hora}</div>
       <div class="corpo">
-        ${fase ? `<div class="fase">${escapeHtml(fase)}</div>` : ''}
+        <div class="fase">${hora}${fase ? ` · ${escapeHtml(fase)}` : ''}</div>
         <div class="matchup">
           <div class="team">
-            <input type="number" min="0" max="20" step="1"
-                   inputmode="numeric"
-                   data-lado="1"
-                   value="${v1}"
-                   ${locked ? 'disabled' : ''}
-                   aria-label="Gols ${escapeHtml(j.selecao1)}">
             <span class="name">${escapeHtml(j.selecao1)}</span>
+            <div class="stepper">
+              <button class="step-btn" data-step="-1" ${dis} tabindex="-1">−</button>
+              <input type="number" min="0" max="20" step="1"
+                     inputmode="numeric" data-lado="1"
+                     value="${v1}" ${dis}
+                     aria-label="Gols ${escapeHtml(j.selecao1)}">
+              <button class="step-btn" data-step="1" ${dis} tabindex="-1">+</button>
+            </div>
           </div>
           <div class="vs">vs</div>
           <div class="team right">
-            <input type="number" min="0" max="20" step="1"
-                   inputmode="numeric"
-                   data-lado="2"
-                   value="${v2}"
-                   ${locked ? 'disabled' : ''}
-                   aria-label="Gols ${escapeHtml(j.selecao2)}">
             <span class="name">${escapeHtml(j.selecao2)}</span>
+            <div class="stepper">
+              <button class="step-btn" data-step="-1" ${dis} tabindex="-1">−</button>
+              <input type="number" min="0" max="20" step="1"
+                     inputmode="numeric" data-lado="2"
+                     value="${v2}" ${dis}
+                     aria-label="Gols ${escapeHtml(j.selecao2)}">
+              <button class="step-btn" data-step="1" ${dis} tabindex="-1">+</button>
+            </div>
           </div>
         </div>
+        ${locked ? `
+        <div class="bets-wrap">
+          <button class="bets-toggle" data-jogo-bets="${j.numero}">▸ ver palpites</button>
+          <div class="bets-panel" id="bets-${j.numero}">
+            <div class="bets-list"></div>
+          </div>
+        </div>` : ''}
       </div>
       <div class="status${locked ? '' : (ESTADO.saved[j.numero] ? ' saved' : '')}" data-status>
         ${locked
@@ -489,7 +606,60 @@ function attachHandlers(){
         if (e.key === 'Enter'){ e.preventDefault(); inp.blur(); }
       });
     });
+    card.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const inp = btn.closest('.stepper').querySelector('input');
+        const delta = Number(btn.dataset.step);
+        const cur = inp.value === '' ? 0 : parseInt(inp.value, 10);
+        inp.value = Math.max(0, Math.min(20, cur + delta));
+        onInputChange(card, jogoId, inp);
+        tentarSalvar(card, jogoId);
+      });
+    });
   });
+}
+
+/* ---- Palpites de todos (jogos travados) ---- */
+function attachBetsToggles(){
+  document.querySelectorAll('.bets-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const jogoId = Number(btn.dataset.jogoBets);
+      const panel  = document.getElementById('bets-' + jogoId);
+      const isOpen = panel.classList.contains('open');
+      if (isOpen) {
+        panel.classList.remove('open');
+        btn.textContent = '▸ ver palpites';
+      } else {
+        panel.classList.add('open');
+        btn.textContent = '▾ ocultar palpites';
+        if (!panel.dataset.loaded) {
+          panel.dataset.loaded = '1';
+          panel.querySelector('.bets-list').textContent = 'carregando…';
+          google.script.run
+            .withSuccessHandler(res => renderBets(panel, res))
+            .withFailureHandler(() => {
+              panel.querySelector('.bets-list').textContent = 'erro ao carregar';
+            })
+            .getPalpitesJogo(jogoId);
+        }
+      }
+    });
+  });
+}
+
+function renderBets(panel, res){
+  const list = panel.querySelector('.bets-list');
+  if (!res.ok || !res.palpites || res.palpites.length === 0){
+    list.innerHTML = '<span style="color:var(--ink-soft);font-size:12px;font-style:italic">nenhum palpite registrado</span>';
+    return;
+  }
+  list.innerHTML = res.palpites.map(p => {
+    const nome = escapeHtml(p.usuario.split('@')[0]);
+    return `<div class="bet-chip">
+      <span class="bet-user">${nome}</span>
+      <span class="bet-score">${p.gols1}×${p.gols2}</span>
+    </div>`;
+  }).join('');
 }
 
 function onInputChange(card, jogoId, inp){
@@ -574,6 +744,7 @@ function travarCard(card, g1, g2){
     const v = (i === 0) ? g1 : g2;
     if (v != null) inp.value = v;
   });
+  card.querySelectorAll('.step-btn').forEach(btn => { btn.disabled = true; });
   const status = card.querySelector('[data-status]');
   status.classList.remove('saving','saved','error');
   status.innerHTML = '<span class="lock-badge">🔒 encerrado</span>';
