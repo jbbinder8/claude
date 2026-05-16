@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:        #f3ecdc;
+      --bg-card:   #faf6ec;
+      --ink:       #122418;
+      --ink-soft:  #4a5a4e;
+      --line:      #d8cfba;
+      --accent:    #c4452f;   /* coral/terracota */
+      --accent-2:  #2f6d4a;   /* verde campo */
+      --gold:      #d4a93b;   /* ouro */
+      --locked-bg: #e7e1d2;
+      --locked-ink:#7d7565;
+      --ok:        #2f6d4a;
+      --warn:      #b85b1d;
+      --err:       #a8302a;
+      --shadow:    0 1px 0 rgba(18,36,24,.06);
+      --radius:    10px;
+    }
+
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{
+      font-family:'IBM Plex Sans', system-ui, sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+      -webkit-font-smoothing:antialiased;
+      background-image:
+        radial-gradient(circle at 12% 8%, rgba(196,69,47,.06), transparent 40%),
+        radial-gradient(circle at 88% 92%, rgba(47,109,74,.07), transparent 45%);
+      min-height:100vh;
+      padding-bottom:64px;
+    }
+
+    .wrap{max-width:920px;margin:0 auto;padding:32px 20px}
+
+    /* ---------- header ---------- */
+    header.top{
+      display:flex;flex-direction:column;gap:14px;
+      padding-bottom:22px;border-bottom:1px solid var(--line);
+      margin-bottom:28px;
+    }
+    .eyebrow{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+      color:var(--accent);font-weight:600;
+    }
+    h1{
+      font-family:'Archivo Black', sans-serif;
+      font-size:clamp(34px,5.4vw,52px);
+      line-height:.92;letter-spacing:-.02em;
+      margin:0;color:var(--ink);
+      text-transform:uppercase;
+    }
+    h1 .crown{color:var(--accent)}
+    .meta{
+      display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;
+      font-size:13px;color:var(--ink-soft);
+    }
+    .meta .pill{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      padding:5px 10px;border-radius:999px;
+      font-family:'IBM Plex Mono', monospace;font-size:11px;
+      color:var(--ink);
+    }
+    .meta .pill b{color:var(--accent-2);font-weight:600}
+
+    /* ---------- regras ---------- */
+    .rules{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-left:4px solid var(--accent);
+      border-radius:var(--radius);
+      padding:18px 22px 20px;
+      margin-bottom:32px;
+      box-shadow:var(--shadow);
+    }
+    .rules-label{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+      color:var(--accent);font-weight:600;margin-bottom:12px;
+      display:flex;align-items:center;gap:8px;
+    }
+    .rules-label::before,
+    .rules-label::after{
+      content:"";flex:0 0 18px;height:1px;background:var(--accent);
+      opacity:.4;
+    }
+    .rules-label::after{flex:1}
+    .rules-list{
+      margin:0;padding:0;list-style:none;
+      font-size:14px;line-height:1.55;color:var(--ink);
+    }
+    .rules-list li{
+      padding:6px 0 6px 22px;
+      position:relative;
+      border-bottom:1px dashed var(--line);
+    }
+    .rules-list li:last-child{border-bottom:none;padding-bottom:0}
+    .rules-list li:first-child{padding-top:0}
+    .rules-list li::before{
+      content:"§";
+      position:absolute;left:0;top:6px;
+      font-family:'Archivo Black', sans-serif;
+      color:var(--accent);font-size:13px;
+    }
+    .rules-list li:first-child::before{top:0}
+    .rules-list b{font-weight:600}
+    .rules-list em{font-style:normal;color:var(--accent-2);font-weight:600}
+    .pts{
+      display:inline-block;
+      font-family:'Archivo Black', sans-serif;
+      font-size:12px;letter-spacing:.02em;
+      background:var(--accent-2);color:#fffdf5;
+      padding:2px 7px 1px;border-radius:4px;
+      vertical-align:1px;
+    }
+    .pts.alt{background:var(--ink)}
+
+    /* ---------- estados de carregamento e vazio ---------- */
+    .state{
+      text-align:center;padding:60px 20px;color:var(--ink-soft);
+      font-size:14px;
+    }
+    .state .spinner{
+      width:24px;height:24px;border-radius:50%;
+      border:2px solid var(--line);border-top-color:var(--accent);
+      animation:spin 0.8s linear infinite;margin:0 auto 14px;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ---------- grupo por dia ---------- */
+    .day-group{margin-bottom:30px}
+    .day-header{
+      display:flex;align-items:baseline;gap:14px;
+      padding:0 4px 10px;
+      border-bottom:2px solid var(--ink);
+      margin-bottom:12px;
+    }
+    .day-header .num{
+      font-family:'Archivo Black', sans-serif;
+      font-size:34px;line-height:1;color:var(--ink);
+    }
+    .day-header .month{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--ink-soft);
+    }
+    .day-header .dow{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--accent);font-weight:600;margin-left:auto;
+    }
+
+    /* ---------- cartão do jogo ---------- */
+    .jogo{
+      display:grid;
+      grid-template-columns:64px 1fr auto;
+      gap:14px;align-items:center;
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:14px 16px;
+      margin-bottom:8px;
+      box-shadow:var(--shadow);
+      transition:background .15s, border-color .15s;
+    }
+    .jogo:hover:not(.locked){border-color:#b8ad94}
+
+    .jogo .hora{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:18px;font-weight:600;color:var(--ink);
+      letter-spacing:.02em;
+      padding:6px 0;border-right:1px solid var(--line);
+      text-align:center;
+    }
+
+    .jogo .corpo{display:flex;flex-direction:column;gap:8px;min-width:0}
+    .jogo .fase{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;text-transform:uppercase;letter-spacing:.18em;
+      color:var(--ink-soft);
+    }
+    .jogo .matchup{
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      gap:10px;align-items:center;
+    }
+    .team{
+      display:flex;align-items:center;gap:10px;min-width:0;
+    }
+    .team.right{justify-content:flex-end;flex-direction:row-reverse}
+    .team .name{
+      font-weight:600;font-size:15px;color:var(--ink);
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    input[type="number"]{
+      font-family:'Archivo Black', sans-serif;
+      font-size:22px;
+      width:54px;height:46px;
+      text-align:center;
+      border:2px solid var(--ink);
+      background:#fffdf5;color:var(--ink);
+      border-radius:8px;
+      padding:0;
+      outline:none;
+      -moz-appearance:textfield;
+      transition:border-color .15s, background .15s, box-shadow .15s;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button{
+      -webkit-appearance:none;margin:0;
+    }
+    input[type="number"]:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(196,69,47,.18);
+    }
+    input[type="number"]:disabled{
+      background:transparent;color:var(--locked-ink);
+      border-color:var(--locked-ink);
+      cursor:not-allowed;
+    }
+    .vs{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;letter-spacing:.2em;color:var(--ink-soft);
+      padding:0 4px;
+    }
+
+    /* status do save */
+    .status{
+      min-width:90px;text-align:right;
+      font-family:'IBM Plex Mono', monospace;font-size:11px;
+      letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);
+      display:flex;align-items:center;justify-content:flex-end;gap:6px;
+    }
+    .status .dot{
+      width:8px;height:8px;border-radius:50%;background:var(--line);
+      flex-shrink:0;
+    }
+    .status.saved   {color:var(--ok)}
+    .status.saved   .dot{background:var(--ok)}
+    .status.saving  {color:var(--accent)}
+    .status.saving  .dot{background:var(--accent);animation:pulse 1s ease-in-out infinite}
+    .status.error   {color:var(--err)}
+    .status.error   .dot{background:var(--err)}
+    @keyframes pulse{
+      0%,100%{opacity:1;transform:scale(1)}
+      50%{opacity:.4;transform:scale(.7)}
+    }
+
+    /* ---------- estado travado ---------- */
+    .jogo.locked{
+      background:
+        repeating-linear-gradient(
+          135deg,
+          var(--locked-bg) 0 10px,
+          #ddd5c1 10px 11px
+        );
+      border-color:#c7bda6;
+    }
+    .jogo.locked .hora,
+    .jogo.locked .team .name{color:var(--locked-ink)}
+    .jogo.locked .fase{color:var(--locked-ink)}
+    .lock-badge{
+      display:inline-flex;align-items:center;gap:5px;
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;text-transform:uppercase;letter-spacing:.16em;
+      background:#1a2e1f;color:#f3ecdc;
+      padding:4px 8px;border-radius:4px;font-weight:600;
+    }
+
+    /* ---------- footer ---------- */
+    footer.foot{
+      margin-top:40px;padding-top:20px;
+      border-top:1px solid var(--line);
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+      color:var(--ink-soft);text-align:center;
+    }
+
+    /* ---------- responsivo ---------- */
+    @media (max-width: 640px){
+      .wrap{padding:20px 14px}
+      .jogo{grid-template-columns:54px 1fr;gap:10px;padding:12px}
+      .jogo .status{grid-column:1 / -1;justify-content:flex-start;padding-left:0}
+      .jogo .hora{font-size:15px;padding:0;border-right:none;
+                  border-bottom:1px solid var(--line);padding-bottom:6px;text-align:left}
+      .team .name{font-size:13px}
+      input[type="number"]{width:46px;height:40px;font-size:18px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Copa do Mundo • 2026</div>
+    <h1>Bolão <span class="crown">★</span> da Copa</h1>
+    <div class="meta">
+      <span class="pill" id="user-pill">carregando…</span>
+      <span class="pill"><b id="count-done">0</b>/<span id="count-total">0</span> com palpite</span>
+      <span class="pill"><b id="count-open" style="color:var(--accent)">0</b> ainda abertos</span>
+    </div>
+  </header>
+
+  <section class="rules" aria-label="Regras do bolão">
+    <div class="rules-label">Regras</div>
+    <ul class="rules-list">
+      <li>
+        Na <b>fase de grupos</b>, palpites apenas nos jogos com
+        <em>cabeças de chave</em>.
+      </li>
+      <li>
+        Acertar o <b>resultado</b> da partida (vitória, empate ou derrota):
+        <span class="pts">+1</span> na fase de grupos,
+        <span class="pts alt">+2</span> nas demais fases.
+      </li>
+      <li>
+        Acertar o <b>placar exato</b> ou a <b>quantidade total de gols</b>
+        da partida: <span class="pts">+1</span> na fase de grupos,
+        <span class="pts alt">+2</span> nas demais fases.
+      </li>
+    </ul>
+  </section>
+
+  <main id="content">
+    <div class="state">
+      <div class="spinner"></div>
+      Carregando jogos…
+    </div>
+  </main>
+
+  <footer class="foot">
+    palpites são salvos automaticamente · jogos travam no horário de início (Brasília)
+  </footer>
+</div>
+
+<script>
+/* ====================================================================
+   Estado em memória + render
+   ==================================================================== */
+const ESTADO = {
+  email: '',
+  jogos: [],     // mesma struct vinda do servidor
+  saved: {},     // map jogoId -> { gols1, gols2 } (último valor confirmado)
+};
+
+const DOW_PT = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+// ---- Boot ----
+window.addEventListener('DOMContentLoaded', () => {
+  google.script.run
+    .withSuccessHandler(onBootOk)
+    .withFailureHandler(onBootErr)
+    .getJogosEPalpites();
+});
+
+function onBootOk(data){
+  ESTADO.email = data.email;
+  ESTADO.jogos = data.jogos || [];
+  ESTADO.jogos.forEach(j => {
+    if (j.gols1 != null && j.gols2 != null){
+      ESTADO.saved[j.numero] = { gols1: Number(j.gols1), gols2: Number(j.gols2) };
+    }
+  });
+  document.getElementById('user-pill').textContent = data.email;
+  renderJogos();
+}
+
+function onBootErr(err){
+  document.getElementById('content').innerHTML =
+    '<div class="state" style="color:var(--err)">' +
+    'Erro ao carregar: ' + escapeHtml(String(err && err.message || err)) +
+    '</div>';
+}
+
+/* ---- Render principal: agrupa por dia ---- */
+function renderJogos(){
+  const container = document.getElementById('content');
+  if (!ESTADO.jogos.length){
+    container.innerHTML = '<div class="state">Nenhum jogo disponível.</div>';
+    return;
+  }
+
+  // Agrupa por data (yyyy-MM-dd da inicioIso)
+  const groups = new Map();
+  ESTADO.jogos.forEach(j => {
+    const dia = j.inicioIso.slice(0,10);  // yyyy-MM-dd
+    if (!groups.has(dia)) groups.set(dia, []);
+    groups.get(dia).push(j);
+  });
+
+  let html = '';
+  for (const [dia, lista] of groups){
+    html += renderDayGroup(dia, lista);
+  }
+  container.innerHTML = html;
+  attachHandlers();
+  refreshCounters();
+}
+
+function renderDayGroup(diaIso, lista){
+  const [y,m,d] = diaIso.split('-').map(Number);
+  // Date construído com componentes locais — só pra extrair dow
+  const dt = new Date(y, m-1, d);
+  const dow = DOW_PT[dt.getDay()];
+  const month = MONTHS_PT[m-1];
+
+  return `
+    <section class="day-group">
+      <div class="day-header">
+        <span class="num">${d}</span>
+        <span class="month">${month}</span>
+        <span class="dow">${dow}</span>
+      </div>
+      ${lista.map(renderJogo).join('')}
+    </section>
+  `;
+}
+
+function renderJogo(j){
+  // Hora HH:MM da string ISO
+  const hora = j.inicioIso.slice(11,16);
+  // Tenta extrair fase do título (formato "DD/MM HH:MM - fase - team1 x team2")
+  const partes = (j.titulo||'').split(' - ');
+  const fase = partes.length >= 3 ? partes[1] : '';
+
+  const locked = !!j.iniciado;
+  const v1 = j.gols1 != null ? j.gols1 : '';
+  const v2 = j.gols2 != null ? j.gols2 : '';
+
+  return `
+    <div class="jogo${locked ? ' locked' : ''}" data-jogo="${j.numero}">
+      <div class="hora">${hora}</div>
+      <div class="corpo">
+        ${fase ? `<div class="fase">${escapeHtml(fase)}</div>` : ''}
+        <div class="matchup">
+          <div class="team">
+            <input type="number" min="0" max="20" step="1"
+                   inputmode="numeric"
+                   data-lado="1"
+                   value="${v1}"
+                   ${locked ? 'disabled' : ''}
+                   aria-label="Gols ${escapeHtml(j.selecao1)}">
+            <span class="name">${escapeHtml(j.selecao1)}</span>
+          </div>
+          <div class="vs">vs</div>
+          <div class="team right">
+            <input type="number" min="0" max="20" step="1"
+                   inputmode="numeric"
+                   data-lado="2"
+                   value="${v2}"
+                   ${locked ? 'disabled' : ''}
+                   aria-label="Gols ${escapeHtml(j.selecao2)}">
+            <span class="name">${escapeHtml(j.selecao2)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="status${locked ? '' : (ESTADO.saved[j.numero] ? ' saved' : '')}" data-status>
+        ${locked
+          ? `<span class="lock-badge">🔒 encerrado</span>`
+          : `<span class="dot"></span><span data-status-text>${ESTADO.saved[j.numero] ? 'salvo' : ''}</span>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+/* ---- Handlers nos inputs ---- */
+function attachHandlers(){
+  document.querySelectorAll('.jogo').forEach(card => {
+    if (card.classList.contains('locked')) return;
+    const jogoId = Number(card.dataset.jogo);
+    const inputs = card.querySelectorAll('input[type="number"]');
+    inputs.forEach(inp => {
+      inp.addEventListener('input', () => onInputChange(card, jogoId, inp));
+      inp.addEventListener('blur',  () => tentarSalvar(card, jogoId));
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter'){ e.preventDefault(); inp.blur(); }
+      });
+    });
+  });
+}
+
+function onInputChange(card, jogoId, inp){
+  // saneamento leve enquanto digita
+  let v = inp.value;
+  if (v !== ''){
+    v = v.replace(/[^0-9]/g,'');
+    if (v.length > 2) v = v.slice(0,2);
+    inp.value = v;
+  }
+  // marca status como "dirty" se difere do salvo
+  const cur = lerCard(card);
+  const saved = ESTADO.saved[jogoId];
+  const status = card.querySelector('[data-status]');
+  const txt    = card.querySelector('[data-status-text]');
+  if (saved && saved.gols1 === cur.g1 && saved.gols2 === cur.g2){
+    status.classList.add('saved');
+    status.classList.remove('error','saving');
+    if (txt) txt.textContent = 'salvo';
+  } else {
+    status.classList.remove('saved','error','saving');
+    if (txt) txt.textContent = '';
+  }
+}
+
+function tentarSalvar(card, jogoId){
+  const { g1, g2 } = lerCard(card);
+  // só salva se ambos preenchidos
+  if (g1 === null || g2 === null) return;
+  // valida faixa
+  if (g1 < 0 || g1 > 20 || g2 < 0 || g2 > 20) return;
+
+  const saved = ESTADO.saved[jogoId];
+  if (saved && saved.gols1 === g1 && saved.gols2 === g2) return;  // sem mudança
+
+  const status = card.querySelector('[data-status]');
+  const txt    = card.querySelector('[data-status-text]');
+  status.classList.remove('saved','error');
+  status.classList.add('saving');
+  if (txt) txt.textContent = 'salvando…';
+
+  google.script.run
+    .withSuccessHandler(res => onSaveOk(card, jogoId, res))
+    .withFailureHandler(err => onSaveErr(card, jogoId, err))
+    .salvarPalpite(jogoId, g1, g2);
+}
+
+function onSaveOk(card, jogoId, res){
+  const status = card.querySelector('[data-status]');
+  const txt    = card.querySelector('[data-status-text]');
+
+  if (res && res.ok){
+    ESTADO.saved[jogoId] = { gols1: res.gols1, gols2: res.gols2 };
+    status.classList.remove('saving','error');
+    status.classList.add('saved');
+    if (txt) txt.textContent = 'salvo';
+  } else if (res && res.iniciado){
+    // Servidor rejeitou: o jogo já começou. Travamos a UI e exibimos o
+    // palpite original (se houver). A trava real é a do servidor.
+    travarCard(card, res.gols1, res.gols2);
+  } else {
+    status.classList.remove('saving','saved');
+    status.classList.add('error');
+    if (txt) txt.textContent = (res && res.motivo) || 'erro';
+  }
+  refreshCounters();
+}
+
+function onSaveErr(card, jogoId, err){
+  const status = card.querySelector('[data-status]');
+  const txt    = card.querySelector('[data-status-text]');
+  status.classList.remove('saving','saved');
+  status.classList.add('error');
+  if (txt) txt.textContent = 'falhou';
+  console.error('save error', err);
+}
+
+function travarCard(card, g1, g2){
+  card.classList.add('locked');
+  card.querySelectorAll('input[type="number"]').forEach((inp,i) => {
+    inp.disabled = true;
+    const v = (i === 0) ? g1 : g2;
+    if (v != null) inp.value = v;
+  });
+  const status = card.querySelector('[data-status]');
+  status.classList.remove('saving','saved','error');
+  status.innerHTML = '<span class="lock-badge">🔒 encerrado</span>';
+  // marca como iniciado no estado
+  const id = Number(card.dataset.jogo);
+  const j = ESTADO.jogos.find(x => x.numero === id);
+  if (j) j.iniciado = true;
+}
+
+/* ---- helpers ---- */
+function lerCard(card){
+  const inputs = card.querySelectorAll('input[type="number"]');
+  const v1 = inputs[0].value.trim();
+  const v2 = inputs[1].value.trim();
+  return {
+    g1: v1 === '' ? null : Number(v1),
+    g2: v2 === '' ? null : Number(v2)
+  };
+}
+
+function refreshCounters(){
+  const total = ESTADO.jogos.length;
+  const done  = Object.keys(ESTADO.saved).length;
+  const open  = ESTADO.jogos.filter(j => !j.iniciado).length;
+  document.getElementById('count-total').textContent = total;
+  document.getElementById('count-done').textContent  = done;
+  document.getElementById('count-open').textContent  = open;
+}
+
+function escapeHtml(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
