@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
     :root{
       --bg:        #f3ecdc;
@@ -303,37 +304,6 @@
       font-size:13px;color:var(--ink-soft);
       margin:0 0 20px;line-height:1.5;
     }
-    .id-box input[type="email"]{
-      width:100%;
-      font-family:'IBM Plex Sans',sans-serif;
-      font-size:15px;
-      padding:10px 12px;
-      border:2px solid var(--ink);
-      border-radius:8px;
-      background:#fffdf5;color:var(--ink);
-      outline:none;
-      box-sizing:border-box;
-      transition:border-color .15s,box-shadow .15s;
-    }
-    .id-box input[type="email"]:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 0 3px rgba(196,69,47,.18);
-    }
-    .id-btn{
-      margin-top:12px;width:100%;
-      font-family:'Archivo Black',sans-serif;
-      font-size:15px;letter-spacing:.02em;
-      padding:11px 0;
-      border:none;border-radius:8px;
-      background:var(--ink);color:#fffdf5;
-      cursor:pointer;
-      transition:background .15s;
-    }
-    .id-btn:hover{background:var(--accent)}
-    .id-err{
-      margin-top:8px;font-size:12px;
-      color:var(--err);font-family:'IBM Plex Mono',monospace;
-    }
     .id-troca{
       margin-top:10px;font-size:11px;text-align:right;
       font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;
@@ -367,13 +337,9 @@
 <!-- Modal de identificação — aparece apenas na primeira visita -->
 <div class="id-overlay" id="id-overlay" style="display:none">
   <div class="id-box">
-    <h2>Quem é você?</h2>
-    <p>Digite seu e-mail Google para entrar no bolão.<br>
-       O browser vai lembrar nas próximas visitas.</p>
-    <input type="email" id="id-email" placeholder="seuemail@gmail.com"
-           autocomplete="email" inputmode="email">
-    <div class="id-err" id="id-err"></div>
-    <button class="id-btn" id="id-btn">Entrar</button>
+    <h2>Bolão da Copa</h2>
+    <p>Entre com sua conta Google para registrar seus palpites.</p>
+    <div id="g-signin-btn" style="display:flex;justify-content:center;margin-top:4px"></div>
   </div>
 </div>
 
@@ -435,6 +401,7 @@ const ESTADO = {
 };
 
 const LS_KEY    = 'bolao_email';
+const CLIENT_ID = '89661658791-ron2dod4r9a8hbegued9eq006186lm0o.apps.googleusercontent.com';
 const DOW_PT    = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
@@ -444,18 +411,60 @@ window.addEventListener('DOMContentLoaded', () => {
   if (emailSalvo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailSalvo)) {
     carregarJogos(emailSalvo);
   } else {
-    abrirModal();
+    document.getElementById('id-overlay').style.display = 'flex';
+    aguardarGIS(iniciarOneTap);
   }
 
-  document.getElementById('id-btn').addEventListener('click', submeterEmail);
-  document.getElementById('id-email').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submeterEmail();
-  });
   document.getElementById('troca-link').addEventListener('click', () => {
     localStorage.removeItem(LS_KEY);
+    if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
     location.reload();
   });
 });
+
+function aguardarGIS(cb) {
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    cb();
+  } else {
+    setTimeout(() => aguardarGIS(cb), 50);
+  }
+}
+
+function iniciarOneTap() {
+  google.accounts.id.initialize({
+    client_id:            CLIENT_ID,
+    callback:             onCredencial,
+    auto_select:          true,
+    cancel_on_tap_outside: false,
+    context:              'signin'
+  });
+
+  // Botão "Entrar com Google" — fallback se o popup One Tap não aparecer
+  google.accounts.id.renderButton(
+    document.getElementById('g-signin-btn'),
+    { theme: 'outline', size: 'large', locale: 'pt-BR' }
+  );
+
+  // Tenta mostrar o popup One Tap automaticamente
+  google.accounts.id.prompt();
+}
+
+function onCredencial(response) {
+  try {
+    // Decodifica o payload JWT (base64url → JSON) sem biblioteca externa
+    const b64 = response.credential.split('.')[1]
+      .replace(/-/g, '+').replace(/_/g, '/');
+    const pad = b64.length % 4 ? b64 + '='.repeat(4 - b64.length % 4) : b64;
+    const payload = JSON.parse(atob(pad));
+    const email = (payload.email || '').trim().toLowerCase();
+    if (!email) throw new Error('email vazio no token');
+    localStorage.setItem(LS_KEY, email);
+    document.getElementById('id-overlay').style.display = 'none';
+    carregarJogos(email);
+  } catch(e) {
+    console.error('Erro ao processar credencial Google:', e);
+  }
+}
 
 function carregarJogos(email) {
   ESTADO.email = email;
@@ -465,27 +474,6 @@ function carregarJogos(email) {
     .withSuccessHandler(onBootOk)
     .withFailureHandler(onBootErr)
     .getJogosEPalpites(email);
-}
-
-function abrirModal() {
-  const overlay = document.getElementById('id-overlay');
-  overlay.style.display = 'flex';
-  setTimeout(() => document.getElementById('id-email').focus(), 50);
-}
-
-function submeterEmail() {
-  const inp = document.getElementById('id-email');
-  const err = document.getElementById('id-err');
-  const email = inp.value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    err.textContent = 'Digite um e-mail válido.';
-    inp.focus();
-    return;
-  }
-  err.textContent = '';
-  localStorage.setItem(LS_KEY, email);
-  document.getElementById('id-overlay').style.display = 'none';
-  carregarJogos(email);
 }
 
 function onBootOk(data){
