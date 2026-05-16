@@ -292,6 +292,21 @@
     .jogo.locked .stepper input[type="number"]{border-color:var(--locked-ink)}
     .jogo.locked .step-btn{color:var(--locked-ink)}
 
+    /* ---------- resultado final ---------- */
+    .result{
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      margin-top:4px;
+    }
+    .result-label{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:9px;text-transform:uppercase;letter-spacing:.2em;
+      color:var(--ink-soft);
+    }
+    .result-score{
+      font-family:'Archivo Black', sans-serif;
+      font-size:20px;letter-spacing:.04em;color:var(--ink);
+    }
+
     /* ---------- painel de palpites alheios ---------- */
     .bets-wrap{margin-top:10px}
     .bets-toggle{
@@ -575,6 +590,11 @@ function renderJogo(j){
             </div>
           </div>
         </div>
+        ${(j.resultado1 != null && j.resultado2 != null) ? `
+        <div class="result">
+          <span class="result-label">Resultado</span>
+          <span class="result-score">${j.resultado1} × ${j.resultado2}</span>
+        </div>` : ''}
         ${locked ? `
         <div class="bets-wrap">
           <button class="bets-toggle" data-jogo-bets="${j.numero}">▸ ver palpites</button>

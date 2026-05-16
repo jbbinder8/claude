@@ -33,7 +33,9 @@ const COL_SELECAO1      = 7;   // G
 const COL_SELECAO2      = 8;   // H
 const COL_CONSIDERAR    = 9;   // I
 const COL_TITULO        = 10;  // J
-const COL_FIM           = 10;  // até onde lemos
+const COL_RESULTADO1    = 11;  // K — gols reais selecao1
+const COL_RESULTADO2    = 12;  // L — gols reais selecao2
+const COL_FIM           = 12;  // até onde lemos
 
 // Colunas da aba "palpites"
 const PCOL_JOGO         = 1;
@@ -192,16 +194,20 @@ function getJogosEPalpites() {
       const inicioIso = _extrairInicioIso(titulo, displays[i][COL_DATA_BR - 1]);
       if (!inicioIso) continue;
 
+      const r1 = row[COL_RESULTADO1 - 1];
+      const r2 = row[COL_RESULTADO2 - 1];
       jogos.push({
-        numero:    numero,
-        titulo:    titulo || '',
-        selecao1:  sel1 || '',
-        selecao2:  sel2 || '',
-        inicio:    inicioIso.replace('T', ' '),
-        inicioIso: inicioIso,
-        iniciado:  agoraIso >= inicioIso,
-        gols1:     null,
-        gols2:     null
+        numero:      numero,
+        titulo:      titulo || '',
+        selecao1:    sel1 || '',
+        selecao2:    sel2 || '',
+        inicio:      inicioIso.replace('T', ' '),
+        inicioIso:   inicioIso,
+        iniciado:    agoraIso >= inicioIso,
+        gols1:       null,
+        gols2:       null,
+        resultado1:  (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1))) ? Number(r1) : null,
+        resultado2:  (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2))) ? Number(r2) : null,
       });
     }
   }
