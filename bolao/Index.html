@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
     :root{
       --bg:        #f3ecdc;
@@ -279,38 +278,6 @@
       padding:4px 8px;border-radius:4px;font-weight:600;
     }
 
-    /* ---------- modal de identificação ---------- */
-    .id-overlay{
-      position:fixed;inset:0;
-      background:rgba(18,36,24,.55);
-      display:flex;align-items:center;justify-content:center;
-      z-index:100;
-      padding:20px;
-    }
-    .id-box{
-      background:var(--bg-card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      padding:32px 28px 28px;
-      max-width:400px;width:100%;
-      box-shadow:0 8px 32px rgba(18,36,24,.18);
-    }
-    .id-box h2{
-      font-family:'Archivo Black',sans-serif;
-      font-size:22px;letter-spacing:-.01em;
-      margin:0 0 6px;color:var(--ink);
-    }
-    .id-box p{
-      font-size:13px;color:var(--ink-soft);
-      margin:0 0 20px;line-height:1.5;
-    }
-    .id-troca{
-      margin-top:10px;font-size:11px;text-align:right;
-      font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;
-      color:var(--ink-soft);
-    }
-    .id-troca a{color:var(--accent);cursor:pointer;text-decoration:underline}
-
     /* ---------- footer ---------- */
     footer.foot{
       margin-top:40px;padding-top:20px;
@@ -333,16 +300,6 @@
   </style>
 </head>
 <body>
-
-<!-- Modal de identificação — aparece apenas na primeira visita -->
-<div class="id-overlay" id="id-overlay" style="display:none">
-  <div class="id-box">
-    <h2>Bolão da Copa</h2>
-    <p>Entre com sua conta Google para registrar seus palpites.</p>
-    <div id="g-signin-btn" style="display:flex;justify-content:center;margin-top:4px"></div>
-  </div>
-</div>
-
 <div class="wrap">
 
   <header class="top">
@@ -350,9 +307,6 @@
     <h1>Bolão <span class="crown">★</span> da Copa</h1>
     <div class="meta">
       <span class="pill" id="user-pill">carregando…</span>
-      <span class="id-troca" id="troca-wrap" style="display:none">
-        <a id="troca-link">não é você?</a>
-      </span>
       <span class="pill"><b id="count-done">0</b>/<span id="count-total">0</span> com palpite</span>
       <span class="pill"><b id="count-open" style="color:var(--accent)">0</b> ainda abertos</span>
     </div>
@@ -396,93 +350,30 @@
    ==================================================================== */
 const ESTADO = {
   email: '',
-  jogos: [],
-  saved: {},
+  jogos: [],     // mesma struct vinda do servidor
+  saved: {},     // map jogoId -> { gols1, gols2 } (último valor confirmado)
 };
 
-const LS_KEY    = 'bolao_email';
-const CLIENT_ID = '89661658791-lsp2uqcqc7oak4gdqtur4ldammqi7iv4.apps.googleusercontent.com';
-const DOW_PT    = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+const DOW_PT = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 const MONTHS_PT = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
-/* ---- Boot ---- */
+// ---- Boot ----
 window.addEventListener('DOMContentLoaded', () => {
-  const emailSalvo = localStorage.getItem(LS_KEY) || '';
-  if (emailSalvo && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailSalvo)) {
-    carregarJogos(emailSalvo);
-  } else {
-    document.getElementById('id-overlay').style.display = 'flex';
-    aguardarGIS(iniciarOneTap);
-  }
-
-  document.getElementById('troca-link').addEventListener('click', () => {
-    localStorage.removeItem(LS_KEY);
-    if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
-    location.reload();
-  });
-});
-
-function aguardarGIS(cb) {
-  if (window.google && window.google.accounts && window.google.accounts.id) {
-    cb();
-  } else {
-    setTimeout(() => aguardarGIS(cb), 50);
-  }
-}
-
-function iniciarOneTap() {
-  google.accounts.id.initialize({
-    client_id:            CLIENT_ID,
-    callback:             onCredencial,
-    auto_select:          true,
-    cancel_on_tap_outside: false,
-    context:              'signin'
-  });
-
-  // Botão "Entrar com Google" — fallback se o popup One Tap não aparecer
-  google.accounts.id.renderButton(
-    document.getElementById('g-signin-btn'),
-    { theme: 'outline', size: 'large', locale: 'pt-BR' }
-  );
-
-  // Tenta mostrar o popup One Tap automaticamente
-  google.accounts.id.prompt();
-}
-
-function onCredencial(response) {
-  try {
-    // Decodifica o payload JWT (base64url → JSON) sem biblioteca externa
-    const b64 = response.credential.split('.')[1]
-      .replace(/-/g, '+').replace(/_/g, '/');
-    const pad = b64.length % 4 ? b64 + '='.repeat(4 - b64.length % 4) : b64;
-    const payload = JSON.parse(atob(pad));
-    const email = (payload.email || '').trim().toLowerCase();
-    if (!email) throw new Error('email vazio no token');
-    localStorage.setItem(LS_KEY, email);
-    document.getElementById('id-overlay').style.display = 'none';
-    carregarJogos(email);
-  } catch(e) {
-    console.error('Erro ao processar credencial Google:', e);
-  }
-}
-
-function carregarJogos(email) {
-  ESTADO.email = email;
-  document.getElementById('user-pill').textContent = email;
-  document.getElementById('troca-wrap').style.display = '';
   google.script.run
     .withSuccessHandler(onBootOk)
     .withFailureHandler(onBootErr)
-    .getJogosEPalpites(email);
-}
+    .getJogosEPalpites();
+});
 
 function onBootOk(data){
+  ESTADO.email = data.email;
   ESTADO.jogos = data.jogos || [];
   ESTADO.jogos.forEach(j => {
     if (j.gols1 != null && j.gols2 != null){
       ESTADO.saved[j.numero] = { gols1: Number(j.gols1), gols2: Number(j.gols2) };
     }
   });
+  document.getElementById('user-pill').textContent = data.email;
   renderJogos();
 }
 
@@ -643,7 +534,7 @@ function tentarSalvar(card, jogoId){
   google.script.run
     .withSuccessHandler(res => onSaveOk(card, jogoId, res))
     .withFailureHandler(err => onSaveErr(card, jogoId, err))
-    .salvarPalpite(ESTADO.email, jogoId, g1, g2);
+    .salvarPalpite(jogoId, g1, g2);
 }
 
 function onSaveOk(card, jogoId, res){
