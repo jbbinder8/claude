@@ -109,19 +109,23 @@ let _emailCache = null;
 function _emailUsuario() {
   if (_emailCache) return _emailCache;
 
-  // Com executeAs = USER_DEPLOYING, getEffectiveUser() devolve o e-mail do
-  // dono do script, não do visitante. Usamos apenas getActiveUser(), que
-  // retorna o visitante quando access = ANYONE (conta Google obrigatória).
-  let email = '';
-  try { email = _normalizaEmail(Session.getActiveUser().getEmail()); } catch (e) {}
+  const candidatos = [];
+  // Effective primeiro: em "executar como usuário que acessa" é o mais
+  // confiável. Active pode vir vazio para contas Gmail comuns.
+  try { candidatos.push(Session.getEffectiveUser().getEmail()); } catch (e) {}
+  try { candidatos.push(Session.getActiveUser().getEmail()); }    catch (e) {}
 
-  if (!email) {
-    throw new Error('Não foi possível identificar seu e-mail Google. ' +
-      'Verifique se você está logado com uma conta Google.');
+  for (const bruto of candidatos) {
+    const email = _normalizaEmail(bruto);
+    if (email) {
+      _emailCache = email;
+      return email;
+    }
   }
 
-  _emailCache = email;
-  return email;
+  throw new Error('Não foi possível identificar seu e-mail Google. ' +
+    'Verifique se você está logado e se o app está configurado para ' +
+    '"Executar como: usuário que acessa".');
 }
 
 function _normalizaEmail(valor) {
