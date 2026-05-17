@@ -236,26 +236,29 @@ todos os municípios do estado de uma só vez.
 `TIPO, NUM_ANO, NUM_PERI, COD_UF, SIG_UF, COD_MUNI, NOM_MUNI,
 COD_EXIB_FORMATADO, NOM_ITEM, IDN_CLAS, NOM_COLU, NUM_NIVE, NUM_ORDE, VAL_DECL`
 
-Filtro aplicado no servidor: `IDN_CLAS eq 'RR'` (classificação "Receita Realizada").
+Filtro aplicado no servidor: `IDN_CLAS eq 'RR' or IDN_CLAS eq 'OD'`
+(classificações "Receita Realizada" e "Outras Deduções").
+O valor final gravado é **`|VAL_DECL_RR| − |VAL_DECL_OD|`** por município × rubrica;
+quando não há linha `OD` para um município, a dedução é tratada como zero.
 
 ### Códigos de conta consultados
 
 O plano de contas do SIOPE passou por três gerações:
 
-**2019–2020** — códigos com vírgulas (formato antigo); o ISS é composto por quatro
-rubricas somadas por município:
+**2019–2020** — códigos com pontos como separador de nível (ex: `4.11.13.05.00.00`);
+o ISS é composto por cinco rubricas somadas por município (após aplicação da dedução OD em cada uma):
 
 | Código | Rubrica | Indicador |
 |---|---|---|
-| `4,11,13,05,00,00` | ISS principal | ISS |
-| `4,19,11,40,00,00` | Multas e Juros de Mora sobre ISS | ISS |
-| `4,19,13,13,00,00` | Multas e Juros de Mora da Dívida Ativa sobre ISS | ISS |
-| `4,19,31,13,00,00` | Dívida Ativa de ISS | ISS |
-| `4,17,22,01,01,00` | — | Cota-Parte ICMS |
+| `4.11.13.05.00.00` | ISS principal | ISS |
+| `4.11.13.05.02.00` | Adicional ISS — Fundo Municipal de Combate à Pobreza (FECOP) | ISS |
+| `4.19.11.40.00.00` | Multas e Juros de Mora sobre ISS | ISS |
+| `4.19.13.13.00.00` | Multas e Juros de Mora da Dívida Ativa sobre ISS | ISS |
+| `4.19.31.13.00.00` | Dívida Ativa de ISS | ISS |
+| `4.17.22.01.01.00` | — | Cota-Parte ICMS |
 
-Neste período, o filtro por código é feito localmente (os códigos com vírgulas
-são rejeitados pelo servidor OData como separadores), e os quatro componentes
-do ISS são somados por município antes de gravar.
+Neste período, a resposta completa da UF é baixada sem filtro de conta,
+e a seleção dos cinco componentes do ISS é feita em Python.
 
 **2021–2022**
 
@@ -411,8 +414,8 @@ no DCA2. As 10 divergências reais em relação ao RREO concentram-se no Rio de 
 | Cobertura — estados | Sim | Sim | Não | Não | Sim |
 | Cobertura — municípios | Sim | Sim | Sim | Sim | Sim |
 | Indicadores extraídos | ICMS, ISS, Cota-Parte ICMS | ICMS, ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS | ISS, Cota-Parte ICMS | ICMS, ISS, Cota-Parte ICMS, LC194 |
-| Colunas por rubrica | 1 (RBR) | — | — | — | 2 (RBR e ODR) |
-| Inclui Adicional FCP (ICMS/ISS) | Não | Não | Não | Não | Sim |
+| Colunas por rubrica | 1 (RBR) | — | — | 2 (RR e OD) | 2 (RBR e ODR) |
+| Inclui Adicional FCP (ICMS/ISS) | Não | Não | Não | Sim (FECOP/ISS, 2019-2020) | Sim |
 | Inclui LC194 | Não | Não | Não | Não | Sim |
 | Código IBGE do município | 7 dígitos | 7 dígitos | 7 dígitos (enviado 6) | 6 dígitos | 7 dígitos |
 | Plano de contas muda por ano? | Sim (2022) | Não | Não | Sim (2021 e 2023) | Sim (2022) |

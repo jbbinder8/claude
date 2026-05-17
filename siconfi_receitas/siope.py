@@ -4,9 +4,9 @@ Extrai ISS e Cota-Parte ICMS por UF×ano para todos os municípios.
 Scope: municípios apenas.
 
 Plano de contas muda a cada geração:
-  2019-2020  formato com vírgulas; ISS é composto por múltiplos códigos
-             (principal + multas/juros + dívida ativa) que são somados
-             por município antes de retornar — mesma metodologia do DCA.
+  2019-2020  formato com pontos (ex: 4.11.13.05.00.00); ISS é composto por
+             múltiplos códigos (principal + FECOP + multas/juros + dívida ativa)
+             que são somados por município antes de retornar — mesma metodologia do DCA.
   2021-2022  ISS=11180230  Cota=17280110  (8 dígitos, série 118/172)
   2023+      ISS=11145110  Cota=17215000  (8 dígitos, série 114/172)
 
@@ -59,15 +59,16 @@ _PERIODO = 6  # bimestre anual
 #   a filtragem é feita em Python após busca geral (url_contas=None).
 #   Após coletar as linhas individuais, _buscar() agrega por município.
 _CONTAS_2019_2020 = {
-    "4,11,13,05,00,00": "ISS",   # ISS principal
-    "4,19,11,40,00,00": "ISS",   # Multas e Juros de Mora sobre ISS
-    "4,19,13,13,00,00": "ISS",   # Multas e Juros de Mora da Dívida Ativa sobre ISS
-    "4,19,31,13,00,00": "ISS",   # Dívida Ativa de ISS
-    "4,17,22,01,01,00": "Cota-Parte ICMS",
+    "4.11.13.05.00.00": "ISS",   # ISS principal
+    "4.11.13.05.02.00": "ISS",   # Adicional ISS - Fundo Municipal de Combate à Pobreza (FECOP)
+    "4.19.11.40.00.00": "ISS",   # Multas e Juros de Mora sobre ISS
+    "4.19.13.13.00.00": "ISS",   # Multas e Juros de Mora da Dívida Ativa sobre ISS
+    "4.19.31.13.00.00": "ISS",   # Dívida Ativa de ISS
+    "4.17.22.01.01.00": "Cota-Parte ICMS",
 }
 # Código sintético gravado no CSV para o ISS agregado de 2019-2020
 # (usado na chave de deduplicação no lugar dos múltiplos códigos-fonte)
-_COD_ISS_AGREGADO_2019_2020 = "4,11,13,05,agregado"
+_COD_ISS_AGREGADO_2019_2020 = "4.11.13.05.agregado"
 
 _CONTAS_2021_2022 = {
     "11180230": "ISS",
@@ -130,15 +131,15 @@ def _construir_url(sig_uf: str, ano: int, contas: dict | None) -> str:
     """
     Monta a URL de consulta.
 
-    Quando `contas` é None, omite o filtro por COD_EXIB_FORMATADO — necessário
-    para 2019-2020, cujos códigos contêm vírgulas que o servidor OData interpreta
-    como separadores e ignora o filtro. Nesses anos a filtragem é feita em Python.
+    Quando `contas` é None, omite o filtro por COD_EXIB_FORMATADO — usado para
+    2019-2020, baixando tudo e filtrando em Python (os códigos desse período usam
+    pontos como separador de nível, ex: 4.11.13.05.00.00).
     """
     if contas is not None:
         codigos = " or ".join(f"COD_EXIB_FORMATADO eq '{c}'" for c in contas)
-        filtro  = f"IDN_CLAS eq 'RR' and ({codigos})"
+        filtro  = f"(IDN_CLAS eq 'RR' or IDN_CLAS eq 'OD') and ({codigos})"
     else:
-        filtro  = "IDN_CLAS eq 'RR'"
+        filtro  = "IDN_CLAS eq 'RR' or IDN_CLAS eq 'OD'"
 
     selecao = (
         "TIPO,NUM_ANO,NUM_PERI,COD_UF,SIG_UF,"
@@ -159,8 +160,7 @@ def _construir_url(sig_uf: str, ano: int, contas: dict | None) -> str:
 def _buscar(sig_uf: str, ano: int) -> list[dict]:
     """Retorna registros de ISS e Cota-Parte ICMS de uma UF/ano. [] se sem dados."""
     contas = _contas_por_ano(ano)
-    # 2019-2020: códigos com vírgulas quebram o filtro OData no servidor →
-    # busca tudo e filtra em Python.
+    # 2019-2020: busca tudo e filtra em Python pelos códigos com ponto.
     url_contas = None if ano <= 2020 else contas
     resp = _get_session().get(_construir_url(sig_uf, ano, url_contas), timeout=60)
     resp.raise_for_status()
@@ -182,11 +182,17 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
     if df.empty or "COD_MUNI" not in df.columns:
         return []
 
-    registros: list[dict] = []
+    # Coletar RR (Receitas Realizadas) e OD (Outras Deduções) separadamente.
+    # Chave: (cod_ibge, cod_conta) — única por município × rubrica × classificação.
+    rr_meta: dict[tuple, dict]        = {}  # metadados da linha RR
+    rr_vals: dict[tuple, float | None] = {}  # VAL_DECL da linha RR
+    od_vals: dict[tuple, float]        = {}  # VAL_DECL da linha OD
+
     for _, row in df.iterrows():
         cod_conta = str(row.get("COD_EXIB_FORMATADO", "")).strip()
+        idn_clas  = str(row.get("IDN_CLAS", "")).strip()
         indicador = contas.get(cod_conta)
-        if not indicador:
+        if not indicador or idn_clas not in ("RR", "OD"):
             continue
 
         raw_cod = str(row.get("COD_MUNI", "")).strip().split(".")[0]
@@ -199,27 +205,44 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
         else:
             continue  # município sem código IBGE válido — descarta a linha
 
-        raw_no_ente = str(row.get("NOM_MUNI", "")).strip()
-        no_ente = "Brasília" if (not raw_no_ente or raw_no_ente == "nan") and sig_uf == "DF" else raw_no_ente
-
         raw_valor = str(row.get("VAL_DECL", "")).strip().replace(",", ".")
         try:
-            valor: float | None = float(raw_valor)
+            val: float | None = float(raw_valor)
         except ValueError:
-            valor = None
+            val = None
 
-        registros.append({
-            "esfera"   : "Município",
-            "co_uf"    : str(row.get("SIG_UF", sig_uf)).strip(),
-            "cod_ibge" : cod_ibge,
-            "no_ente"  : no_ente,
-            "ano"      : ano,
-            "indicador": indicador,
-            "cod_conta": cod_conta,
-            "conta"    : str(row.get("NOM_ITEM", "")).strip(),
-            "valor"    : valor,
-            "populacao": None,
-        })
+        key = (cod_ibge, cod_conta)
+        if idn_clas == "OD":
+            if val is not None:
+                od_vals[key] = val
+        else:  # RR
+            raw_no_ente = str(row.get("NOM_MUNI", "")).strip()
+            no_ente = "Brasília" if (not raw_no_ente or raw_no_ente == "nan") and sig_uf == "DF" else raw_no_ente
+            rr_meta[key] = {
+                "esfera"   : "Município",
+                "co_uf"    : str(row.get("SIG_UF", sig_uf)).strip(),
+                "cod_ibge" : cod_ibge,
+                "no_ente"  : no_ente,
+                "ano"      : ano,
+                "indicador": indicador,
+                "cod_conta": cod_conta,
+                "conta"    : str(row.get("NOM_ITEM", "")).strip(),
+                "valor"    : None,  # placeholder — ordem de coluna igual ao formato antigo
+                "populacao": None,
+            }
+            rr_vals[key] = val
+
+    # valor líquido = |RR| − |OD|  (OD ausente → dedução zero)
+    registros: list[dict] = []
+    for key, meta in rr_meta.items():
+        val_rr = rr_vals[key]
+        val_od = od_vals.get(key)
+        if val_rr is not None:
+            deducao = abs(val_od) if val_od is not None else 0.0
+            meta["valor"] = abs(val_rr) - deducao
+        else:
+            meta["valor"] = None
+        registros.append(meta)
 
     # 2019-2020: ISS é composto por múltiplos códigos → agregar por município,
     # igual à metodologia do DCA (Receitas Brutas Realizadas inclui tudo).
@@ -237,7 +260,7 @@ def _buscar(sig_uf: str, ano: int) -> list[dict]:
                 .agg(valor=("valor", "sum"))
             )
             agg["cod_conta"]  = _COD_ISS_AGREGADO_2019_2020
-            agg["conta"]      = "ISS (principal + multas/juros + dívida ativa)"
+            agg["conta"]      = "ISS (principal + FECOP + multas/juros + dívida ativa)"
             agg["populacao"]  = None
             registros = df_cota.to_dict("records") + agg.to_dict("records")
 
