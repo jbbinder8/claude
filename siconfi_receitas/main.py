@@ -2,7 +2,7 @@
 main.py — Orquestrador do projeto siconfi_receitas.
 
 Modo padrão (sem --modulos): lança 3 subprocessos em paralelo:
-    • dca + rreo  (sequenciais num mesmo processo)
+    • dca + rreo + dca_detalhado  (sequenciais num mesmo processo — mesma API SICONFI)
     • siops
     • siope
   Aguarda os 3 e roda consolidação ao final.
@@ -12,11 +12,11 @@ Modo direto (--modulos especificado): executa os módulos informados
   output/receitas/log_<modulos>.txt automaticamente.
 
 Uso:
-    python -m siconfi_receitas.main                                # paralelo (padrão)
-    python -m siconfi_receitas.main --modulos dca rreo             # direto, 2 módulos
-    python -m siconfi_receitas.main --modulos siops                # direto, 1 módulo
-    python -m siconfi_receitas.main --modulos siope                # direto, 1 módulo
-    python -m siconfi_receitas.main --modulos dca rreo siops siope # direto, todos sequencial
+    python -m siconfi_receitas.main                                          # paralelo (padrão)
+    python -m siconfi_receitas.main --modulos dca rreo dca_detalhado        # direto, SICONFI
+    python -m siconfi_receitas.main --modulos siops                          # direto, 1 módulo
+    python -m siconfi_receitas.main --modulos siope                          # direto, 1 módulo
+    python -m siconfi_receitas.main --modulos dca rreo dca_detalhado siops siope  # todos sequencial
 """
 
 from __future__ import annotations
@@ -28,17 +28,18 @@ import time
 from pathlib import Path
 
 from .common import obter_entes
-from . import dca, rreo, siops, siope, consolidar as _consolidar
+from . import dca, rreo, dca_detalhado, siops, siope, consolidar as _consolidar
 
 
 MODULOS_DISPONIVEIS = {
-    "dca"  : dca.baixar,
-    "rreo" : rreo.baixar,
-    "siops": siops.baixar,
-    "siope": siope.baixar,
+    "dca"          : dca.baixar,
+    "rreo"         : rreo.baixar,
+    "dca_detalhado": dca_detalhado.baixar,
+    "siops"        : siops.baixar,
+    "siope"        : siope.baixar,
 }
 
-_GRUPOS_PARALELOS = [["dca", "rreo"], ["siops"], ["siope"]]
+_GRUPOS_PARALELOS = [["dca", "rreo", "dca_detalhado"], ["siops"], ["siope"]]
 
 DIR_SAIDA = Path("output/receitas")
 
