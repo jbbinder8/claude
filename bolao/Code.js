@@ -397,13 +397,11 @@ function getPalpitesJogo(jogoId) {
   }
   if (!jogoRow) return { ok: false, motivo: 'Jogo não encontrado.' };
 
-  if (!_jogoIniciado(jogoRow[COL_TITULO - 1], dataDisplay)) {
-    return { ok: false, motivo: 'Jogo ainda não iniciado.' };
-  }
+  const iniciado = _jogoIniciado(jogoRow[COL_TITULO - 1], dataDisplay);
 
   const sp = _abaPalpites();
   const lastRowP = sp.getLastRow();
-  if (lastRowP < 2) return { ok: true, palpites: [] };
+  if (lastRowP < 2) return { ok: true, iniciado: iniciado, palpites: [] };
 
   const pdata    = sp.getRange(2, 1, lastRowP - 1, 5).getValues();
   const palpites = [];
@@ -413,14 +411,19 @@ function getPalpitesJogo(jogoId) {
     const g1    = r[PCOL_GOLS1 - 1];
     const g2    = r[PCOL_GOLS2 - 1];
     if (!email || g1 === '' || g1 === null || g2 === '' || g2 === null) return;
-    palpites.push({ usuario: email, gols1: Number(g1), gols2: Number(g2) });
+    // Antes do início só expõe o nome, não os palpites
+    if (iniciado) {
+      palpites.push({ usuario: email, gols1: Number(g1), gols2: Number(g2) });
+    } else {
+      palpites.push({ usuario: email });
+    }
   });
 
   palpites.sort(function(a, b) {
     return a.usuario.localeCompare(b.usuario);
   });
 
-  return { ok: true, palpites: palpites };
+  return { ok: true, iniciado: iniciado, palpites: palpites };
 }
 
 

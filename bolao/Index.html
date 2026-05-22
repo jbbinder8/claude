@@ -764,13 +764,12 @@ function renderJogo(j){
             </div>
           </div>
         </div>` : ''}
-        ${locked ? `
         <div class="bets-wrap">
           <button class="bets-toggle" data-jogo-bets="${j.numero}">▸ ver palpites</button>
           <div class="bets-panel" id="bets-${j.numero}">
             <div class="bets-list"></div>
           </div>
-        </div>` : ''}
+        </div>
       </div>
       <div class="status${locked ? '' : (ESTADO.saved[j.numero] ? ' saved' : '')}" data-status>
         ${locked
@@ -822,11 +821,14 @@ function attachBetsToggles(){
         panel.classList.add('open');
         btn.textContent = '▾ ocultar palpites';
         if (!panel.dataset.loaded) {
-          panel.dataset.loaded = '1';
           panel.querySelector('.bets-list').textContent = 'carregando…';
           google.script.run
-            .withSuccessHandler(res => renderBets(panel, res))
-            .withFailureHandler(() => {
+            .withSuccessHandler(function(res) {
+              // Só cacheia após o início — antes disso recarrega sempre para revelar placares
+              if (res.iniciado) panel.dataset.loaded = '1';
+              renderBets(panel, res);
+            })
+            .withFailureHandler(function() {
               panel.querySelector('.bets-list').textContent = 'erro ao carregar';
             })
             .getPalpitesJogo(jogoId);
@@ -842,12 +844,15 @@ function renderBets(panel, res){
     list.innerHTML = '<span style="color:var(--ink-soft);font-size:12px;font-style:italic">nenhum palpite registrado</span>';
     return;
   }
-  list.innerHTML = res.palpites.map(p => {
+  list.innerHTML = res.palpites.map(function(p) {
     const nome = escapeHtml(p.usuario.split('@')[0]);
-    return `<div class="bet-chip">
-      <span class="bet-user">${nome}</span>
-      <span class="bet-score">${p.gols1}×${p.gols2}</span>
-    </div>`;
+    if (res.iniciado) {
+      return '<div class="bet-chip">' +
+        '<span class="bet-user">' + nome + '</span>' +
+        '<span class="bet-score">' + p.gols1 + '×' + p.gols2 + '</span>' +
+        '</div>';
+    }
+    return '<div class="bet-chip"><span class="bet-user">' + nome + '</span></div>';
   }).join('');
 }
 
