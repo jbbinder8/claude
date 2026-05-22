@@ -49,8 +49,9 @@ const PCOL_GOLS2        = 5;
 // =========================================================================
 // Entrada do Web App
 // =========================================================================
-function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
+function doGet(e) {
+  const page = (e && e.parameter && e.parameter.page === 'stats') ? 'Estatisticas' : 'Index';
+  return HtmlService.createTemplateFromFile(page)
     .evaluate()
     .setTitle('Bolão da Copa')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
@@ -421,6 +422,46 @@ function getPalpitesJogo(jogoId) {
   });
 
   return { ok: true, palpites: palpites };
+}
+
+
+// =========================================================================
+// API: retorna contagem de palpites por usuário + total de jogos ativos.
+// =========================================================================
+function getEstatisticas() {
+  // Total de jogos ativos (considerar = 1)
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tabela = ss.getSheetByName(SHEET_TABELA);
+  let totalJogos = 0;
+  if (tabela && tabela.getLastRow() >= 2) {
+    const vals = tabela.getRange(2, 1, tabela.getLastRow() - 1, COL_CONSIDERAR).getValues();
+    vals.forEach(function(r) { if (r[COL_CONSIDERAR - 1] == 1) totalJogos++; });
+  }
+
+  // Contagem de palpites por usuário
+  const sp = _abaPalpites();
+  const lastRow = sp.getLastRow();
+  const contagem = {};
+  if (lastRow >= 2) {
+    const pdata = sp.getRange(2, 1, lastRow - 1, 5).getValues();
+    pdata.forEach(function(r) {
+      const email = String(r[PCOL_USUARIO - 1] || '').toLowerCase().trim();
+      const g1 = r[PCOL_GOLS1 - 1];
+      const g2 = r[PCOL_GOLS2 - 1];
+      if (!email) return;
+      if (g1 === '' || g1 === null || g2 === '' || g2 === null) return;
+      contagem[email] = (contagem[email] || 0) + 1;
+    });
+  }
+
+  const usuarios = Object.keys(contagem).map(function(email) {
+    return { nome: email.split('@')[0], total: contagem[email] };
+  });
+  usuarios.sort(function(a, b) {
+    return b.total - a.total || a.nome.localeCompare(b.nome);
+  });
+
+  return { usuarios: usuarios, totalJogos: totalJogos };
 }
 
 
