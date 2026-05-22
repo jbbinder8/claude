@@ -35,7 +35,8 @@ const COL_CONSIDERAR    = 9;   // I
 const COL_TITULO        = 10;  // J
 const COL_RESULTADO1    = 11;  // K — gols reais selecao1
 const COL_RESULTADO2    = 12;  // L — gols reais selecao2
-const COL_FIM           = 12;  // até onde lemos
+const COL_EDIT_RESULTADO = 13; // M — 1 = permite editar resultado após início
+const COL_FIM           = 13;  // até onde lemos
 
 // Colunas da aba "palpites"
 const PCOL_JOGO         = 1;
@@ -77,16 +78,22 @@ function _agoraIso() {
 
 function _extrairInicioIso(tituloVal, dataDisplay) {
   const t = String(tituloVal || '');
-  const m = t.match(/^\s*(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+  // Formato esperado: "DD/MM/YYYY HH:MM - ..." (ano opcional para retrocompatibilidade)
+  const m = t.match(/^\s*(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?\s+(\d{1,2}):(\d{2})/);
   if (!m) return null;
   const dia  = parseInt(m[1], 10);
   const mes  = parseInt(m[2], 10);
-  const hora = parseInt(m[3], 10);
-  const min  = parseInt(m[4], 10);
+  const hora = parseInt(m[4], 10);
+  const min  = parseInt(m[5], 10);
 
-  // Ano: pega 4 dígitos no display value da coluna D; fallback 2026 (Copa).
-  const y = String(dataDisplay || '').match(/(\d{4})/);
-  const ano = y ? parseInt(y[1], 10) : 2026;
+  // Ano: da coluna J se presente; fallback coluna D; fallback 2026 (Copa).
+  let ano;
+  if (m[3]) {
+    ano = parseInt(m[3], 10);
+  } else {
+    const y = String(dataDisplay || '').match(/(\d{4})/);
+    ano = y ? parseInt(y[1], 10) : 2026;
+  }
 
   const pad = n => (n < 10 ? '0' + n : '' + n);
   return ano + '-' + pad(mes) + '-' + pad(dia) + 'T' +
@@ -197,18 +204,19 @@ function getJogosEPalpites() {
       const r1 = row[COL_RESULTADO1 - 1];
       const r2 = row[COL_RESULTADO2 - 1];
       jogos.push({
-        numero:      numero,
-        titulo:      titulo || '',
-        selecao1:    sel1 || '',
-        selecao2:    sel2 || '',
-        inicio:      inicioIso.replace('T', ' '),
-        inicioIso:   inicioIso,
-        iniciado:    agoraIso >= inicioIso,
-        gols1:       null,
-        gols2:       null,
-        resultado1:    (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1))) ? Number(r1) : null,
-        resultado2:    (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2))) ? Number(r2) : null,
-        totalPalpites: 0,
+        numero:          numero,
+        titulo:          titulo || '',
+        selecao1:        sel1 || '',
+        selecao2:        sel2 || '',
+        inicio:          inicioIso.replace('T', ' '),
+        inicioIso:       inicioIso,
+        iniciado:        agoraIso >= inicioIso,
+        gols1:           null,
+        gols2:           null,
+        resultado1:      (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1))) ? Number(r1) : null,
+        resultado2:      (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2))) ? Number(r2) : null,
+        editarResultado: row[COL_EDIT_RESULTADO - 1] == 1,
+        totalPalpites:   0,
       });
     }
   }
@@ -413,6 +421,56 @@ function getPalpitesJogo(jogoId) {
   });
 
   return { ok: true, palpites: palpites };
+}
+
+
+// =========================================================================
+// API: salva o resultado oficial (colunas K e L da aba tabela).
+// Exige que coluna M = 1 E que o jogo já tenha iniciado.
+// =========================================================================
+function salvarResultado(jogoId, gols1, gols2) {
+  const lock = LockService.getDocumentLock();
+  lock.waitLock(15000);
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const tabela = ss.getSheetByName(SHEET_TABELA);
+    if (!tabela) return { ok: false, motivo: 'Aba tabela não encontrada.' };
+
+    const lastRow = tabela.getLastRow();
+    if (lastRow < 2) return { ok: false, motivo: 'Tabela vazia.' };
+
+    const range   = tabela.getRange(2, 1, lastRow - 1, COL_FIM);
+    const values  = range.getValues();
+    const displays = range.getDisplayValues();
+
+    let rowIdx = -1;
+    for (let i = 0; i < values.length; i++) {
+      if (values[i][COL_JOGO - 1] == jogoId &&
+          values[i][COL_CONSIDERAR - 1] == 1) {
+        if (values[i][COL_EDIT_RESULTADO - 1] != 1) {
+          return { ok: false, motivo: 'Edição de resultado não liberada para este jogo.' };
+        }
+        if (!_jogoIniciado(values[i][COL_TITULO - 1], displays[i][COL_DATA_BR - 1])) {
+          return { ok: false, motivo: 'Jogo ainda não iniciou.' };
+        }
+        rowIdx = i + 2; // linha real na planilha (header na linha 1)
+        break;
+      }
+    }
+    if (rowIdx < 0) return { ok: false, motivo: 'Jogo não encontrado ou indisponível.' };
+
+    const g1 = _parseGols(gols1);
+    const g2 = _parseGols(gols2);
+    if (g1 === null || g2 === null) {
+      return { ok: false, motivo: 'Informe inteiros entre ' + GOLS_MIN + ' e ' + GOLS_MAX + '.' };
+    }
+
+    tabela.getRange(rowIdx, COL_RESULTADO1, 1, 2).setValues([[g1, g2]]);
+    return { ok: true, gols1: g1, gols2: g2 };
+
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 

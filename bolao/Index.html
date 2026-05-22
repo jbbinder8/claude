@@ -385,6 +385,44 @@
       padding:4px 8px;border-radius:4px;font-weight:600;
     }
 
+    /* ---------- editor de resultado oficial ---------- */
+    .result-edit{
+      margin-top:12px;padding-top:12px;
+      border-top:1px dashed var(--gold);
+    }
+    .result-edit-label{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;text-transform:uppercase;letter-spacing:.2em;
+      color:var(--gold);font-weight:600;margin-bottom:8px;
+    }
+    .result-edit-row{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    }
+    .result-edit .stepper{border-color:var(--gold)}
+    .result-edit .stepper input[type="number"]{border-color:var(--gold)}
+    .result-edit .step-btn{color:var(--gold)}
+    .result-edit .step-btn:active:not(:disabled){background:var(--gold);color:var(--ink)}
+    .result-edit-vs{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:12px;color:var(--ink-soft);
+    }
+    .result-save-btn{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+      background:var(--gold);color:var(--ink);
+      border:none;border-radius:6px;padding:9px 14px;
+      cursor:pointer;font-weight:700;
+      transition:opacity .15s;
+    }
+    .result-save-btn:hover{opacity:.82}
+    .result-save-btn:disabled{opacity:.45;cursor:not-allowed}
+    .result-status{
+      font-family:'IBM Plex Mono', monospace;font-size:11px;
+      letter-spacing:.1em;text-transform:uppercase;
+    }
+    .result-status.ok{color:var(--ok)}
+    .result-status.err{color:var(--err)}
+
     /* ---------- footer ---------- */
     footer.foot{
       margin-top:40px;padding-top:20px;
@@ -537,6 +575,7 @@ function renderJogos(){
   container.innerHTML = html;
   attachHandlers();
   attachBetsToggles();
+  attachResultadoHandlers();
   refreshCounters();
 }
 
@@ -602,10 +641,35 @@ function renderJogo(j){
             </div>
           </div>
         </div>
-        ${(j.resultado1 != null && j.resultado2 != null) ? `
+        ${(j.resultado1 != null && j.resultado2 != null && !j.editarResultado) ? `
         <div class="result">
           <span class="result-label">Resultado</span>
           <span class="result-score">${j.resultado1} × ${j.resultado2}</span>
+        </div>` : ''}
+        ${(j.iniciado && j.editarResultado) ? `
+        <div class="result-edit">
+          <div class="result-edit-label">Resultado oficial</div>
+          <div class="result-edit-row">
+            <div class="stepper">
+              <button class="step-btn result-step" data-step="-1" tabindex="-1">−</button>
+              <input type="number" min="0" max="20" step="1" inputmode="numeric"
+                     data-resultado="1"
+                     value="${j.resultado1 != null ? j.resultado1 : ''}"
+                     aria-label="Resultado ${escapeHtml(j.selecao1)}">
+              <button class="step-btn result-step" data-step="1" tabindex="-1">+</button>
+            </div>
+            <span class="result-edit-vs">×</span>
+            <div class="stepper">
+              <button class="step-btn result-step" data-step="-1" tabindex="-1">−</button>
+              <input type="number" min="0" max="20" step="1" inputmode="numeric"
+                     data-resultado="2"
+                     value="${j.resultado2 != null ? j.resultado2 : ''}"
+                     aria-label="Resultado ${escapeHtml(j.selecao2)}">
+              <button class="step-btn result-step" data-step="1" tabindex="-1">+</button>
+            </div>
+            <button class="result-save-btn" data-resultado-save="${j.numero}">Salvar</button>
+            <span class="result-status" id="result-status-${j.numero}"></span>
+          </div>
         </div>` : ''}
         ${locked ? `
         <div class="bets-wrap">
@@ -804,6 +868,60 @@ function refreshCounters(){
   document.getElementById('count-total').textContent = total;
   document.getElementById('count-done').textContent  = done;
   document.getElementById('count-open').textContent  = open;
+}
+
+function attachResultadoHandlers(){
+  document.querySelectorAll('[data-resultado-save]').forEach(btn => {
+    const jogoId    = Number(btn.dataset.resultadoSave);
+    const resultEdit = btn.closest('.result-edit');
+
+    resultEdit.querySelectorAll('.result-step').forEach(stepBtn => {
+      stepBtn.addEventListener('click', () => {
+        const inp   = stepBtn.closest('.stepper').querySelector('input');
+        const delta = Number(stepBtn.dataset.step);
+        const cur   = inp.value === '' ? 0 : parseInt(inp.value, 10);
+        inp.value   = Math.max(0, Math.min(20, cur + delta));
+      });
+    });
+
+    btn.addEventListener('click', () => {
+      const inputs  = resultEdit.querySelectorAll('input[data-resultado]');
+      const v1      = inputs[0].value.trim();
+      const v2      = inputs[1].value.trim();
+      const statusEl = document.getElementById('result-status-' + jogoId);
+
+      if (v1 === '' || v2 === '') {
+        statusEl.textContent = 'preencha ambos';
+        statusEl.className   = 'result-status err';
+        return;
+      }
+
+      btn.disabled           = true;
+      statusEl.textContent   = 'salvando…';
+      statusEl.className     = 'result-status';
+
+      google.script.run
+        .withSuccessHandler(res => {
+          btn.disabled = false;
+          if (res && res.ok) {
+            statusEl.textContent = 'salvo ✓';
+            statusEl.className   = 'result-status ok';
+            const j = ESTADO.jogos.find(x => x.numero === jogoId);
+            if (j) { j.resultado1 = res.gols1; j.resultado2 = res.gols2; }
+          } else {
+            statusEl.textContent = (res && res.motivo) || 'erro';
+            statusEl.className   = 'result-status err';
+          }
+        })
+        .withFailureHandler(err => {
+          btn.disabled         = false;
+          statusEl.textContent = 'falhou';
+          statusEl.className   = 'result-status err';
+          console.error(err);
+        })
+        .salvarResultado(jogoId, Number(v1), Number(v2));
+    });
+  });
 }
 
 function escapeHtml(s){
