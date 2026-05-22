@@ -1149,7 +1149,7 @@ function carregarStats(){
 }
 
 function fmtPts(n){
-  return (n % 1 === 0) ? String(n) : Number(n).toFixed(1);
+  return parseFloat(Number(n).toFixed(2)).toString();
 }
 
 function renderPlacar(data){
