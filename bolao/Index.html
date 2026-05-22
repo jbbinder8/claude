@@ -595,8 +595,9 @@
    ==================================================================== */
 const ESTADO = {
   email: '',
-  jogos: [],     // mesma struct vinda do servidor
-  saved: {},     // map jogoId -> { gols1, gols2 } (último valor confirmado)
+  jogos: [],
+  saved: {},           // jogoId -> { gols1, gols2 } palpites confirmados
+  savedResultado: {},  // jogoId -> { gols1, gols2 } resultados confirmados
 };
 
 const DOW_PT = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
@@ -724,7 +725,7 @@ function renderJogo(j){
           <span class="result-score">${j.resultado1} × ${j.resultado2}</span>
         </div>` : ''}
         ${(j.iniciado && j.editarResultado) ? `
-        <div class="result-edit">
+        <div class="result-edit" data-resultado-jogo="${j.numero}">
           <div class="result-edit-label">Resultado oficial</div>
           <div class="result-edit-row">
             <div class="stepper">
@@ -744,8 +745,10 @@ function renderJogo(j){
                      aria-label="Resultado ${escapeHtml(j.selecao2)}">
               <button class="step-btn result-step" data-step="1" tabindex="-1">+</button>
             </div>
-            <button class="result-save-btn" data-resultado-save="${j.numero}">Salvar</button>
-            <span class="result-status" id="result-status-${j.numero}"></span>
+            <div class="status${j.resultado1 != null ? ' saved' : ''}" id="result-status-${j.numero}">
+              <span class="dot"></span>
+              <span data-result-status-text>${j.resultado1 != null ? 'salvo' : ''}</span>
+            </div>
           </div>
         </div>` : ''}
         ${locked ? `
@@ -948,57 +951,94 @@ function refreshCounters(){
 }
 
 function attachResultadoHandlers(){
-  document.querySelectorAll('[data-resultado-save]').forEach(btn => {
-    const jogoId    = Number(btn.dataset.resultadoSave);
-    const resultEdit = btn.closest('.result-edit');
+  document.querySelectorAll('[data-resultado-jogo]').forEach(function(resultEdit) {
+    const jogoId = Number(resultEdit.dataset.resultadoJogo);
+    const inputs = resultEdit.querySelectorAll('input[data-resultado]');
 
-    resultEdit.querySelectorAll('.result-step').forEach(stepBtn => {
-      stepBtn.addEventListener('click', () => {
+    // Inicializa savedResultado com o valor atual (se existir)
+    const j = ESTADO.jogos.find(function(x){ return x.numero === jogoId; });
+    if (j && j.resultado1 != null && j.resultado2 != null) {
+      ESTADO.savedResultado[jogoId] = { gols1: j.resultado1, gols2: j.resultado2 };
+    }
+
+    // Steppers
+    resultEdit.querySelectorAll('.result-step').forEach(function(stepBtn) {
+      stepBtn.addEventListener('click', function() {
         const inp   = stepBtn.closest('.stepper').querySelector('input');
         const delta = Number(stepBtn.dataset.step);
         const cur   = inp.value === '' ? 0 : parseInt(inp.value, 10);
         inp.value   = Math.max(0, Math.min(20, cur + delta));
+        onResultadoInputChange(resultEdit, jogoId);
+        tentarSalvarResultado(resultEdit, jogoId);
       });
     });
 
-    btn.addEventListener('click', () => {
-      const inputs  = resultEdit.querySelectorAll('input[data-resultado]');
-      const v1      = inputs[0].value.trim();
-      const v2      = inputs[1].value.trim();
-      const statusEl = document.getElementById('result-status-' + jogoId);
-
-      if (v1 === '' || v2 === '') {
-        statusEl.textContent = 'preencha ambos';
-        statusEl.className   = 'result-status err';
-        return;
-      }
-
-      btn.disabled           = true;
-      statusEl.textContent   = 'salvando…';
-      statusEl.className     = 'result-status';
-
-      google.script.run
-        .withSuccessHandler(res => {
-          btn.disabled = false;
-          if (res && res.ok) {
-            statusEl.textContent = 'salvo ✓';
-            statusEl.className   = 'result-status ok';
-            const j = ESTADO.jogos.find(x => x.numero === jogoId);
-            if (j) { j.resultado1 = res.gols1; j.resultado2 = res.gols2; }
-          } else {
-            statusEl.textContent = (res && res.motivo) || 'erro';
-            statusEl.className   = 'result-status err';
-          }
-        })
-        .withFailureHandler(err => {
-          btn.disabled         = false;
-          statusEl.textContent = 'falhou';
-          statusEl.className   = 'result-status err';
-          console.error(err);
-        })
-        .salvarResultado(jogoId, Number(v1), Number(v2));
+    // Inputs
+    inputs.forEach(function(inp) {
+      inp.addEventListener('input',   function(){ onResultadoInputChange(resultEdit, jogoId); });
+      inp.addEventListener('blur',    function(){ tentarSalvarResultado(resultEdit, jogoId); });
+      inp.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); inp.blur(); } });
     });
   });
+}
+
+function onResultadoInputChange(resultEdit, jogoId){
+  const cur    = lerResultadoEdit(resultEdit);
+  const saved  = ESTADO.savedResultado[jogoId];
+  const el     = document.getElementById('result-status-' + jogoId);
+  const txt    = el.querySelector('[data-result-status-text]');
+  if (saved && saved.gols1 === cur.g1 && saved.gols2 === cur.g2){
+    el.classList.add('saved'); el.classList.remove('error','saving');
+    if (txt) txt.textContent = 'salvo';
+  } else {
+    el.classList.remove('saved','error','saving');
+    if (txt) txt.textContent = '';
+  }
+}
+
+function tentarSalvarResultado(resultEdit, jogoId){
+  const { g1, g2 } = lerResultadoEdit(resultEdit);
+  if (g1 === null || g2 === null) return;
+  if (g1 < 0 || g1 > 20 || g2 < 0 || g2 > 20) return;
+
+  const saved = ESTADO.savedResultado[jogoId];
+  if (saved && saved.gols1 === g1 && saved.gols2 === g2) return;
+
+  const el  = document.getElementById('result-status-' + jogoId);
+  const txt = el.querySelector('[data-result-status-text]');
+  el.classList.remove('saved','error'); el.classList.add('saving');
+  if (txt) txt.textContent = 'salvando…';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      el.classList.remove('saving');
+      if (res && res.ok){
+        ESTADO.savedResultado[jogoId] = { gols1: res.gols1, gols2: res.gols2 };
+        el.classList.add('saved');
+        if (txt) txt.textContent = 'salvo';
+        const jogo = ESTADO.jogos.find(function(x){ return x.numero === jogoId; });
+        if (jogo){ jogo.resultado1 = res.gols1; jogo.resultado2 = res.gols2; }
+      } else {
+        el.classList.add('error');
+        if (txt) txt.textContent = (res && res.motivo) || 'erro';
+      }
+    })
+    .withFailureHandler(function(err){
+      el.classList.remove('saving'); el.classList.add('error');
+      if (txt) txt.textContent = 'falhou';
+      console.error(err);
+    })
+    .salvarResultado(jogoId, g1, g2);
+}
+
+function lerResultadoEdit(resultEdit){
+  const inputs = resultEdit.querySelectorAll('input[data-resultado]');
+  const v1 = inputs[0].value.trim();
+  const v2 = inputs[1].value.trim();
+  return {
+    g1: v1 === '' ? null : Number(v1),
+    g2: v2 === '' ? null : Number(v2)
+  };
 }
 
 /* ---- Abas ---- */
