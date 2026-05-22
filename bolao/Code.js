@@ -49,9 +49,8 @@ const PCOL_GOLS2        = 5;
 // =========================================================================
 // Entrada do Web App
 // =========================================================================
-function doGet(e) {
-  const page = (e && e.parameter && e.parameter.page === 'stats') ? 'Estatisticas' : 'Index';
-  return HtmlService.createTemplateFromFile(page)
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
     .evaluate()
     .setTitle('Bolão da Copa')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')

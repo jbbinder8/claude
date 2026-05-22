@@ -423,6 +423,68 @@
     .result-status.ok{color:var(--ok)}
     .result-status.err{color:var(--err)}
 
+    /* ---------- abas ---------- */
+    .tabs{
+      display:flex;gap:0;
+      border-bottom:2px solid var(--ink);
+      margin-bottom:24px;
+    }
+    .tab-btn{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+      font-weight:600;background:none;border:none;cursor:pointer;
+      padding:10px 20px;color:var(--ink-soft);
+      border-bottom:3px solid transparent;margin-bottom:-2px;
+      transition:color .15s,border-color .15s;
+    }
+    .tab-btn.active{color:var(--ink);border-bottom-color:var(--accent)}
+    .tab-btn:hover:not(.active){color:var(--ink)}
+
+    /* ---------- estatísticas ---------- */
+    .section-label{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+      color:var(--ink-soft);font-weight:600;
+      margin-bottom:14px;
+      display:flex;align-items:center;gap:10px;
+    }
+    .section-label::after{content:"";flex:1;height:1px;background:var(--line)}
+    .rank-list{display:flex;flex-direction:column;gap:8px}
+    .rank-row{
+      display:grid;
+      grid-template-columns:36px 1fr auto auto;
+      align-items:center;gap:12px;
+      background:var(--bg-card);border:1px solid var(--line);
+      border-radius:var(--radius);padding:12px 16px;
+      box-shadow:var(--shadow);
+    }
+    .rank-row.top1{border-left:4px solid var(--gold)}
+    .rank-row.top2{border-left:4px solid #b0b0b0}
+    .rank-row.top3{border-left:4px solid #a0714a}
+    .rank-pos{
+      font-family:'Archivo Black', sans-serif;
+      font-size:18px;color:var(--ink-soft);text-align:center;
+    }
+    .rank-row.top1 .rank-pos{color:var(--gold)}
+    .rank-row.top2 .rank-pos{color:#888}
+    .rank-row.top3 .rank-pos{color:#a0714a}
+    .rank-nome{font-weight:600;font-size:15px;color:var(--ink)}
+    .rank-bar-wrap{width:120px}
+    .rank-bar-bg{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+    .rank-bar-fill{height:100%;border-radius:3px;background:var(--accent-2)}
+    .rank-count{
+      font-family:'Archivo Black', sans-serif;
+      font-size:16px;color:var(--ink);text-align:right;white-space:nowrap;
+    }
+    .rank-count span{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;font-weight:600;color:var(--ink-soft);margin-left:3px;
+    }
+    @media (max-width:560px){
+      .rank-bar-wrap{display:none}
+      .rank-row{grid-template-columns:36px 1fr auto}
+    }
+
     /* ---------- footer ---------- */
     footer.foot{
       margin-top:40px;padding-top:20px;
@@ -462,6 +524,12 @@
     </div>
   </header>
 
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="palpites">Palpites</button>
+    <button class="tab-btn" data-tab="stats">Estatísticas</button>
+  </nav>
+
+  <div id="tab-palpites">
   <section class="access-info" aria-label="Informações de acesso">
     <div class="access-info-label">Acesso &amp; Privacidade</div>
     <ul>
@@ -506,6 +574,15 @@
       Carregando jogos…
     </div>
   </main>
+
+  </div><!-- #tab-palpites -->
+
+  <div id="tab-stats" style="display:none">
+    <div class="section-label">Palpites registrados</div>
+    <div id="stats-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+  </div>
 
   <footer class="foot">
     palpites são salvos automaticamente · jogos travam no horário de início (Brasília)
@@ -922,6 +999,59 @@ function attachResultadoHandlers(){
         .salvarResultado(jogoId, Number(v1), Number(v2));
     });
   });
+}
+
+/* ---- Abas ---- */
+let statsCarregado = false;
+
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('tab-palpites').style.display = tab === 'palpites' ? '' : 'none';
+    document.getElementById('tab-stats').style.display    = tab === 'stats'    ? '' : 'none';
+    if (tab === 'stats' && !statsCarregado) {
+      statsCarregado = true;
+      google.script.run
+        .withSuccessHandler(renderStats)
+        .withFailureHandler(function(err) {
+          document.getElementById('stats-content').innerHTML =
+            '<div class="state" style="color:var(--err)">Erro: ' +
+            escapeHtml(String(err && err.message || err)) + '</div>';
+        })
+        .getEstatisticas();
+    }
+  });
+});
+
+function renderStats(data) {
+  const usuarios   = data.usuarios   || [];
+  const totalJogos = data.totalJogos || 0;
+  const el         = document.getElementById('stats-content');
+
+  if (!usuarios.length) {
+    el.innerHTML = '<div class="state">Nenhum palpite registrado ainda.</div>';
+    return;
+  }
+
+  const maxTotal = usuarios[0].total;
+  const rows = usuarios.map(function(u, i) {
+    const pos    = i + 1;
+    const pct    = maxTotal > 0 ? Math.round(u.total / maxTotal * 100) : 0;
+    const classe = pos === 1 ? ' top1' : pos === 2 ? ' top2' : pos === 3 ? ' top3' : '';
+    const de     = totalJogos > 0 ? '<span>/ ' + totalJogos + '</span>' : '';
+    return '<div class="rank-row' + classe + '">' +
+      '<div class="rank-pos">'  + pos + '</div>' +
+      '<div class="rank-nome">' + escapeHtml(u.nome) + '</div>' +
+      '<div class="rank-bar-wrap"><div class="rank-bar-bg">' +
+        '<div class="rank-bar-fill" style="width:' + pct + '%"></div>' +
+      '</div></div>' +
+      '<div class="rank-count">' + u.total + de + '</div>' +
+    '</div>';
+  }).join('');
+
+  el.innerHTML = '<div class="rank-list">' + rows + '</div>';
 }
 
 function escapeHtml(s){
