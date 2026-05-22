@@ -480,6 +480,17 @@
       font-family:'IBM Plex Mono', monospace;
       font-size:11px;font-weight:600;color:var(--ink-soft);margin-left:3px;
     }
+    .refresh-btn{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+      background:none;border:1px solid var(--line);
+      border-radius:4px;padding:3px 8px;
+      color:var(--ink-soft);cursor:pointer;
+      transition:color .15s,border-color .15s;
+      white-space:nowrap;
+    }
+    .refresh-btn:hover{color:var(--ink);border-color:var(--ink-soft)}
+    .refresh-btn:disabled{opacity:.45;cursor:not-allowed}
     @media (max-width:560px){
       .rank-bar-wrap{display:none}
       .rank-row{grid-template-columns:36px 1fr auto}
@@ -578,7 +589,9 @@
   </div><!-- #tab-palpites -->
 
   <div id="tab-stats" style="display:none">
-    <div class="section-label">Palpites registrados</div>
+    <div class="section-label">Palpites registrados
+      <button class="refresh-btn" id="stats-refresh-btn">↻ atualizar</button>
+    </div>
     <div id="stats-content">
       <div class="state"><div class="spinner"></div>Carregando…</div>
     </div>
@@ -1053,17 +1066,31 @@ document.querySelectorAll('.tab-btn').forEach(function(btn) {
     document.getElementById('tab-stats').style.display    = tab === 'stats'    ? '' : 'none';
     if (tab === 'stats' && !statsCarregado) {
       statsCarregado = true;
-      google.script.run
-        .withSuccessHandler(renderStats)
-        .withFailureHandler(function(err) {
-          document.getElementById('stats-content').innerHTML =
-            '<div class="state" style="color:var(--err)">Erro: ' +
-            escapeHtml(String(err && err.message || err)) + '</div>';
-        })
-        .getEstatisticas();
+      carregarStats();
     }
   });
 });
+
+document.getElementById('stats-refresh-btn').addEventListener('click', carregarStats);
+
+function carregarStats(){
+  const btn = document.getElementById('stats-refresh-btn');
+  if (btn) btn.disabled = true;
+  document.getElementById('stats-content').innerHTML =
+    '<div class="state"><div class="spinner"></div>Carregando…</div>';
+  google.script.run
+    .withSuccessHandler(function(data){
+      if (btn) btn.disabled = false;
+      renderStats(data);
+    })
+    .withFailureHandler(function(err){
+      if (btn) btn.disabled = false;
+      document.getElementById('stats-content').innerHTML =
+        '<div class="state" style="color:var(--err)">Erro: ' +
+        escapeHtml(String(err && err.message || err)) + '</div>';
+    })
+    .getEstatisticas();
+}
 
 function renderStats(data) {
   const usuarios   = data.usuarios   || [];
