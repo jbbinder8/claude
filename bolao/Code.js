@@ -19,8 +19,10 @@
  *      somente-leitura com todos.
  */
 
-const SHEET_TABELA      = 'tabela';
-const SHEET_PALPITES    = 'palpites';
+const SHEET_TABELA       = 'tabela';
+const SHEET_PALPITES     = 'palpites';
+const SHEET_PLACAR_TIPO  = 'placar_tipo';
+const SHEET_PLACAR_FASE  = 'placar_fase';
 const TZ                = 'America/Sao_Paulo';
 const GOLS_MIN          = 0;
 const GOLS_MAX          = 20;
@@ -424,6 +426,54 @@ function getPalpitesJogo(jogoId) {
   });
 
   return { ok: true, iniciado: iniciado, palpites: palpites };
+}
+
+
+// =========================================================================
+// API: retorna placar_tipo e placar_fase (lidas diretamente das abas).
+// =========================================================================
+function getPlacar() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  function _ler(nome, ncols) {
+    const sh = ss.getSheetByName(nome);
+    if (!sh || sh.getLastRow() < 2) return [];
+    return sh.getRange(2, 1, sh.getLastRow() - 1, ncols).getValues();
+  }
+
+  // placar_tipo: usuario | pt_venc | pt_placar | pt_gols | pt_total
+  const tipo = _ler(SHEET_PLACAR_TIPO, 5)
+    .filter(function(r) { return r[0]; })
+    .map(function(r) {
+      return {
+        nome:      String(r[0]).split('@')[0],
+        pt_venc:   Number(r[1]) || 0,
+        pt_placar: Number(r[2]) || 0,
+        pt_gols:   Number(r[3]) || 0,
+        pt_total:  Number(r[4]) || 0
+      };
+    })
+    .sort(function(a, b) { return b.pt_total - a.pt_total || a.nome.localeCompare(b.nome); });
+
+  // placar_fase: usuario | grupos | 16-avos | oitavas | quartas | semifinal | 3.o lugar | final | total
+  const fase = _ler(SHEET_PLACAR_FASE, 9)
+    .filter(function(r) { return r[0]; })
+    .map(function(r) {
+      return {
+        nome:      String(r[0]).split('@')[0],
+        grupos:    Number(r[1]) || 0,
+        avos16:    Number(r[2]) || 0,
+        oitavas:   Number(r[3]) || 0,
+        quartas:   Number(r[4]) || 0,
+        semifinal: Number(r[5]) || 0,
+        lugar3:    Number(r[6]) || 0,
+        final:     Number(r[7]) || 0,
+        total:     Number(r[8]) || 0
+      };
+    })
+    .sort(function(a, b) { return b.total - a.total || a.nome.localeCompare(b.nome); });
+
+  return { tipo: tipo, fase: fase };
 }
 
 

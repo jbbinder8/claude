@@ -491,6 +491,31 @@
     }
     .refresh-btn:hover{color:var(--ink);border-color:var(--ink-soft)}
     .refresh-btn:disabled{opacity:.45;cursor:not-allowed}
+
+    /* ---------- tabelas de placar ---------- */
+    .score-wrap{overflow-x:auto;margin-bottom:4px}
+    .score-table{
+      width:100%;border-collapse:collapse;font-size:13px;
+      background:var(--bg-card);border:1px solid var(--line);
+      border-radius:var(--radius);overflow:hidden;
+    }
+    .score-table thead th{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+      color:var(--ink-soft);font-weight:600;
+      padding:9px 12px;text-align:right;
+      border-bottom:2px solid var(--line);
+      background:var(--bg);white-space:nowrap;
+    }
+    .score-table thead th:first-child{text-align:left}
+    .score-table tbody tr:not(:last-child){border-bottom:1px solid var(--line)}
+    .score-table tbody td{padding:9px 12px;text-align:right;white-space:nowrap}
+    .score-table tbody td:first-child{text-align:left;font-weight:600}
+    .score-table .col-total{
+      font-family:'Archivo Black', sans-serif;font-size:14px;color:var(--ink);
+    }
+    .score-table tbody tr:hover{background:rgba(18,36,24,.03)}
+    .section-gap{margin-top:28px}
     @media (max-width:560px){
       .rank-bar-wrap{display:none}
       .rank-row{grid-template-columns:36px 1fr auto}
@@ -593,6 +618,16 @@
       <button class="refresh-btn" id="stats-refresh-btn">↻ atualizar</button>
     </div>
     <div id="stats-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+
+    <div class="section-label section-gap">Pontuação por tipo</div>
+    <div id="placar-tipo-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+
+    <div class="section-label section-gap">Pontuação por fase</div>
+    <div id="placar-fase-content">
       <div class="state"><div class="spinner"></div>Carregando…</div>
     </div>
   </div>
@@ -1081,20 +1116,90 @@ document.getElementById('stats-refresh-btn').addEventListener('click', carregarS
 function carregarStats(){
   const btn = document.getElementById('stats-refresh-btn');
   if (btn) btn.disabled = true;
+
+  var pendentes = 2;
+  function done(){ if (--pendentes === 0 && btn) btn.disabled = false; }
+
+  // Palpites registrados
   document.getElementById('stats-content').innerHTML =
     '<div class="state"><div class="spinner"></div>Carregando…</div>';
   google.script.run
-    .withSuccessHandler(function(data){
-      if (btn) btn.disabled = false;
-      renderStats(data);
-    })
+    .withSuccessHandler(function(data){ done(); renderStats(data); })
     .withFailureHandler(function(err){
-      if (btn) btn.disabled = false;
+      done();
       document.getElementById('stats-content').innerHTML =
-        '<div class="state" style="color:var(--err)">Erro: ' +
-        escapeHtml(String(err && err.message || err)) + '</div>';
+        '<div class="state" style="color:var(--err)">Erro: ' + escapeHtml(String(err && err.message || err)) + '</div>';
     })
     .getEstatisticas();
+
+  // Placar
+  document.getElementById('placar-tipo-content').innerHTML =
+    '<div class="state"><div class="spinner"></div>Carregando…</div>';
+  document.getElementById('placar-fase-content').innerHTML =
+    '<div class="state"><div class="spinner"></div>Carregando…</div>';
+  google.script.run
+    .withSuccessHandler(function(data){ done(); renderPlacar(data); })
+    .withFailureHandler(function(err){
+      done();
+      var msg = '<div class="state" style="color:var(--err)">Erro: ' + escapeHtml(String(err && err.message || err)) + '</div>';
+      document.getElementById('placar-tipo-content').innerHTML = msg;
+      document.getElementById('placar-fase-content').innerHTML = msg;
+    })
+    .getPlacar();
+}
+
+function fmtPts(n){
+  return (n % 1 === 0) ? String(n) : Number(n).toFixed(1);
+}
+
+function renderPlacar(data){
+  var tipo = data.tipo || [];
+  var fase = data.fase || [];
+
+  // Tabela pontuação por tipo
+  var elTipo = document.getElementById('placar-tipo-content');
+  if (!tipo.length) {
+    elTipo.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
+  } else {
+    var rowsTipo = tipo.map(function(u, i){
+      var pos = i + 1;
+      return '<tr>' +
+        '<td>' + pos + '. ' + escapeHtml(u.nome) + '</td>' +
+        '<td>' + fmtPts(u.pt_venc)   + '</td>' +
+        '<td>' + fmtPts(u.pt_placar) + '</td>' +
+        '<td>' + fmtPts(u.pt_gols)   + '</td>' +
+        '<td class="col-total">' + fmtPts(u.pt_total) + '</td>' +
+      '</tr>';
+    }).join('');
+    elTipo.innerHTML = '<div class="score-wrap"><table class="score-table">' +
+      '<thead><tr><th>Usuário</th><th>Vencedor</th><th>Placar</th><th>Gols</th><th>Total</th></tr></thead>' +
+      '<tbody>' + rowsTipo + '</tbody></table></div>';
+  }
+
+  // Tabela pontuação por fase
+  var elFase = document.getElementById('placar-fase-content');
+  if (!fase.length) {
+    elFase.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
+  } else {
+    var rowsFase = fase.map(function(u, i){
+      var pos = i + 1;
+      return '<tr>' +
+        '<td>' + pos + '. ' + escapeHtml(u.nome) + '</td>' +
+        '<td>' + fmtPts(u.grupos)    + '</td>' +
+        '<td>' + fmtPts(u.avos16)   + '</td>' +
+        '<td>' + fmtPts(u.oitavas)  + '</td>' +
+        '<td>' + fmtPts(u.quartas)  + '</td>' +
+        '<td>' + fmtPts(u.semifinal)+ '</td>' +
+        '<td>' + fmtPts(u.lugar3)   + '</td>' +
+        '<td>' + fmtPts(u.final)    + '</td>' +
+        '<td class="col-total">' + fmtPts(u.total) + '</td>' +
+      '</tr>';
+    }).join('');
+    elFase.innerHTML = '<div class="score-wrap"><table class="score-table">' +
+      '<thead><tr><th>Usuário</th><th>Grupos</th><th>16-avos</th><th>Oitavas</th>' +
+      '<th>Quartas</th><th>Semi</th><th>3.º</th><th>Final</th><th>Total</th></tr></thead>' +
+      '<tbody>' + rowsFase + '</tbody></table></div>';
+  }
 }
 
 function renderStats(data) {
