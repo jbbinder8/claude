@@ -373,7 +373,9 @@
           #ddd5c1 10px 11px
         );
       border-color:#c7bda6;
+      grid-template-columns:1fr;
     }
+    .lock-row{margin-bottom:6px}
     .jogo.locked .hora,
     .jogo.locked .team .name{color:var(--locked-ink)}
     .jogo.locked .fase{color:var(--locked-ink)}
@@ -741,7 +743,8 @@ function renderJogo(j){
   return `
     <div class="jogo${locked ? ' locked' : ''}" data-jogo="${j.numero}">
       <div class="corpo">
-        <div class="fase">${hora}${fase ? ` · ${escapeHtml(fase)}` : ''}${palpitesStr}</div>
+        <div class="fase">#${j.numero} · ${hora}${fase ? ` · ${escapeHtml(fase)}` : ''}${palpitesStr}</div>
+        ${locked ? '<div class="lock-row"><span class="lock-badge">🔒 encerrado</span></div>' : ''}
         <div class="matchup">
           <div class="team">
             <span class="name">${escapeHtml(j.selecao1)}</span>
@@ -806,12 +809,10 @@ function renderJogo(j){
           </div>
         </div>
       </div>
-      <div class="status${locked ? '' : (ESTADO.saved[j.numero] ? ' saved' : '')}" data-status>
-        ${locked
-          ? `<span class="lock-badge">🔒 encerrado</span>`
-          : `<span class="dot"></span><span data-status-text>${ESTADO.saved[j.numero] ? 'salvo' : ''}</span>`
-        }
-      </div>
+      ${!locked ? `
+      <div class="status${ESTADO.saved[j.numero] ? ' saved' : ''}" data-status>
+        <span class="dot"></span><span data-status-text>${ESTADO.saved[j.numero] ? 'salvo' : ''}</span>
+      </div>` : ''}
     </div>
   `;
 }
@@ -842,7 +843,7 @@ function attachHandlers(){
   });
 }
 
-/* ---- Palpites de todos (jogos travados) ---- */
+/* ---- Palpites de todos (pré-carregados no boot) ---- */
 function attachBetsToggles(){
   document.querySelectorAll('.bets-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -856,17 +857,13 @@ function attachBetsToggles(){
         panel.classList.add('open');
         btn.textContent = '▾ ocultar palpites';
         if (!panel.dataset.loaded) {
-          panel.querySelector('.bets-list').textContent = 'carregando…';
-          google.script.run
-            .withSuccessHandler(function(res) {
-              // Só cacheia após o início — antes disso recarrega sempre para revelar placares
-              if (res.iniciado) panel.dataset.loaded = '1';
-              renderBets(panel, res);
-            })
-            .withFailureHandler(function() {
-              panel.querySelector('.bets-list').textContent = 'erro ao carregar';
-            })
-            .getPalpitesJogo(jogoId);
+          panel.dataset.loaded = '1';
+          const j = ESTADO.jogos.find(x => x.numero === jogoId);
+          renderBets(panel, {
+            ok:       true,
+            iniciado: j ? j.iniciado : false,
+            palpites: (j && j.palpites) || []
+          });
         }
       }
     });
@@ -975,8 +972,12 @@ function travarCard(card, g1, g2){
   });
   card.querySelectorAll('.step-btn').forEach(btn => { btn.disabled = true; });
   const status = card.querySelector('[data-status]');
-  status.classList.remove('saving','saved','error');
-  status.innerHTML = '<span class="lock-badge">🔒 encerrado</span>';
+  status.style.display = 'none';
+  const corpo = card.querySelector('.corpo');
+  const lockRow = document.createElement('div');
+  lockRow.className = 'lock-row';
+  lockRow.innerHTML = '<span class="lock-badge">🔒 encerrado</span>';
+  corpo.insertBefore(lockRow, corpo.querySelector('.matchup'));
   // marca como iniciado no estado
   const id = Number(card.dataset.jogo);
   const j = ESTADO.jogos.find(x => x.numero === id);
@@ -1155,6 +1156,7 @@ function fmtPts(n){
 function renderPlacar(data){
   var tipo = data.tipo || [];
   var fase = data.fase || [];
+  var faseHeaders = data.faseHeaders || ['Grupos','16-avos','Oitavas','Quartas','Semi','3.º lugar','Final','Total'];
 
   // Tabela pontuação por tipo
   var elTipo = document.getElementById('placar-tipo-content');
@@ -1195,9 +1197,9 @@ function renderPlacar(data){
         '<td class="col-total">' + fmtPts(u.total) + '</td>' +
       '</tr>';
     }).join('');
+    var thFase = faseHeaders.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('');
     elFase.innerHTML = '<div class="score-wrap"><table class="score-table">' +
-      '<thead><tr><th>Usuário</th><th>Grupos</th><th>16-avos</th><th>Oitavas</th>' +
-      '<th>Quartas</th><th>Semi</th><th>3.º</th><th>Final</th><th>Total</th></tr></thead>' +
+      '<thead><tr><th>Usuário</th>' + thFase + '</tr></thead>' +
       '<tbody>' + rowsFase + '</tbody></table></div>';
   }
 }

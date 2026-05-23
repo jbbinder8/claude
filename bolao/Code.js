@@ -228,17 +228,19 @@ function getJogosEPalpites() {
   const lastRowP = sp.getLastRow();
   if (lastRowP >= 2) {
     const pdata = sp.getRange(2, 1, lastRowP - 1, 5).getValues();
-    const map = {}, countMap = {};
+    const map = {}, countMap = {}, palpitesMap = {};
     pdata.forEach(function (r) {
       const u  = String(r[PCOL_USUARIO - 1] || '').toLowerCase();
       const g1 = r[PCOL_GOLS1 - 1];
       const g2 = r[PCOL_GOLS2 - 1];
-      if (g1 !== '' && g1 !== null && g2 !== '' && g2 !== null) {
-        const jid = String(r[PCOL_JOGO - 1]);
+      const jid = String(r[PCOL_JOGO - 1]);
+      if (u && g1 !== '' && g1 !== null && g2 !== '' && g2 !== null) {
         countMap[jid] = (countMap[jid] || 0) + 1;
+        if (!palpitesMap[jid]) palpitesMap[jid] = [];
+        palpitesMap[jid].push({ usuario: u, gols1: Number(g1), gols2: Number(g2) });
       }
       if (u === email) {
-        map[String(r[PCOL_JOGO - 1])] = { gols1: g1, gols2: g2 };
+        map[jid] = { gols1: g1, gols2: g2 };
       }
     });
     jogos.forEach(function (j) {
@@ -248,6 +250,13 @@ function getJogosEPalpites() {
         j.gols2 = (p.gols2 === '' || p.gols2 === null) ? null : Number(p.gols2);
       }
       j.totalPalpites = countMap[String(j.numero)] || 0;
+      const raw = (palpitesMap[String(j.numero)] || [])
+        .slice().sort(function(a, b) { return a.usuario.localeCompare(b.usuario); });
+      j.palpites = raw.map(function(q) {
+        return j.iniciado
+          ? { usuario: q.usuario, gols1: q.gols1, gols2: q.gols2 }
+          : { usuario: q.usuario };
+      });
     });
   }
 
@@ -455,6 +464,18 @@ function getPlacar() {
     })
     .sort(function(a, b) { return b.pt_total - a.pt_total || a.nome.localeCompare(b.nome); });
 
+  // Cabeçalhos da linha 1 da aba placar_fase (colunas B a I)
+  const defaultFaseHeaders = ['Grupos','16-avos','Oitavas','Quartas','Semi','3.º lugar','Final','Total'];
+  let faseHeaders = defaultFaseHeaders.slice();
+  const shFase = ss.getSheetByName(SHEET_PLACAR_FASE);
+  if (shFase && shFase.getLastRow() >= 1) {
+    const raw = shFase.getRange(1, 2, 1, 8).getValues()[0];
+    faseHeaders = raw.map(function(h, i) {
+      const s = String(h == null ? '' : h).trim();
+      return s || defaultFaseHeaders[i];
+    });
+  }
+
   // placar_fase: usuario | grupos | 16-avos | oitavas | quartas | semifinal | 3.o lugar | final | total
   const fase = _ler(SHEET_PLACAR_FASE, 9)
     .filter(function(r) { return r[0]; })
@@ -473,7 +494,7 @@ function getPlacar() {
     })
     .sort(function(a, b) { return b.total - a.total || a.nome.localeCompare(b.nome); });
 
-  return { tipo: tipo, fase: fase };
+  return { tipo: tipo, fase: fase, faseHeaders: faseHeaders };
 }
 
 
