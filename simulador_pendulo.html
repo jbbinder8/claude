@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulador de Pêndulo</title>
+  <title>Simulador de Pêndulo Duplo</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --bg: #0f172a;
       --surface: #1e293b;
@@ -20,13 +18,15 @@
       --red: #ef4444;
     }
 
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'Segoe UI', system-ui, sans-serif;
       font-size: 13px;
       padding: 14px;
-      min-width: 920px;
+      min-width: 940px;
     }
 
     h1 {
@@ -35,24 +35,21 @@
       font-weight: 700;
       margin-bottom: 14px;
       color: #f8fafc;
-      letter-spacing: 0.3px;
     }
 
-    /* ── Layout ── */
     .layout {
       display: grid;
-      grid-template-columns: 255px 1fr 255px;
+      grid-template-columns: 262px 1fr 262px;
       gap: 14px;
-      max-width: 1060px;
+      max-width: 1080px;
       margin: 0 auto 12px;
       align-items: start;
     }
 
-    /* ── Panels ── */
     .panel {
       background: var(--surface);
       border-radius: 12px;
-      padding: 14px;
+      padding: 13px;
       border: 2px solid var(--border);
     }
     .panel.p1 { border-color: var(--c1); }
@@ -62,14 +59,14 @@
       font-size: 15px;
       font-weight: 700;
       text-align: center;
-      padding-bottom: 10px;
-      margin-bottom: 12px;
+      padding-bottom: 9px;
+      margin-bottom: 10px;
       border-bottom: 1px solid var(--border);
     }
     .panel.p1 .panel-title { color: var(--c1); }
     .panel.p2 .panel-title { color: var(--c2); }
 
-    .ctrl-group { margin-bottom: 11px; }
+    .ctrl-group { margin-bottom: 9px; }
 
     .ctrl-label {
       display: block;
@@ -77,10 +74,10 @@
       text-transform: uppercase;
       letter-spacing: 0.6px;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
-    .range-wrap { display: flex; align-items: center; gap: 7px; }
+    .range-wrap { display: flex; align-items: center; gap: 6px; }
 
     input[type=range] { flex: 1; cursor: pointer; }
     .panel.p1 input[type=range] { accent-color: var(--c1); }
@@ -89,7 +86,7 @@
     .rval {
       font-size: 11px;
       font-weight: 700;
-      min-width: 52px;
+      min-width: 48px;
       text-align: right;
       font-variant-numeric: tabular-nums;
     }
@@ -100,9 +97,11 @@
       background: #0f172a;
       border: 1px solid var(--border);
       border-radius: 5px;
-      width: 58px;
+      width: 56px;
       padding: 2px 5px;
       outline: none;
+      font-size: 11px;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
       flex-shrink: 0;
     }
@@ -110,6 +109,8 @@
     .angle-num::-webkit-outer-spin-button,
     .angle-num::-webkit-inner-spin-button { -webkit-appearance: none; }
     .angle-num[type=number] { -moz-appearance: textfield; }
+    .panel.p1 .angle-num { color: var(--c1); }
+    .panel.p2 .angle-num { color: var(--c2); }
 
     .num-input {
       width: 100%;
@@ -134,24 +135,23 @@
       font-size: 10px;
       padding: 3px 6px;
       cursor: pointer;
-      transition: background 0.12s, color 0.12s, border-color 0.12s;
+      transition: color 0.12s, border-color 0.12s;
     }
     .g-preset:hover { color: var(--text); border-color: var(--text); }
     .panel.p1 .g-preset.active { border-color: var(--c1); color: var(--c1); }
     .panel.p2 .g-preset.active { border-color: var(--c2); color: var(--c2); }
 
-    /* Method radios */
     .method-wrap { display: flex; flex-direction: column; gap: 5px; }
     .method-opt {
       display: flex;
       align-items: flex-start;
       gap: 7px;
-      padding: 7px 9px;
+      padding: 6px 8px;
       border-radius: 8px;
       border: 1px solid var(--border);
       cursor: pointer;
-      transition: background 0.12s, border-color 0.12s;
       user-select: none;
+      transition: background 0.12s, border-color 0.12s;
     }
     .method-opt:hover { background: rgba(255,255,255,0.04); }
     .method-opt input[type=radio] { margin-top: 2px; cursor: pointer; flex-shrink: 0; }
@@ -160,11 +160,11 @@
     .panel.p1 .method-opt.selected { border-color: var(--c1); background: rgba(56,189,248,0.06); }
     .panel.p2 .method-opt.selected { border-color: var(--c2); background: rgba(251,113,133,0.06); }
 
-    .mtext { font-size: 12px; line-height: 1.3; }
-    .msub { font-size: 10px; color: var(--muted); margin-top: 2px; font-family: monospace; }
+    .mtext { font-size: 11px; line-height: 1.3; }
+    .msub { font-size: 10px; color: var(--muted); margin-top: 1px; font-family: monospace; }
 
-    .period-box {
-      margin-top: 10px;
+    .info-box {
+      margin-top: 9px;
       padding: 8px 10px;
       background: #0f172a;
       border-radius: 8px;
@@ -172,36 +172,26 @@
       font-size: 11px;
       color: var(--muted);
     }
-    .period-box .pval {
+    .info-box .ivals {
       display: block;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 700;
-      margin-top: 2px;
+      margin-top: 3px;
     }
-    .panel.p1 .period-box .pval { color: var(--c1); }
-    .panel.p2 .period-box .pval { color: var(--c2); }
+    .panel.p1 .info-box .ivals { color: var(--c1); }
+    .panel.p2 .info-box .ivals { color: var(--c2); }
 
-    .mass-note {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-      font-style: italic;
-    }
-
-    /* Canvas area */
     .canvas-area {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
     }
-
     #pendCanvas {
       border-radius: 12px;
       border: 1px solid var(--border);
       display: block;
     }
-
     .time-badge {
       font-size: 13px;
       color: var(--muted);
@@ -209,15 +199,13 @@
     }
     .time-badge span { color: var(--text); font-weight: 700; }
 
-    /* Buttons */
     .btn-row {
       display: flex;
       gap: 10px;
       justify-content: center;
-      max-width: 1060px;
+      max-width: 1080px;
       margin: 0 auto 12px;
     }
-
     .btn {
       padding: 9px 26px;
       border-radius: 8px;
@@ -234,16 +222,14 @@
     .btn-pause { background: var(--amber); color: #fff; }
     .btn-reset { background: var(--red); color: #fff; }
 
-    /* Graph */
     .graph-wrap {
-      max-width: 1060px;
+      max-width: 1080px;
       margin: 0 auto;
       background: var(--surface);
       border-radius: 12px;
       padding: 12px 14px;
       border: 1px solid var(--border);
     }
-
     .graph-header {
       display: flex;
       justify-content: space-between;
@@ -252,59 +238,98 @@
       font-size: 11px;
       color: var(--muted);
     }
-
     .legend { display: flex; gap: 14px; align-items: center; }
     .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; }
     .leg-p1 { width: 20px; height: 2px; background: var(--c1); border-radius: 1px; }
     .leg-p2 { width: 20px; height: 0; border-top: 2px dashed var(--c2); }
 
-    #graphCanvas { border-radius: 6px; display: block; }
+    .graph-sub-label {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 5px 0 3px;
+    }
+    canvas.gcv { border-radius: 6px; display: block; }
 
-    /* Locked state */
     .panel.locked input,
     .panel.locked .method-opt,
     .panel.locked .g-preset { opacity: 0.45; pointer-events: none; }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      max-width: 1080px;
+      margin: 0 auto 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .speed-row input[type=range] { width: 220px; accent-color: var(--amber); }
+    .speed-val { font-size: 14px; font-weight: 700; color: var(--amber); min-width: 38px; }
   </style>
 </head>
 <body>
 
-<h1>Simulador de Pêndulo</h1>
+<h1>Simulador de Pêndulo Duplo</h1>
 
 <div class="layout">
 
-  <!-- ── Panel 1 ── -->
+  <!-- Panel 1 -->
   <div class="panel p1" id="panel-1">
-    <div class="panel-title">Pêndulo 1</div>
+    <div class="panel-title">Simulação 1</div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Ângulo inicial (θ₀)</span>
+      <span class="ctrl-label">Ângulo inicial — 1º braço (θ₁)</span>
       <div class="range-wrap">
-        <input type="range" id="a1" min="-180" max="180" value="30" step="1">
-        <input type="number" class="rval angle-num" id="a1v" value="30" min="-180" max="180" step="1">
+        <input type="range" id="a1_1" min="-180" max="180" value="90" step="1">
+        <input type="number" class="rval angle-num" id="a1_1v" value="90" min="-180" max="180" step="1">
       </div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Comprimento L</span>
+      <span class="ctrl-label">Ângulo inicial — 2º braço (θ₂)</span>
       <div class="range-wrap">
-        <input type="range" id="l1" min="0.1" max="5.0" value="1.0" step="0.1">
-        <span class="rval" id="l1v">1.0 m</span>
+        <input type="range" id="a2_1" min="-180" max="180" value="90" step="1">
+        <input type="number" class="rval angle-num" id="a2_1v" value="90" min="-180" max="180" step="1">
       </div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Massa m</span>
+      <span class="ctrl-label">Comprimento — 1º braço (L₁)</span>
       <div class="range-wrap">
-        <input type="range" id="m1" min="0.1" max="10" value="1.0" step="0.1">
-        <span class="rval" id="m1v">1.0 kg</span>
+        <input type="range" id="l1_1" min="0.1" max="3.0" value="1.0" step="0.05">
+        <span class="rval" id="l1_1v">1.00 m</span>
       </div>
-      <div class="mass-note">Não afeta o período (sem atrito)</div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Comprimento — 2º braço (L₂)</span>
+      <div class="range-wrap">
+        <input type="range" id="l2_1" min="0.1" max="3.0" value="1.0" step="0.05">
+        <span class="rval" id="l2_1v">1.00 m</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Massa — 1ª bob (m₁)</span>
+      <div class="range-wrap">
+        <input type="range" id="m1_1" min="0.1" max="10" value="1.0" step="0.1">
+        <span class="rval" id="m1_1v">1.0 kg</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Massa — 2ª bob (m₂)</span>
+      <div class="range-wrap">
+        <input type="range" id="m2_1" min="0.1" max="10" value="1.0" step="0.1">
+        <span class="rval" id="m2_1v">1.0 kg</span>
+      </div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label">Gravidade g (m/s²)</span>
-      <input type="number" class="num-input" id="g1" value="9.81" step="0.01" min="0.01">
-      <div class="g-presets" id="gp1">
+      <input type="number" class="num-input" id="g_1" value="9.81" step="0.01" min="0.01">
+      <div class="g-presets" id="gp_1">
         <button class="g-preset active" data-g="9.81">Terra</button>
         <button class="g-preset" data-g="1.62">Lua</button>
         <button class="g-preset" data-g="3.72">Marte</button>
@@ -315,68 +340,100 @@
     <div class="ctrl-group">
       <span class="ctrl-label">Método de solução</span>
       <div class="method-wrap">
-        <label class="method-opt selected" id="mo1-full">
-          <input type="radio" name="meth1" value="full" checked>
+        <label class="method-opt selected" id="mo1_1-full">
+          <input type="radio" name="meth_1" value="full" checked>
           <div>
             <div class="mtext">Solução completa</div>
-            <div class="msub">θ'' = −(g/L)·sin θ &nbsp;[RK4]</div>
+            <div class="msub">Lagrangiana não-linear [RK4]</div>
           </div>
         </label>
-        <label class="method-opt" id="mo1-small">
-          <input type="radio" name="meth1" value="small">
+        <label class="method-opt" id="mo1_1-small">
+          <input type="radio" name="meth_1" value="small">
           <div>
             <div class="mtext">Pequenos ângulos</div>
-            <div class="msub">θ'' ≈ −(g/L)·θ &nbsp;[analítica]</div>
+            <div class="msub">Linearizado (sin θ ≈ θ) [RK4]</div>
           </div>
         </label>
       </div>
     </div>
 
-    <div class="period-box" id="per1">
-      <span id="per1-lbl">Período estimado:</span>
-      <span class="pval" id="per1-val">2.007 s</span>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Frequência de integração RK4</span>
+      <div class="range-wrap">
+        <input type="range" id="freq_1" min="0" max="7" value="6" step="1">
+        <span class="rval" id="freq_1v">4 kHz</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Baixo = rápido / impreciso &nbsp;|&nbsp; Alto = lento / preciso</div>
+    </div>
+
+    <div class="info-box" id="info_1">
+      <span id="info_1-lbl">Energia inicial:</span>
+      <span class="ivals" id="info_1-val">—</span>
     </div>
   </div>
 
-  <!-- ── Canvas ── -->
+  <!-- Canvas -->
   <div class="canvas-area">
-    <canvas id="pendCanvas" width="440" height="470"></canvas>
+    <canvas id="pendCanvas" width="520" height="490"></canvas>
     <div class="time-badge">t = <span id="tDisplay">0.00</span> s</div>
   </div>
 
-  <!-- ── Panel 2 ── -->
+  <!-- Panel 2 -->
   <div class="panel p2" id="panel-2">
-    <div class="panel-title">Pêndulo 2</div>
+    <div class="panel-title">Simulação 2</div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Ângulo inicial (θ₀)</span>
+      <span class="ctrl-label">Ângulo inicial — 1º braço (θ₁)</span>
       <div class="range-wrap">
-        <input type="range" id="a2" min="-180" max="180" value="30" step="1">
-        <input type="number" class="rval angle-num" id="a2v" value="30" min="-180" max="180" step="1">
+        <input type="range" id="a1_2" min="-180" max="180" value="91" step="1">
+        <input type="number" class="rval angle-num" id="a1_2v" value="91" min="-180" max="180" step="1">
       </div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Comprimento L</span>
+      <span class="ctrl-label">Ângulo inicial — 2º braço (θ₂)</span>
       <div class="range-wrap">
-        <input type="range" id="l2" min="0.1" max="5.0" value="1.0" step="0.1">
-        <span class="rval" id="l2v">1.0 m</span>
+        <input type="range" id="a2_2" min="-180" max="180" value="90" step="1">
+        <input type="number" class="rval angle-num" id="a2_2v" value="90" min="-180" max="180" step="1">
       </div>
     </div>
 
     <div class="ctrl-group">
-      <span class="ctrl-label">Massa m</span>
+      <span class="ctrl-label">Comprimento — 1º braço (L₁)</span>
       <div class="range-wrap">
-        <input type="range" id="m2" min="0.1" max="10" value="1.0" step="0.1">
-        <span class="rval" id="m2v">1.0 kg</span>
+        <input type="range" id="l1_2" min="0.1" max="3.0" value="1.0" step="0.05">
+        <span class="rval" id="l1_2v">1.00 m</span>
       </div>
-      <div class="mass-note">Não afeta o período (sem atrito)</div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Comprimento — 2º braço (L₂)</span>
+      <div class="range-wrap">
+        <input type="range" id="l2_2" min="0.1" max="3.0" value="1.0" step="0.05">
+        <span class="rval" id="l2_2v">1.00 m</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Massa — 1ª bob (m₁)</span>
+      <div class="range-wrap">
+        <input type="range" id="m1_2" min="0.1" max="10" value="1.0" step="0.1">
+        <span class="rval" id="m1_2v">1.0 kg</span>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <span class="ctrl-label">Massa — 2ª bob (m₂)</span>
+      <div class="range-wrap">
+        <input type="range" id="m2_2" min="0.1" max="10" value="1.0" step="0.1">
+        <span class="rval" id="m2_2v">1.0 kg</span>
+      </div>
     </div>
 
     <div class="ctrl-group">
       <span class="ctrl-label">Gravidade g (m/s²)</span>
-      <input type="number" class="num-input" id="g2" value="9.81" step="0.01" min="0.01">
-      <div class="g-presets" id="gp2">
+      <input type="number" class="num-input" id="g_2" value="9.81" step="0.01" min="0.01">
+      <div class="g-presets" id="gp_2">
         <button class="g-preset active" data-g="9.81">Terra</button>
         <button class="g-preset" data-g="1.62">Lua</button>
         <button class="g-preset" data-g="3.72">Marte</button>
@@ -387,160 +444,223 @@
     <div class="ctrl-group">
       <span class="ctrl-label">Método de solução</span>
       <div class="method-wrap">
-        <label class="method-opt selected" id="mo2-full">
-          <input type="radio" name="meth2" value="full" checked>
+        <label class="method-opt selected" id="mo1_2-full">
+          <input type="radio" name="meth_2" value="full" checked>
           <div>
             <div class="mtext">Solução completa</div>
-            <div class="msub">θ'' = −(g/L)·sin θ &nbsp;[RK4]</div>
+            <div class="msub">Lagrangiana não-linear [RK4]</div>
           </div>
         </label>
-        <label class="method-opt" id="mo2-small">
-          <input type="radio" name="meth2" value="small">
+        <label class="method-opt" id="mo1_2-small">
+          <input type="radio" name="meth_2" value="small">
           <div>
             <div class="mtext">Pequenos ângulos</div>
-            <div class="msub">θ'' ≈ −(g/L)·θ &nbsp;[analítica]</div>
+            <div class="msub">Linearizado (sin θ ≈ θ) [RK4]</div>
           </div>
         </label>
       </div>
     </div>
 
-    <div class="period-box" id="per2">
-      <span id="per2-lbl">Período estimado:</span>
-      <span class="pval" id="per2-val">2.007 s</span>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Frequência de integração RK4</span>
+      <div class="range-wrap">
+        <input type="range" id="freq_2" min="0" max="7" value="6" step="1">
+        <span class="rval" id="freq_2v">4 kHz</span>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">Baixo = rápido / impreciso &nbsp;|&nbsp; Alto = lento / preciso</div>
+    </div>
+
+    <div class="info-box" id="info_2">
+      <span id="info_2-lbl">Energia inicial:</span>
+      <span class="ivals" id="info_2-val">—</span>
     </div>
   </div>
 </div>
 
-<!-- Buttons -->
+<div class="speed-row">
+  <span>Velocidade da simulação:</span>
+  <input type="range" id="speedSlider" min="1" max="10" value="1" step="0.5">
+  <span class="speed-val" id="speedVal">1.0×</span>
+</div>
+
 <div class="btn-row">
   <button class="btn btn-start" id="btnStart">&#9654; Iniciar</button>
   <button class="btn btn-pause" id="btnPause" disabled>&#9646;&#9646; Pausar</button>
   <button class="btn btn-reset" id="btnReset">&#8635; Reiniciar</button>
 </div>
 
-<!-- Graph -->
 <div class="graph-wrap">
   <div class="graph-header">
-    <span>&#952;(t) &mdash; Ângulo ao longo do tempo</span>
+    <span>&#952;(t) — ângulo ao longo do tempo</span>
     <div class="legend">
-      <div class="leg-item"><div class="leg-p1"></div><span>Pêndulo 1 (sólido)</span></div>
-      <div class="leg-item"><div class="leg-p2"></div><span>Pêndulo 2 (tracejado)</span></div>
+      <div class="leg-item"><div class="leg-p1"></div><span>Sim 1</span></div>
+      <div class="leg-item"><div class="leg-p2"></div><span>Sim 2</span></div>
     </div>
   </div>
-  <canvas id="graphCanvas" height="140"></canvas>
+  <div class="graph-sub-label">&#952;&#8321;(t) — 1&#186; bra&#231;o</div>
+  <canvas class="gcv" id="g1c" height="118"></canvas>
+  <div class="graph-sub-label" style="margin-top:8px">&#952;&#8322;(t) — 2&#186; bra&#231;o</div>
+  <canvas class="gcv" id="g2c" height="118"></canvas>
 </div>
 
 <script>
 'use strict';
 
-const C1 = '#38bdf8';
-const C2 = '#fb7185';
-const TRAIL_LEN = 110;
-const PHYS_DT = 1 / 2000;
+const C1 = '#38bdf8', C2 = '#fb7185';
+const TRAIL_LEN = 180;
 const GRAPH_WIN = 20;
-const TAU = 2 * Math.PI;
+const TAU = Math.PI * 2;
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
 
+// DOM
 const pendCanvas = document.getElementById('pendCanvas');
 const pCtx = pendCanvas.getContext('2d');
-const graphCanvas = document.getElementById('graphCanvas');
-const gCtx = graphCanvas.getContext('2d');
+const g1c = document.getElementById('g1c');
+const g2c = document.getElementById('g2c');
+const g1Ctx = g1c.getContext('2d');
+const g2Ctx = g2c.getContext('2d');
 const tDisplay = document.getElementById('tDisplay');
 const btnStart = document.getElementById('btnStart');
 const btnPause = document.getElementById('btnPause');
 const btnReset = document.getElementById('btnReset');
 
-let running = false;
-let paused = false;
-let simTime = 0;
-let lastTs = null;
-let physAccum = 0;
-let rafId = null;
+// Simulation state
+let running = false, paused = false;
+let simTime = 0, lastTs = null, physAccum = [0, 0], rafId = null;
+let timeScale = 1;
+
+const FREQ_OPTIONS = [60, 120, 240, 500, 1000, 2000, 4000, 10000];
+const FREQ_DEFAULT = 6; // index → 4000 Hz
+
+function fmtFreq(hz) {
+  return hz >= 1000 ? (hz / 1000) + ' kHz' : hz + ' Hz';
+}
 
 const params = [
-  { angle0: 30, L: 1.0, m: 1.0, g: 9.81, method: 'full' },
-  { angle0: 30, L: 1.0, m: 1.0, g: 9.81, method: 'full' },
+  { a1: 90, a2: 90, L1: 1.0, L2: 1.0, m1: 1.0, m2: 1.0, g: 9.81, method: 'full', freqHz: 4000 },
+  { a1: 91, a2: 90, L1: 1.0, L2: 1.0, m1: 1.0, m2: 1.0, g: 9.81, method: 'full', freqHz: 4000 },
 ];
 
 const phys = [
-  { theta: 0, omega: 0, t: 0 },
-  { theta: 0, omega: 0, t: 0 },
+  { th1: 0, om1: 0, th2: 0, om2: 0, t: 0 },
+  { th1: 0, om1: 0, th2: 0, om2: 0, t: 0 },
 ];
 
 const trails = [[], []];
-const history = [[], []];
+const hist1 = [[], []]; // theta1 history per sim
+const hist2 = [[], []]; // theta2 history per sim
 
-// ── Physics ─────────────────────────────────────────────────────────────────
+// ── Physics ──────────────────────────────────────────────────────────────────
+
+function derivFull(th1, om1, th2, om2, p) {
+  const { m1, m2, L1, L2, g } = p;
+  const dth = th1 - th2;
+  const D = 2*m1 + m2 - m2*Math.cos(2*dth);
+  const dom1 = (
+    -g*(2*m1+m2)*Math.sin(th1)
+    - m2*g*Math.sin(th1-2*th2)
+    - 2*Math.sin(dth)*m2*(om2*om2*L2 + om1*om1*L1*Math.cos(dth))
+  ) / (L1*D);
+  const dom2 = (
+    2*Math.sin(dth)*(
+      om1*om1*L1*(m1+m2)
+      + g*(m1+m2)*Math.cos(th1)
+      + om2*om2*L2*m2*Math.cos(dth)
+    )
+  ) / (L2*D);
+  return [om1, dom1, om2, dom2];
+}
+
+function derivSmall(th1, om1, th2, om2, p) {
+  const { m1, m2, L1, L2, g } = p;
+  const dom1 = (-(m1+m2)*g*th1 + m2*g*th2) / (m1*L1);
+  const dom2 = g*(m1+m2)*(th1-th2) / (m1*L2);
+  return [om1, dom1, om2, dom2];
+}
 
 function stepPhysics(idx, dt) {
   const p = params[idx];
   const s = phys[idx];
+  const dfn = p.method === 'small' ? derivSmall : derivFull;
+  const { th1, om1, th2, om2 } = s;
 
+  const k1 = dfn(th1,             om1,             th2,             om2,             p);
+  const k2 = dfn(th1+.5*dt*k1[0], om1+.5*dt*k1[1], th2+.5*dt*k1[2], om2+.5*dt*k1[3], p);
+  const k3 = dfn(th1+.5*dt*k2[0], om1+.5*dt*k2[1], th2+.5*dt*k2[2], om2+.5*dt*k2[3], p);
+  const k4 = dfn(th1+   dt*k3[0], om1+   dt*k3[1], th2+   dt*k3[2], om2+   dt*k3[3], p);
+
+  s.th1 += dt/6*(k1[0]+2*k2[0]+2*k3[0]+k4[0]);
+  s.om1 += dt/6*(k1[1]+2*k2[1]+2*k3[1]+k4[1]);
+  s.th2 += dt/6*(k1[2]+2*k2[2]+2*k3[2]+k4[2]);
+  s.om2 += dt/6*(k1[3]+2*k2[3]+2*k3[3]+k4[3]);
+  s.t += dt;
+}
+
+// ── Info box ─────────────────────────────────────────────────────────────────
+
+function initEnergy(idx) {
+  const p = params[idx];
+  const th1 = p.a1 * D2R, th2 = p.a2 * D2R;
+  return (p.m1+p.m2)*p.g*p.L1*(1-Math.cos(th1)) + p.m2*p.g*p.L2*(1-Math.cos(th2));
+}
+
+function normalPeriods(p) {
+  const { m1, m2, L1, L2, g } = p;
+  const M = m1+m2;
+  const a = m1*L1*L2;
+  const b = M*g*(L1+L2);
+  const disc = M*g*g*(M*(L1+L2)*(L1+L2) - 4*m1*L1*L2);
+  const sq = Math.sqrt(Math.max(0, disc));
+  const w2s = (b - sq) / (2*a);
+  const w2f = (b + sq) / (2*a);
+  if (w2s <= 0) return null;
+  return { Ts: TAU/Math.sqrt(w2s), Tf: TAU/Math.sqrt(w2f) };
+}
+
+function updateInfoBox(idx) {
+  const p = params[idx];
+  const lbl = document.getElementById(`info_${idx+1}-lbl`);
+  const val = document.getElementById(`info_${idx+1}-val`);
   if (p.method === 'small') {
-    const w0 = Math.sqrt(p.g / p.L);
-    const th0 = p.angle0 * Math.PI / 180;
-    s.t += dt;
-    s.theta = th0 * Math.cos(w0 * s.t);
-    s.omega = -th0 * w0 * Math.sin(w0 * s.t);
+    const nm = normalPeriods(p);
+    lbl.textContent = 'Modos normais (pequenos ângulos):';
+    val.textContent = nm
+      ? `Lento: ${nm.Ts.toFixed(3)} s  |  Rápido: ${nm.Tf.toFixed(3)} s`
+      : '—';
   } else {
-    const accel = (th) => -(p.g / p.L) * Math.sin(th);
-    const th = s.theta, om = s.omega;
-
-    const k1v = om,               k1a = accel(th);
-    const k2v = om + .5*dt*k1a,  k2a = accel(th + .5*dt*k1v);
-    const k3v = om + .5*dt*k2a,  k3a = accel(th + .5*dt*k2v);
-    const k4v = om +    dt*k3a,  k4a = accel(th +    dt*k3v);
-
-    s.theta += dt / 6 * (k1v + 2*k2v + 2*k3v + k4v);
-    s.omega += dt / 6 * (k1a + 2*k2a + 2*k3a + k4a);
-    s.t += dt;
+    const E = initEnergy(idx);
+    lbl.textContent = 'Energia inicial (conservada):';
+    val.textContent = E.toFixed(4) + ' J';
   }
 }
 
-// ── Period display ───────────────────────────────────────────────────────────
-
-function updatePeriod(idx) {
-  const { L, g, angle0, method } = params[idx];
-  const T0 = TAU * Math.sqrt(L / g);
-  const th0 = angle0 * Math.PI / 180;
-  const Ts = T0 * (1 + th0*th0/16 + 11*th0*th0*th0*th0/3072);
-
-  const lbl = document.getElementById(`per${idx+1}-lbl`);
-  const val = document.getElementById(`per${idx+1}-val`);
-
-  if (method === 'small') {
-    lbl.textContent = 'Período (linear):';
-    val.textContent = T0.toFixed(3) + ' s';
-  } else {
-    lbl.textContent = 'Período estimado (série):';
-    val.textContent = Ts.toFixed(3) + ' s';
-  }
-}
-
-// ── Reset ────────────────────────────────────────────────────────────────────
+// ── Reset ─────────────────────────────────────────────────────────────────────
 
 function resetSim() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-  running = false;
-  paused = false;
-  simTime = 0;
-  lastTs = null;
-  physAccum = 0;
+  running = false; paused = false;
+  simTime = 0; lastTs = null; physAccum = [0, 0];
 
   for (let i = 0; i < 2; i++) {
-    phys[i].theta = params[i].angle0 * Math.PI / 180;
-    phys[i].omega = 0;
+    phys[i].th1 = params[i].a1 * D2R;
+    phys[i].om1 = 0;
+    phys[i].th2 = params[i].a2 * D2R;
+    phys[i].om2 = 0;
     phys[i].t = 0;
     trails[i] = [];
-    history[i] = [];
+    hist1[i] = [];
+    hist2[i] = [];
   }
 
   tDisplay.textContent = '0.00';
   btnStart.disabled = false;
   btnPause.disabled = true;
-  btnPause.textContent = '⎮⎮ Pausar';
+  btnPause.innerHTML = '&#9646;&#9646; Pausar';
   setLocked(false);
-  drawFrame(false);
-  drawGraph();
+  drawPend(false);
+  drawGraph(g1Ctx, g1c, hist1, 'theta1');
+  drawGraph(g2Ctx, g2c, hist2, 'theta2');
 }
 
 function setLocked(v) {
@@ -548,396 +668,343 @@ function setLocked(v) {
   document.getElementById('panel-2').classList.toggle('locked', v);
 }
 
-// ── Draw pendulum canvas ─────────────────────────────────────────────────────
+// ── Draw pendulum canvas ──────────────────────────────────────────────────────
 
-function drawFrame(addTrail) {
-  const W = pendCanvas.width;
-  const H = pendCanvas.height;
-  const cx = W / 2;
-  const pivY = 52;
+function drawPend(addTrail) {
+  const W = pendCanvas.width, H = pendCanvas.height;
+  const cx = W/2, pivY = 52;
 
   pCtx.clearRect(0, 0, W, H);
   pCtx.fillStyle = '#0d1117';
   pCtx.fillRect(0, 0, W, H);
 
-  const maxL = Math.max(params[0].L, params[1].L, 0.1);
-  const scale = (H - pivY - 28) / maxL;
+  const maxLen = Math.max(
+    params[0].L1+params[0].L2,
+    params[1].L1+params[1].L2, 0.2
+  );
+  // Scale must fit L1+L2 in any direction: horizontal and vertical
+  const scale = Math.min(
+    (W/2 - 35) / maxLen,
+    (H - pivY - 35) / maxLen
+  );
 
   // Ceiling
-  pCtx.strokeStyle = '#475569';
-  pCtx.lineWidth = 2;
-  pCtx.beginPath();
-  pCtx.moveTo(cx - 55, pivY);
-  pCtx.lineTo(cx + 55, pivY);
-  pCtx.stroke();
+  pCtx.strokeStyle = '#475569'; pCtx.lineWidth = 2;
+  pCtx.beginPath(); pCtx.moveTo(cx-55, pivY); pCtx.lineTo(cx+55, pivY); pCtx.stroke();
   pCtx.lineWidth = 1.5;
-  for (let x = cx - 44; x <= cx + 44; x += 11) {
-    pCtx.beginPath();
-    pCtx.moveTo(x, pivY);
-    pCtx.lineTo(x - 7, pivY - 7);
-    pCtx.stroke();
+  for (let x = cx-44; x <= cx+44; x += 11) {
+    pCtx.beginPath(); pCtx.moveTo(x, pivY); pCtx.lineTo(x-7, pivY-7); pCtx.stroke();
   }
 
-  // Equilibrium line
-  pCtx.beginPath();
-  pCtx.moveTo(cx, pivY);
-  pCtx.lineTo(cx, pivY + maxL * scale + 12);
-  pCtx.strokeStyle = '#1e293b';
-  pCtx.lineWidth = 1;
-  pCtx.setLineDash([4, 4]);
-  pCtx.stroke();
-  pCtx.setLineDash([]);
+  // Vertical ref
+  pCtx.beginPath(); pCtx.moveTo(cx, pivY); pCtx.lineTo(cx, H-20);
+  pCtx.strokeStyle = '#1e293b'; pCtx.lineWidth = 1;
+  pCtx.setLineDash([4,4]); pCtx.stroke(); pCtx.setLineDash([]);
 
-  // Draw pendulums — P2 behind P1
+  // Draw both — sim 2 behind sim 1
   for (let i = 1; i >= 0; i--) {
     const col = i === 0 ? C1 : C2;
-    const { theta } = phys[i];
-    const { L, m } = params[i];
-    const bx = cx + scale * L * Math.sin(theta);
-    const by = pivY + scale * L * Math.cos(theta);
+    const s = phys[i], p = params[i];
+
+    const b1x = cx + scale*p.L1*Math.sin(s.th1);
+    const b1y = pivY + scale*p.L1*Math.cos(s.th1);
+    const b2x = b1x + scale*p.L2*Math.sin(s.th2);
+    const b2y = b1y + scale*p.L2*Math.cos(s.th2);
 
     if (addTrail) {
-      trails[i].push([bx, by]);
+      trails[i].push([b2x, b2y]);
       if (trails[i].length > TRAIL_LEN) trails[i].shift();
     }
 
-    // Trail
+    // Trail (bob 2 only)
     if (trails[i].length > 1) {
       for (let j = 1; j < trails[i].length; j++) {
-        pCtx.globalAlpha = (j / trails[i].length) * 0.4;
+        pCtx.globalAlpha = (j / trails[i].length) * 0.38;
         pCtx.beginPath();
         pCtx.moveTo(trails[i][j-1][0], trails[i][j-1][1]);
         pCtx.lineTo(trails[i][j][0], trails[i][j][1]);
-        pCtx.strokeStyle = col;
-        pCtx.lineWidth = 1.8;
-        pCtx.stroke();
+        pCtx.strokeStyle = col; pCtx.lineWidth = 1.8; pCtx.stroke();
       }
       pCtx.globalAlpha = 1;
     }
 
-    // Rod
-    pCtx.beginPath();
-    pCtx.moveTo(cx, pivY);
-    pCtx.lineTo(bx, by);
-    pCtx.strokeStyle = col;
-    pCtx.lineWidth = i === 0 ? 2.5 : 2;
-    pCtx.setLineDash(i === 0 ? [] : [9, 5]);
-    pCtx.globalAlpha = 0.92;
-    pCtx.stroke();
-    pCtx.setLineDash([]);
-    pCtx.globalAlpha = 1;
+    const dash = i === 0 ? [] : [9,5];
 
-    // Bob
-    const r = 7 + (m - 0.1) / 9.9 * 15;
-    const grad = pCtx.createRadialGradient(bx - r*0.3, by - r*0.35, r*0.08, bx, by, r);
-    grad.addColorStop(0, '#ffffffaa');
-    grad.addColorStop(0.35, col);
-    grad.addColorStop(1, col + '44');
-    pCtx.beginPath();
-    pCtx.arc(bx, by, r, 0, TAU);
-    pCtx.fillStyle = grad;
-    pCtx.fill();
-    pCtx.strokeStyle = col;
-    pCtx.lineWidth = 1.5;
-    pCtx.stroke();
+    // Arm 1
+    pCtx.beginPath(); pCtx.moveTo(cx, pivY); pCtx.lineTo(b1x, b1y);
+    pCtx.strokeStyle = col; pCtx.lineWidth = i===0 ? 2.5 : 2;
+    pCtx.setLineDash(dash); pCtx.globalAlpha = 0.92; pCtx.stroke();
+    pCtx.setLineDash([]); pCtx.globalAlpha = 1;
+
+    // Arm 2
+    pCtx.beginPath(); pCtx.moveTo(b1x, b1y); pCtx.lineTo(b2x, b2y);
+    pCtx.strokeStyle = col; pCtx.lineWidth = i===0 ? 2.5 : 2;
+    pCtx.setLineDash(dash); pCtx.globalAlpha = 0.92; pCtx.stroke();
+    pCtx.setLineDash([]); pCtx.globalAlpha = 1;
+
+    // Bob 1 (intermediate)
+    const r1 = 4 + (p.m1-0.1)/9.9*9;
+    const g1 = pCtx.createRadialGradient(b1x-r1*.3, b1y-.35*r1, r1*.05, b1x, b1y, r1);
+    g1.addColorStop(0,'#ffffff88'); g1.addColorStop(0.4,col); g1.addColorStop(1,col+'44');
+    pCtx.beginPath(); pCtx.arc(b1x, b1y, r1, 0, TAU);
+    pCtx.fillStyle = g1; pCtx.fill();
+    pCtx.strokeStyle = col; pCtx.lineWidth = 1; pCtx.stroke();
+
+    // Bob 2 (end)
+    const r2 = 6 + (p.m2-0.1)/9.9*13;
+    const g2 = pCtx.createRadialGradient(b2x-r2*.3, b2y-.35*r2, r2*.05, b2x, b2y, r2);
+    g2.addColorStop(0,'#ffffffaa'); g2.addColorStop(0.35,col); g2.addColorStop(1,col+'44');
+    pCtx.beginPath(); pCtx.arc(b2x, b2y, r2, 0, TAU);
+    pCtx.fillStyle = g2; pCtx.fill();
+    pCtx.strokeStyle = col; pCtx.lineWidth = 1.5; pCtx.stroke();
   }
 
   // Pivot
-  pCtx.beginPath();
-  pCtx.arc(cx, pivY, 5, 0, TAU);
-  pCtx.fillStyle = '#64748b';
-  pCtx.fill();
-  pCtx.strokeStyle = '#94a3b8';
-  pCtx.lineWidth = 1;
-  pCtx.stroke();
+  pCtx.beginPath(); pCtx.arc(cx, pivY, 5, 0, TAU);
+  pCtx.fillStyle = '#64748b'; pCtx.fill();
+  pCtx.strokeStyle = '#94a3b8'; pCtx.lineWidth = 1; pCtx.stroke();
 
-  // Angle overlays
-  pCtx.font = '12px monospace';
-  const labels = [
-    { col: C1, txt: `P1: ${(phys[0].theta * 180/Math.PI).toFixed(1)}°` },
-    { col: C2, txt: `P2: ${(phys[1].theta * 180/Math.PI).toFixed(1)}°` },
-  ];
-  labels.forEach((lb, i) => {
-    pCtx.fillStyle = lb.col;
-    pCtx.fillText(lb.txt, 8, pivY + 16 + i * 17);
-  });
-
-  // Method badges
-  pCtx.font = '10px monospace';
-  const mLabels = [
-    { col: C1, txt: params[0].method === 'small' ? 'P1: aprox.' : 'P1: RK4' },
-    { col: C2, txt: params[1].method === 'small' ? 'P2: aprox.' : 'P2: RK4' },
-  ];
-  mLabels.forEach((lb, i) => {
-    pCtx.fillStyle = lb.col;
-    pCtx.fillText(lb.txt, W - 70, pivY + 16 + i * 15);
+  // Angle labels
+  pCtx.font = '11px monospace';
+  [0,1].forEach(i => {
+    const s = phys[i];
+    pCtx.fillStyle = i===0 ? C1 : C2;
+    const th1d = (s.th1*R2D).toFixed(1), th2d = (s.th2*R2D).toFixed(1);
+    pCtx.fillText(`S${i+1}: θ₁=${th1d}° θ₂=${th2d}°`, 8, pivY+14+i*15);
   });
 }
 
-// ── Draw graph ───────────────────────────────────────────────────────────────
+// ── Draw graph ────────────────────────────────────────────────────────────────
 
-function drawGraph() {
-  const W = graphCanvas.width;
-  const H = graphCanvas.height;
-  const PAD = { l: 42, r: 10, t: 8, b: 22 };
-  const pw = W - PAD.l - PAD.r;
-  const ph = H - PAD.t - PAD.b;
+function drawGraph(ctx, cv, histArr, _key) {
+  const W = cv.width, H = cv.height;
+  const PAD = {l:40,r:8,t:6,b:22};
+  const pw = W-PAD.l-PAD.r, ph = H-PAD.t-PAD.b;
 
-  gCtx.clearRect(0, 0, W, H);
-  gCtx.fillStyle = '#0d1117';
-  gCtx.fillRect(0, 0, W, H);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0d1117'; ctx.fillRect(0,0,W,H);
 
-  const maxDeg = Math.max(Math.abs(params[0].angle0), Math.abs(params[1].angle0), 10) * 1.12;
+  // Y range: based on actual history + initial angles
+  let maxDeg = Math.max(
+    Math.abs(params[0].a1), Math.abs(params[0].a2),
+    Math.abs(params[1].a1), Math.abs(params[1].a2),
+    15
+  );
+  for (const h of histArr[0]) maxDeg = Math.max(maxDeg, Math.abs(h.v*R2D));
+  for (const h of histArr[1]) maxDeg = Math.max(maxDeg, Math.abs(h.v*R2D));
+  maxDeg = maxDeg * 1.1;
 
-  // Y grid
-  const yTicks = [];
-  for (let v = -180; v <= 180; v += 30) {
-    if (Math.abs(v) <= maxDeg) yTicks.push(v);
+  // Y ticks
+  const step = maxDeg > 150 ? 60 : maxDeg > 90 ? 45 : maxDeg > 45 ? 30 : maxDeg > 20 ? 15 : 10;
+  ctx.font = '10px monospace'; ctx.textAlign = 'right';
+  for (let v = -Math.ceil(maxDeg/step)*step; v <= maxDeg; v += step) {
+    const y = PAD.t + ph*(1-(v+maxDeg)/(2*maxDeg));
+    ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(PAD.l+pw,y);
+    ctx.strokeStyle = v===0 ? '#2d3f55' : '#18253a';
+    ctx.lineWidth = v===0 ? 1 : 0.5; ctx.stroke();
+    ctx.fillStyle = v===0 ? '#64748b' : '#334155';
+    ctx.fillText(v+'°', PAD.l-3, y+3.5);
   }
 
-  gCtx.font = '10px monospace';
-  gCtx.textAlign = 'right';
-
-  for (const v of yTicks) {
-    const y = PAD.t + ph * (1 - (v + maxDeg) / (2 * maxDeg));
-    gCtx.beginPath();
-    gCtx.moveTo(PAD.l, y);
-    gCtx.lineTo(PAD.l + pw, y);
-    gCtx.strokeStyle = v === 0 ? '#2d3f55' : '#18253a';
-    gCtx.lineWidth = v === 0 ? 1 : 0.5;
-    gCtx.stroke();
-    gCtx.fillStyle = v === 0 ? '#64748b' : '#334155';
-    gCtx.fillText(v + '°', PAD.l - 4, y + 3.5);
+  // X ticks
+  const tEnd = simTime, tStart = Math.max(0, tEnd-GRAPH_WIN);
+  ctx.textAlign='center';
+  for (let t = Math.ceil(tStart/2)*2; t<=tEnd; t+=2) {
+    const x = PAD.l+pw*(t-tStart)/GRAPH_WIN;
+    if (x<PAD.l||x>PAD.l+pw) continue;
+    ctx.beginPath(); ctx.moveTo(x,PAD.t); ctx.lineTo(x,PAD.t+ph);
+    ctx.strokeStyle='#18253a'; ctx.lineWidth=0.5; ctx.stroke();
+    ctx.fillStyle='#334155'; ctx.fillText(t+'s', x, H-3);
   }
 
-  // X grid
-  const tEnd = simTime;
-  const tStart = Math.max(0, tEnd - GRAPH_WIN);
-  gCtx.textAlign = 'center';
-
-  for (let t = Math.ceil(tStart / 2) * 2; t <= tEnd; t += 2) {
-    const x = PAD.l + pw * (t - tStart) / GRAPH_WIN;
-    if (x < PAD.l || x > PAD.l + pw) continue;
-    gCtx.beginPath();
-    gCtx.moveTo(x, PAD.t);
-    gCtx.lineTo(x, PAD.t + ph);
-    gCtx.strokeStyle = '#18253a';
-    gCtx.lineWidth = 0.5;
-    gCtx.stroke();
-    gCtx.fillStyle = '#334155';
-    gCtx.fillText(t + 's', x, H - 3);
-  }
-
-  // Plot histories
+  // Plot
   for (let i = 0; i < 2; i++) {
-    if (history[i].length < 2) continue;
-    gCtx.beginPath();
+    if (histArr[i].length < 2) continue;
+    ctx.beginPath();
     let started = false;
-    for (const pt of history[i]) {
-      if (pt.t < tStart - 0.1) continue;
-      const x = PAD.l + pw * (pt.t - tStart) / GRAPH_WIN;
-      const y = PAD.t + ph * (1 - (pt.theta * 180/Math.PI + maxDeg) / (2 * maxDeg));
-      if (!started) { gCtx.moveTo(x, y); started = true; }
-      else gCtx.lineTo(x, y);
+    for (let j = 0; j < histArr[i].length; j++) {
+      const entry = histArr[i][j];
+      if (!entry || entry.t < tStart-0.1) continue;
+      const x = PAD.l+pw*(entry.t-tStart)/GRAPH_WIN;
+      const y = PAD.t+ph*(1-(entry.v*R2D+maxDeg)/(2*maxDeg));
+      if (!started) { ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
     }
-    gCtx.strokeStyle = i === 0 ? C1 : C2;
-    gCtx.lineWidth = 1.5;
-    if (i === 1) gCtx.setLineDash([6, 3]);
-    gCtx.stroke();
-    gCtx.setLineDash([]);
+    ctx.strokeStyle = i===0 ? C1 : C2;
+    ctx.lineWidth = 1.5;
+    if (i===1) ctx.setLineDash([6,3]);
+    ctx.stroke(); ctx.setLineDash([]);
   }
 
-  // Border
-  gCtx.strokeStyle = '#334155';
-  gCtx.lineWidth = 1;
-  gCtx.strokeRect(PAD.l, PAD.t, pw, ph);
+  ctx.strokeStyle='#334155'; ctx.lineWidth=1;
+  ctx.strokeRect(PAD.l,PAD.t,pw,ph);
 }
 
-// ── Animation loop ───────────────────────────────────────────────────────────
+// ── Animation loop ────────────────────────────────────────────────────────────
 
 function animate(ts) {
-  if (!running || paused) return;
+  if (!running||paused) return;
+  if (lastTs===null) lastTs=ts;
+  const fdt = Math.min((ts-lastTs)/1000, 0.05) * timeScale;
+  lastTs=ts;
 
-  if (lastTs === null) lastTs = ts;
-  const frameDt = Math.min((ts - lastTs) / 1000, 0.05);
-  lastTs = ts;
+  for (let i = 0; i < 2; i++) {
+    const dt_i = 1 / params[i].freqHz;
+    physAccum[i] += fdt;
+    while (physAccum[i] >= dt_i) {
+      stepPhysics(i, dt_i);
+      physAccum[i] -= dt_i;
+    }
+  }
+  simTime += fdt;
 
-  physAccum += frameDt;
-  while (physAccum >= PHYS_DT) {
-    for (let i = 0; i < 2; i++) stepPhysics(i, PHYS_DT);
-    simTime += PHYS_DT;
-    physAccum -= PHYS_DT;
+  // Record (once per frame ~60 Hz)
+  for (let i=0;i<2;i++) {
+    hist1[i].push({t:simTime, v:phys[i].th1});
+    hist2[i].push({t:simTime, v:phys[i].th2});
   }
 
-  // Record once per frame (~60 Hz)
-  for (let i = 0; i < 2; i++) {
-    history[i].push({ t: simTime, theta: phys[i].theta });
-  }
-
-  // Trim old data
-  const cutoff = simTime - GRAPH_WIN - 2;
-  for (let i = 0; i < 2; i++) {
-    if (history[i].length > 0 && history[i][0].t < cutoff) {
-      const idx = history[i].findIndex(p => p.t >= cutoff);
-      if (idx > 1) history[i].splice(0, idx - 1);
+  // Trim old
+  const cut = simTime-GRAPH_WIN-2;
+  for (let i=0;i<2;i++) {
+    for (const h of [hist1,hist2]) {
+      if (h[i].length>0 && h[i][0].t<cut) {
+        const idx = h[i].findIndex(p=>p.t>=cut);
+        if (idx>1) h[i].splice(0,idx-1);
+      }
     }
   }
 
   tDisplay.textContent = simTime.toFixed(2);
-  drawFrame(true);
-  drawGraph();
+  drawPend(true);
+  drawGraph(g1Ctx, g1c, hist1);
+  drawGraph(g2Ctx, g2c, hist2);
 
   rafId = requestAnimationFrame(animate);
 }
 
-// ── UI wiring ────────────────────────────────────────────────────────────────
+// ── UI wiring ─────────────────────────────────────────────────────────────────
 
-function wireSlider(id, dispId, suffix, dec, key, idx) {
-  const el = document.getElementById(id);
-  const dsp = document.getElementById(dispId);
-  el.addEventListener('input', () => {
-    const v = parseFloat(el.value);
-    dsp.textContent = v.toFixed(dec) + suffix;
-    params[idx][key] = v;
-    if (key === 'angle0' && !running) {
-      phys[idx].theta = v * Math.PI / 180;
-    }
-    updatePeriod(idx);
-    if (!running) drawFrame(false);
-  });
-}
-
-function wireAngle(sliderId, numId, idx) {
+function wireAngle(sliderId, numId, idx, key) {
   const slider = document.getElementById(sliderId);
   const num = document.getElementById(numId);
-
   function apply(v) {
     v = Math.max(-180, Math.min(180, Math.round(v)));
-    slider.value = v;
-    num.value = v;
-    params[idx].angle0 = v;
-    if (!running) {
-      phys[idx].theta = v * Math.PI / 180;
-      drawFrame(false);
-    }
-    updatePeriod(idx);
+    slider.value = v; num.value = v;
+    params[idx][key] = v;
+    if (!running) { phys[idx][key==='a1'?'th1':'th2'] = v*D2R; drawPend(false); }
+    updateInfoBox(idx);
   }
+  slider.addEventListener('input', ()=>apply(parseFloat(slider.value)));
+  num.addEventListener('input', ()=>{ const v=parseFloat(num.value); if(!isNaN(v)) apply(v); });
+  num.addEventListener('change', ()=>{ const v=parseFloat(num.value); apply(isNaN(v)?params[idx][key]:v); });
+}
 
-  slider.addEventListener('input', () => apply(parseFloat(slider.value)));
-  num.addEventListener('input', () => {
-    const v = parseFloat(num.value);
-    if (!isNaN(v)) apply(v);
-  });
-  num.addEventListener('change', () => {
-    const v = parseFloat(num.value);
-    num.value = isNaN(v) ? params[idx].angle0 : Math.max(-180, Math.min(180, Math.round(v)));
-    apply(parseFloat(num.value));
+function wireSlider(id, dispId, suffix, dec, key, idx) {
+  const el=document.getElementById(id), dsp=document.getElementById(dispId);
+  el.addEventListener('input', ()=>{
+    const v=parseFloat(el.value);
+    dsp.textContent = v.toFixed(dec)+suffix;
+    params[idx][key]=v;
+    updateInfoBox(idx);
+    if (!running) drawPend(false);
   });
 }
 
-wireAngle('a1', 'a1v', 0);
-wireSlider('l1', 'l1v', ' m', 1, 'L', 0);
-wireSlider('m1', 'm1v', ' kg', 1, 'm', 0);
-wireAngle('a2', 'a2v', 1);
-wireSlider('l2', 'l2v', ' m', 1, 'L', 1);
-wireSlider('m2', 'm2v', ' kg', 1, 'm', 1);
-
-function wireGInput(id, idx, presetsId) {
-  const el = document.getElementById(id);
-  el.addEventListener('input', () => {
-    const v = Math.max(0.01, parseFloat(el.value) || 9.81);
-    params[idx].g = v;
-    updatePresetActive(presetsId, v);
-    updatePeriod(idx);
-    if (!running) drawFrame(false);
+function wireG(inputId, presetsId, idx) {
+  const el=document.getElementById(inputId);
+  el.addEventListener('input', ()=>{
+    const v=Math.max(0.01, parseFloat(el.value)||9.81);
+    params[idx].g=v;
+    updatePresets(presetsId,v);
+    updateInfoBox(idx);
+    if (!running) drawPend(false);
   });
-}
-
-wireGInput('g1', 0, 'gp1');
-wireGInput('g2', 1, 'gp2');
-
-function updatePresetActive(presetsId, g) {
-  document.querySelectorAll(`#${presetsId} .g-preset`).forEach(btn => {
-    btn.classList.toggle('active', Math.abs(parseFloat(btn.dataset.g) - g) < 0.001);
-  });
-}
-
-document.querySelectorAll('#gp1 .g-preset').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const v = parseFloat(btn.dataset.g);
-    document.getElementById('g1').value = v;
-    params[0].g = v;
-    updatePresetActive('gp1', v);
-    updatePeriod(0);
-    if (!running) drawFrame(false);
-  });
-});
-
-document.querySelectorAll('#gp2 .g-preset').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const v = parseFloat(btn.dataset.g);
-    document.getElementById('g2').value = v;
-    params[1].g = v;
-    updatePresetActive('gp2', v);
-    updatePeriod(1);
-    if (!running) drawFrame(false);
-  });
-});
-
-// Method radios
-for (let i = 0; i < 2; i++) {
-  const n = i + 1;
-  ['full', 'small'].forEach(val => {
-    const radio = document.querySelector(`input[name="meth${n}"][value="${val}"]`);
-    radio.addEventListener('change', function () {
-      if (!this.checked) return;
-      params[i].method = val;
-      document.getElementById(`mo${n}-full`).classList.toggle('selected', val === 'full');
-      document.getElementById(`mo${n}-small`).classList.toggle('selected', val === 'small');
-      updatePeriod(i);
+  document.querySelectorAll(`#${presetsId} .g-preset`).forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const v=parseFloat(btn.dataset.g);
+      el.value=v; params[idx].g=v;
+      updatePresets(presetsId,v);
+      updateInfoBox(idx);
+      if (!running) drawPend(false);
     });
   });
 }
 
-// Buttons
-btnStart.addEventListener('click', () => {
+function updatePresets(pid, g) {
+  document.querySelectorAll(`#${pid} .g-preset`).forEach(b=>{
+    b.classList.toggle('active', Math.abs(parseFloat(b.dataset.g)-g)<0.001);
+  });
+}
+
+function wireFreq(sliderId, dispId, idx) {
+  const slider = document.getElementById(sliderId);
+  const disp = document.getElementById(dispId);
+  slider.addEventListener('input', () => {
+    const hz = FREQ_OPTIONS[parseInt(slider.value)];
+    params[idx].freqHz = hz;
+    disp.textContent = fmtFreq(hz);
+  });
+}
+
+// Wire all controls for both sims
+for (let i=0;i<2;i++) {
+  const n=i+1;
+  wireAngle(`a1_${n}`,`a1_${n}v`, i, 'a1');
+  wireAngle(`a2_${n}`,`a2_${n}v`, i, 'a2');
+  wireSlider(`l1_${n}`,`l1_${n}v`,' m', 2, 'L1', i);
+  wireSlider(`l2_${n}`,`l2_${n}v`,' m', 2, 'L2', i);
+  wireSlider(`m1_${n}`,`m1_${n}v`,' kg',1,'m1', i);
+  wireSlider(`m2_${n}`,`m2_${n}v`,' kg',1,'m2', i);
+  wireG(`g_${n}`,`gp_${n}`, i);
+  wireFreq(`freq_${n}`,`freq_${n}v`, i);
+
+  ['full','small'].forEach(val=>{
+    document.querySelector(`input[name="meth_${n}"][value="${val}"]`).addEventListener('change', function(){
+      if (!this.checked) return;
+      params[i].method=val;
+      document.getElementById(`mo1_${n}-full`).classList.toggle('selected', val==='full');
+      document.getElementById(`mo1_${n}-small`).classList.toggle('selected', val==='small');
+      updateInfoBox(i);
+    });
+  });
+}
+
+btnStart.addEventListener('click', ()=>{
   if (running) return;
-  running = true;
-  paused = false;
-  lastTs = null;
-  setLocked(true);
-  btnStart.disabled = true;
-  btnPause.disabled = false;
-  rafId = requestAnimationFrame(animate);
+  running=true; paused=false; lastTs=null;
+  setLocked(true); btnStart.disabled=true; btnPause.disabled=false;
+  rafId=requestAnimationFrame(animate);
 });
 
-btnPause.addEventListener('click', () => {
+btnPause.addEventListener('click', ()=>{
   if (!running) return;
-  paused = !paused;
-  if (paused) {
-    lastTs = null;
-    btnPause.innerHTML = '&#9654; Retomar';
-  } else {
-    btnPause.innerHTML = '&#9646;&#9646; Pausar';
-    rafId = requestAnimationFrame(animate);
-  }
+  paused=!paused;
+  if (paused) { lastTs=null; btnPause.innerHTML='&#9654; Retomar'; }
+  else { btnPause.innerHTML='&#9646;&#9646; Pausar'; rafId=requestAnimationFrame(animate); }
 });
 
 btnReset.addEventListener('click', resetSim);
 
-// Graph canvas resize
-function resizeGraph() {
-  const wrap = document.querySelector('.graph-wrap');
-  graphCanvas.width = Math.max(wrap.clientWidth - 28, 500);
-  if (!running) drawGraph();
+document.getElementById('speedSlider').addEventListener('input', function() {
+  timeScale = parseFloat(this.value);
+  document.getElementById('speedVal').textContent = timeScale.toFixed(1) + '×';
+});
+
+// Resize graph canvases
+function resizeGraphs() {
+  const w = Math.max(document.querySelector('.graph-wrap').clientWidth-28, 500);
+  g1c.width=w; g2c.width=w;
+  if (!running) {
+    drawGraph(g1Ctx, g1c, hist1);
+    drawGraph(g2Ctx, g2c, hist2);
+  }
 }
+window.addEventListener('resize', resizeGraphs);
 
-window.addEventListener('resize', resizeGraph);
-
-// ── Init ─────────────────────────────────────────────────────────────────────
-resizeGraph();
-updatePeriod(0);
-updatePeriod(1);
+// Init
+resizeGraphs();
+updateInfoBox(0);
+updateInfoBox(1);
 resetSim();
 </script>
 </body>
