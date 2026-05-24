@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador de Phantom Jams</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a1a; display: flex; overflow: hidden; font-family: sans-serif; }
+#canvas { display: block; flex-shrink: 0; }
+#panel {
+  width: 280px; min-width: 280px; background: #222; color: #eee;
+  display: flex; flex-direction: column; padding: 10px; gap: 6px;
+  overflow-y: auto; height: 100vh;
+}
+#panel h2 { font-size: 14px; text-align: center; color: #aaf; margin-bottom: 4px; }
+.section-title { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 6px; border-top: 1px solid #444; padding-top: 4px; }
+.ctrl { display: flex; flex-direction: column; gap: 2px; }
+.ctrl label { font-size: 12px; display: flex; justify-content: space-between; }
+.ctrl label span { color: #aaf; }
+.ctrl input[type=range] { width: 100%; accent-color: #4af; cursor: pointer; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+.toggle-btn { padding: 3px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.btn-green { background: #2a6; color: #fff; }
+.btn-red   { background: #a22; color: #fff; }
+.btn-action { width: 100%; padding: 5px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: #fff; background: #446; }
+.btn-action:hover { background: #558; }
+.metrics { background: #111; border-radius: 4px; padding: 6px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.metrics span { color: #8cf; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="panel">
+  <h2>Phantom Jam Simulator</h2>
+
+  <div class="section-title">Spawner</div>
+  <div class="ctrl">
+    <label>Taxa de entrada (carros/s) <span id="vSpawnRate">1.0</span></label>
+    <input type="range" id="spawnRate" min="0.1" max="20" step="0.1" value="1.0">
+  </div>
+  <div class="ctrl">
+    <label>% de Caminhões <span id="vTruckPct">15</span>%</label>
+    <input type="range" id="truckPct" min="0" max="100" step="1" value="15">
+  </div>
+
+  <div class="section-title">Física IDM</div>
+  <div class="ctrl">
+    <label>Tempo de Reação T (s) <span id="vReaction">1.5</span></label>
+    <input type="range" id="reaction" min="0.5" max="3.0" step="0.1" value="1.5">
+  </div>
+  <div class="ctrl">
+    <label>Nível de Ruído η <span id="vNoise">0.05</span></label>
+    <input type="range" id="noise" min="0.0" max="0.5" step="0.01" value="0.05">
+  </div>
+  <div class="ctrl">
+    <label>VMax Carros (km/h) <span id="vVMaxCar">120</span></label>
+    <input type="range" id="vmaxCar" min="60" max="160" step="5" value="120">
+  </div>
+  <div class="ctrl">
+    <label>VMax Caminhões (km/h) <span id="vVMaxTruck">80</span></label>
+    <input type="range" id="vmaxTruck" min="40" max="110" step="5" value="80">
+  </div>
+  <div class="ctrl">
+    <label>Acel. Máx. Carros (m/s²) <span id="vAmaxCar">1.5</span></label>
+    <input type="range" id="amaxCar" min="0.5" max="3.0" step="0.1" value="1.5">
+  </div>
+  <div class="ctrl">
+    <label>Acel. Máx. Caminhões (m/s²) <span id="vAmaxTruck">0.7</span></label>
+    <input type="range" id="amaxTruck" min="0.3" max="2.0" step="0.1" value="0.7">
+  </div>
+  <div class="ctrl">
+    <label>Variação VMax Carros (±%) <span id="vVdevCar">10</span>%</label>
+    <input type="range" id="vdevCar" min="0" max="50" step="1" value="10">
+  </div>
+  <div class="ctrl">
+    <label>Variação VMax Caminhões (±%) <span id="vVdevTruck">10</span>%</label>
+    <input type="range" id="vdevTruck" min="0" max="50" step="1" value="10">
+  </div>
+
+  <div class="section-title">Obstáculos</div>
+  <div class="toggle-row">
+    <span>Semáforo</span>
+    <button class="toggle-btn btn-green" id="trafficLightBtn" onclick="toggleLight()">VERDE</button>
+  </div>
+  <div class="toggle-row">
+    <span>Obras na Direita</span>
+    <button class="toggle-btn btn-green" id="constructionBtn" onclick="toggleConstruction()">OFF</button>
+  </div>
+
+  <div class="section-title">Simulação</div>
+  <div class="ctrl">
+    <label>Velocidade da Simulação <span id="vTimeScale">1</span>×</label>
+    <input type="range" id="timeScale" min="1" max="10" step="1" value="1">
+  </div>
+
+  <div class="section-title">Controles</div>
+  <button class="btn-action" onclick="pauseSim()">⏸ Pausar / Continuar</button>
+  <button class="btn-action" onclick="resetSim()">↺ Reset</button>
+  <button class="btn-action" onclick="restoreDefaults()">⚙ Restaurar Defaults</button>
+
+  <div class="section-title">Métricas</div>
+  <div class="metrics">
+    <div>Veículos: <span id="mVehicles">0</span></div>
+    <div>Vazão: <span id="mFlow">0</span> veíc/min</div>
+    <div>Vel. média: <span id="mSpeed">0.0</span> km/h</div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTES FIXAS ────────────────────────────────────────────────────────
+const DS        = 2;        // metros entre waypoints
+const M_TO_PX   = 2;
+const W_LANE    = 14;       // px
+const S0        = 2;        // m
+const B_MAX     = 9.0;
+const B_SAFE    = 4.0;
+const P_MOBIL   = 0.2;
+const DA_TH     = 0.2;
+const DA_BIAS   = 0.5;      // bônus forte para manter faixa direita
+const DT        = 1 / 60;
+const L_OBRA    = 30;
+let   S_LIGHT   = 900;   // metade da pista — recalculado em updateObstaclePositions()
+let   S_CONE    = 1200;  // 2/3 da pista  — recalculado em updateObstaclePositions()
+const LANE_DUR  = 1.0;
+const D_SAFE    = 14;
+const TARGET_PX_PER_M = 4.5; // escala visual da pista
+
+const VEHICLE_DEF = {
+  car:   { lenPx: 16, widPx: 8,  lenM: 4,  amax: 1.5, b: 2.0, v0base: 33 },
+  truck: { lenPx: 40, widPx: 10, lenM: 12, amax: 0.7, b: 1.8, v0base: 22 }
+};
+
+// ─── ESTADO GLOBAL ───────────────────────────────────────────────────────────
+let canvas, ctx;
+let waypoints = [];
+let L_TRACK = 1800;   // atualizado em buildWaypoints
+let N_WP    = 901;    // atualizado em buildWaypoints
+
+let vehicles = [], nextId = 0;
+let paused = false;
+let lightRed = false, constructionOn = false;
+let spawnAccum = 0;
+let despawnWindow = [];
+let accumulator = 0, lastTime = null;
+
+let params = {
+  spawnRate: 1.0, truckPct: 15, reaction: 1.5, noise: 0.05,
+  vmaxCar: 120 / 3.6, vmaxTruck: 80 / 3.6,
+  amaxCar: 1.5, amaxTruck: 0.7,
+  vdevCar: 0.10, vdevTruck: 0.10,
+  timeScale: 1
+};
+
+// ─── CONSTRUÇÃO DA PISTA (SERPENTINA HORIZONTAL) ──────────────────────────────
+function buildWaypoints() {
+  const W = canvas.width, H = canvas.height;
+  const PAD = 30;
+  const usableH = H - 2 * PAD;
+
+  // Número de fileiras conforme altura disponível (mínimo 3, ≥80 px entre fileiras)
+  const N_ROWS = Math.max(3, Math.round(usableH / 90) + 1);
+  const rowSpacing = usableH / (N_ROWS - 1);
+  const r = rowSpacing / 2;               // raio das semicurvas
+  const x0 = PAD + r;                    // início dos trechos retos
+  const x1 = W - PAD - r;               // fim dos trechos retos
+
+  // Pontos finos da pista: retas + semicírculos
+  const FINE_S = 200, FINE_C = 80;
+  const fp = [];
+
+  for (let row = 0; row < N_ROWS; row++) {
+    const y  = PAD + row * rowSpacing;
+    const ltr = (row % 2 === 0); // esquerda→direita ou direita→esquerda
+
+    // Trecho reto
+    const startI = (row === 0) ? 0 : 1; // evita duplicar o ponto de junção
+    for (let i = startI; i <= FINE_S; i++) {
+      const t = i / FINE_S;
+      fp.push({ x: ltr ? x0 + t * (x1 - x0) : x1 - t * (x1 - x0), y });
+    }
+
+    // Semicírculo ligando à próxima fileira
+    if (row < N_ROWS - 1) {
+      const ny  = PAD + (row + 1) * rowSpacing;
+      const cy  = (y + ny) / 2;
+      const cx  = ltr ? x1 : x0;
+      for (let i = 1; i <= FINE_C; i++) {
+        const t = i / FINE_C;
+        // Direita: horário (ângulo −π/2 → +π/2); esquerda: anti-horário (−π/2 → −3π/2)
+        const angle = ltr ? -Math.PI / 2 + Math.PI * t : -Math.PI / 2 - Math.PI * t;
+        fp.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+      }
+    }
+  }
+
+  // Comprimento de arco acumulado
+  const arcLen = [0];
+  for (let i = 1; i < fp.length; i++) {
+    arcLen.push(arcLen[i - 1] + Math.hypot(fp[i].x - fp[i-1].x, fp[i].y - fp[i-1].y));
+  }
+  const totalArc = arcLen[arcLen.length - 1];
+
+  // Comprimento físico da pista proporcional ao comprimento visual
+  L_TRACK = Math.max(1200, Math.round(totalArc / TARGET_PX_PER_M / 100) * 100);
+  N_WP    = Math.round(L_TRACK / DS) + 1;
+
+  // Resampling com espaçamento uniforme em Δs
+  waypoints = [];
+  let fi = 0;
+  const FN = fp.length - 1;
+  for (let wi = 0; wi < N_WP; wi++) {
+    const target = (wi / (N_WP - 1)) * totalArc;
+    while (fi < FN && arcLen[fi + 1] < target) fi++;
+    const t = fi < FN ? (target - arcLen[fi]) / (arcLen[fi + 1] - arcLen[fi]) : 0;
+    const a = fp[fi], b = fp[Math.min(fi + 1, FN)];
+    waypoints.push({ x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y), s: wi * DS });
+  }
+
+  // Posições dos obstáculos proporcionais ao comprimento total
+  S_LIGHT = Math.round(L_TRACK / 2);
+  S_CONE  = Math.round(L_TRACK * 23 / 33);
+}
+
+// ─── PROJEÇÃO 1D → 2D ────────────────────────────────────────────────────────
+function project(s, laneOffset) {
+  const i = Math.min(Math.floor(s / DS), N_WP - 2);
+  const alpha = (s - i * DS) / DS;
+  const wp0 = waypoints[i], wp1 = waypoints[i + 1];
+  const cx = wp0.x + alpha * (wp1.x - wp0.x);
+  const cy = wp0.y + alpha * (wp1.y - wp0.y);
+  const theta = Math.atan2(wp1.y - wp0.y, wp1.x - wp0.x);
+  const nx = -Math.sin(theta), ny = Math.cos(theta);
+  return { x: cx + nx * laneOffset, y: cy + ny * laneOffset, theta };
+}
+
+// Lane 0 = faixa direita (offset positivo no normal); Lane 1 = faixa esquerda
+function laneOffsetPx(lane) {
+  return lane === 0 ? +0.5 * W_LANE : -0.5 * W_LANE;
+}
+
+// ─── VEÍCULO ─────────────────────────────────────────────────────────────────
+class Vehicle {
+  constructor(type) {
+    this.id   = nextId++;
+    this.type = type;
+    const def = VEHICLE_DEF[type];
+    this.lenM  = def.lenM;
+    this.lenPx = def.lenPx;
+    this.widPx = def.widPx;
+    this.amax  = def.amax;
+    this.b     = def.b;
+    const mu   = 0.9 + Math.random() * 0.2;
+    this.mu     = mu;
+    this.v0base = def.v0base;
+    this.v0inst = mu * def.v0base;
+    this.s      = 0;
+    this.v      = 0;
+    this.lane   = 0;
+    this.state  = 'NORMAL';
+    this.laneTarget   = 0;
+    this.laneSrc      = 0;
+    this.laneProgress = 1.0;
+    this.accel  = 0;
+    this._v0eff = this.v0inst;
+  }
+
+  visualLaneOffset() {
+    if (this.state === 'TROCANDO_FAIXA') {
+      const srcOff = laneOffsetPx(this.laneSrc);
+      const dstOff = laneOffsetPx(this.laneTarget);
+      return srcOff + this.laneProgress * (dstOff - srcOff);
+    }
+    return laneOffsetPx(this.lane);
+  }
+}
+
+// ─── IDM ─────────────────────────────────────────────────────────────────────
+function idmWithLeader(v, amax, b, v0eff, T, s_real, dv) {
+  if (s_real < 0.1) s_real = 0.1;
+  const sStar = S0 + v * T + (v * dv) / (2 * Math.sqrt(amax * b));
+  const a = amax * (1 - Math.pow(v / v0eff, 4) - Math.pow(sStar / s_real, 2));
+  return Math.max(-B_MAX, Math.min(amax, a));
+}
+
+function idmFree(v, amax, b, v0eff) {
+  return Math.max(-B_MAX, Math.min(amax, amax * (1 - Math.pow(v / v0eff, 4))));
+}
+
+function idmAccel(veh, leader, T, v0eff) {
+  if (!leader) return idmFree(veh.v, veh.amax, veh.b, v0eff);
+  return idmWithLeader(veh.v, veh.amax, veh.b, v0eff, T,
+    leader.s - veh.s - leader.lenM, veh.v - leader.v);
+}
+
+function idmRaw(sEgo, vEgo, amax, b, v0, T, sLeader, vLeader, lenLeader) {
+  const s_real = sLeader - sEgo - lenLeader;
+  const dv = vEgo - vLeader;
+  return idmWithLeader(vEgo, amax, b, v0, T, s_real, dv);
+}
+
+// ─── BUSCA DE LÍDER / SEGUIDOR ───────────────────────────────────────────────
+function ghostsForLane(lane) {
+  const g = [];
+  if (lightRed)                 g.push({ s: S_LIGHT,     v: 0, lenM: 0 });
+  if (constructionOn && lane === 0) g.push({ s: S_CONE, v: 0, lenM: 0 });
+  return g;
+}
+
+function findLeader(veh, laneOverride) {
+  const lane = laneOverride !== undefined ? laneOverride : veh.lane;
+  const cands = vehicles.filter(v => v !== veh && v.lane === lane && v.s > veh.s);
+  const all   = [...cands, ...ghostsForLane(lane).filter(g => g.s > veh.s)];
+  if (!all.length) return null;
+  return all.reduce((a, b) => a.s < b.s ? a : b);
+}
+
+function findFollower(veh, laneOverride) {
+  const lane = laneOverride !== undefined ? laneOverride : veh.lane;
+  const cands = vehicles.filter(v => v !== veh && v.lane === lane && v.s < veh.s);
+  if (!cands.length) return null;
+  return cands.reduce((a, b) => a.s > b.s ? a : b);
+}
+
+// ─── MOBIL ASSIMÉTRICO ───────────────────────────────────────────────────────
+const LOOK_AHEAD_CLEAR = 300; // metros à frente para verificar faixa direita livre
+
+function evalMOBIL(veh, T) {
+  if (veh.state !== 'NORMAL') return;
+
+  const curLane = veh.lane;
+  const altLane = 1 - curLane;
+  const v0eff   = veh._v0eff;
+
+  // ── MODO EMERGÊNCIA: obra à frente na faixa 0 (< 150 m) ──────────────────
+  if (constructionOn && curLane === 0 && S_CONE > veh.s && (S_CONE - veh.s) < 150) {
+    const followerL = findFollower(veh, 1);
+    const geomSafe  = !followerL || (veh.s - followerL.s - veh.lenM > 1);
+    if (geomSafe) startLaneChange(veh, 1);
+    return;
+  }
+
+  // ── MUDANÇA 12: obras à frente → proibir retorno à faixa direita ─────────
+  if (constructionOn && curLane === 1 && altLane === 0 && S_CONE > veh.s) return;
+
+  const leaderCur   = findLeader(veh, curLane);
+  const leaderAlt   = findLeader(veh, altLane);
+  const followerAlt = findFollower(veh, altLane);
+  const followerCur = findFollower(veh, curLane);
+
+  // ── MUDANÇA 6: regra de ultrapassagem à esquerda ─────────────────────────
+  if (altLane === 1) {
+    if (!leaderCur) return; // pista livre → não precisa ultrapassar
+    // Caminhões apenas ultrapassam veículos muito mais lentos (< 60% v0eff)
+    // Carros ultrapassam quando líder < 85% v0eff
+    const thresh = veh.type === 'truck' ? 0.60 : 0.85;
+    if (leaderCur.v >= v0eff * thresh) return;
+  }
+
+  // ── CRITÉRIO DE SEGURANÇA ─────────────────────────────────────────────────
+  let a_n = 0, a_n_prime = 0;
+  if (followerAlt) {
+    a_n = followerAlt.accel;
+    a_n_prime = idmRaw(
+      followerAlt.s, followerAlt.v, followerAlt.amax, followerAlt.b,
+      followerAlt._v0eff, T, veh.s, veh.v, veh.lenM
+    );
+    if (a_n_prime < -B_SAFE) return;
+  }
+
+  // ── MUDANÇA 8: retorno proativo à direita quando faixa 0 está livre ───────
+  if (altLane === 0 && curLane === 1) {
+    const slowAhead = vehicles.some(v =>
+      v !== veh && v.lane === 0 && v.s > veh.s &&
+      v.s - veh.s < LOOK_AHEAD_CLEAR && v.v < veh.v0inst * 0.9
+    ) || ghostsForLane(0).some(g => g.s > veh.s && g.s - veh.s < LOOK_AHEAD_CLEAR);
+
+    if (!slowAhead) {
+      // Faixa direita clara → muda imediatamente (segurança já verificada acima)
+      startLaneChange(veh, 0);
+      return;
+    }
+  }
+
+  // ── MUDANÇAS 15/16: faixa esquerda congestionada, direita fluindo → move direita
+  if (altLane === 0 && curLane === 1) {
+    // "Congestionada": veículo andando a < 50% da velocidade desejada
+    const leftJammed = veh.v < veh.v0inst * 0.5;
+    // "Direita livre": sem veículo no look-ahead mais lento que eu em 80%
+    const slowAheadRight = vehicles.some(v =>
+      v !== veh && v.lane === 0 && v.s > veh.s &&
+      v.s - veh.s < LOOK_AHEAD_CLEAR && v.v < veh.v * 0.8
+    ) || ghostsForLane(0).some(g => g.s > veh.s && g.s - veh.s < LOOK_AHEAD_CLEAR);
+    if (leftJammed && !slowAheadRight) { startLaneChange(veh, 0); return; }
+  }
+
+  // ── CRITÉRIO DE INCENTIVO (MOBIL padrão) ─────────────────────────────────
+  const a_c = veh.accel;
+  const a_c_prime = leaderAlt
+    ? idmRaw(veh.s, veh.v, veh.amax, veh.b, v0eff, T, leaderAlt.s, leaderAlt.v, leaderAlt.lenM)
+    : idmFree(veh.v, veh.amax, veh.b, v0eff);
+
+  let a_o = 0, a_o_prime = 0;
+  if (followerCur) {
+    a_o = followerCur.accel;
+    a_o_prime = leaderCur
+      ? idmRaw(followerCur.s, followerCur.v, followerCur.amax, followerCur.b,
+               followerCur._v0eff, T, leaderCur.s, leaderCur.v, leaderCur.lenM)
+      : idmFree(followerCur.v, followerCur.amax, followerCur.b, followerCur._v0eff);
+  }
+
+  const toRight = altLane === 0;
+  const bias    = toRight ? DA_BIAS : -DA_BIAS;
+  const gain    = (a_c_prime - a_c) + P_MOBIL * ((a_n_prime - a_n) + (a_o_prime - a_o)) + bias;
+  if (gain > DA_TH) startLaneChange(veh, altLane);
+}
+
+function startLaneChange(veh, targetLane) {
+  veh.laneSrc      = veh.lane;
+  veh.laneTarget   = targetLane;
+  veh.laneProgress = 0;
+  veh.state        = 'TROCANDO_FAIXA';
+  veh.lane         = targetLane; // topologia imediata
+}
+
+// ─── SPAWNER ─────────────────────────────────────────────────────────────────
+function trySpawn(dt) {
+  spawnAccum += params.spawnRate * dt;
+  while (spawnAccum >= 1) {
+    spawnAccum -= 1;
+    const type = Math.random() * 100 < params.truckPct ? 'truck' : 'car';
+    let spawnLane;
+    if (type === 'truck') {
+      // Caminhões sempre à direita
+      if (vehicles.some(v => v.lane === 0 && v.s < D_SAFE)) continue;
+      spawnLane = 0;
+    } else {
+      // Carros: escolhe a faixa mais livre (mais espaço na entrada)
+      const free0 = !vehicles.some(v => v.lane === 0 && v.s < D_SAFE);
+      const free1 = !vehicles.some(v => v.lane === 1 && v.s < D_SAFE);
+      if (!free0 && !free1) continue;
+      if (free0 && free1) {
+        // Ambas livres: a com menos veículos nos primeiros 150 m
+        const cnt0 = vehicles.filter(v => v.lane === 0 && v.s < 150).length;
+        const cnt1 = vehicles.filter(v => v.lane === 1 && v.s < 150).length;
+        spawnLane = cnt0 <= cnt1 ? 0 : 1;
+      } else {
+        spawnLane = free0 ? 0 : 1;
+      }
+    }
+    const veh    = new Vehicle(type);
+    const def    = VEHICLE_DEF[type];
+    const vmaxMs = type === 'car' ? params.vmaxCar : params.vmaxTruck;
+    const delta  = type === 'car' ? params.vdevCar : params.vdevTruck;
+    const mu     = delta > 0 ? 1 - delta + Math.random() * 2 * delta : 1.0;
+    veh.lane   = spawnLane;
+    veh.mu     = mu;
+    veh.v0base = Math.min(def.v0base, vmaxMs);
+    veh.v0inst = mu * veh.v0base;
+    veh._v0eff = veh.v0inst;
+    veh.v      = 0.8 * veh.v0inst;
+    veh.amax   = type === 'car' ? params.amaxCar : params.amaxTruck;
+    vehicles.push(veh);
+  }
+}
+
+// ─── GAME LOOP ────────────────────────────────────────────────────────────────
+function update(dt) {
+  const T = params.reaction;
+
+  // 1. Spawner
+  trySpawn(dt);
+
+  // 2. Ruído por-frame
+  const eta = params.noise;
+  for (const veh of vehicles) {
+    const xi = Math.random() * 2 - 1;
+    veh._v0eff = Math.max(0.1, veh.v0inst * (1 + eta * xi));
+  }
+
+  // 3. MOBIL
+  for (const veh of vehicles) evalMOBIL(veh, T);
+
+  // 4. IDM
+  for (const veh of vehicles) {
+    const leader = findLeader(veh);
+    veh.accel = idmAccel(veh, leader, T, veh._v0eff);
+  }
+
+  // 5. Integração Euler
+  for (const veh of vehicles) {
+    veh.v = Math.max(0, veh.v + veh.accel * dt);
+    veh.s = veh.s + veh.v * dt;
+  }
+
+  // 5b. Correção de colisão: garante separação mínima em cada faixa
+  for (let lane = 0; lane < 2; lane++) {
+    const inLane = vehicles
+      .filter(v => v.lane === lane)
+      .sort((a, b) => b.s - a.s); // líderes primeiro (s decrescente)
+    for (let i = 1; i < inLane.length; i++) {
+      const leader   = inLane[i - 1];
+      const follower = inLane[i];
+      const minDist  = leader.lenM + 0.1; // bumper-to-bumper ≥ 0.1 m
+      if (follower.s + minDist > leader.s) {
+        follower.s = leader.s - minDist;
+        follower.v = Math.min(follower.v, leader.v);
+        if (follower.s < 0) follower.s = 0;
+      }
+    }
+  }
+
+  // 6. Transição visual de faixa
+  for (const veh of vehicles) {
+    if (veh.state === 'TROCANDO_FAIXA') {
+      veh.laneProgress += dt / LANE_DUR;
+      if (veh.laneProgress >= 1.0) {
+        veh.laneProgress = 1.0;
+        veh.state = 'NORMAL';
+      }
+    }
+  }
+
+  // 7. Despawn
+  const now = performance.now();
+  vehicles = vehicles.filter(veh => {
+    if (veh.s > L_TRACK) { despawnWindow.push(now); return false; }
+    return true;
+  });
+  const cutoff = now - 30000;
+  despawnWindow = despawnWindow.filter(t => t > cutoff);
+}
+
+// ─── RENDERIZAÇÃO ────────────────────────────────────────────────────────────
+function heatColor(v, v0inst) {
+  const r = Math.max(0, Math.min(1, v / v0inst));
+  if (r <= 0.1) return 'hsl(0,90%,50%)';
+  if (r > 0.8)  return 'hsl(120,80%,45%)';
+  let h;
+  if (r <= 0.5) h = (r - 0.1) / 0.4 * 60;
+  else          h = 60 + (r - 0.5) / 0.3 * 40;
+  return `hsl(${h.toFixed(0)},${r <= 0.5 ? 90 : 80}%,${r <= 0.5 ? 50 : 47}%)`;
+}
+
+function drawRoad() {
+  ctx.lineWidth   = 2 * W_LANE;
+  ctx.strokeStyle = '#333';
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
+  ctx.beginPath();
+  ctx.moveTo(waypoints[0].x, waypoints[0].y);
+  for (let i = 1; i < waypoints.length; i++) ctx.lineTo(waypoints[i].x, waypoints[i].y);
+  ctx.stroke();
+
+  ctx.lineWidth   = 1.5;
+  ctx.strokeStyle = '#888';
+  ctx.setLineDash([10, 10]);
+  ctx.beginPath();
+  ctx.moveTo(waypoints[0].x, waypoints[0].y);
+  for (let i = 1; i < waypoints.length; i++) ctx.lineTo(waypoints[i].x, waypoints[i].y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawObstacles() {
+  if (lightRed) {
+    for (let lane = 0; lane < 2; lane++) {
+      const p = project(S_LIGHT, laneOffsetPx(lane));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+      ctx.fillStyle = '#ff3333';
+      ctx.fill();
+    }
+  }
+
+  if (constructionOn) {
+    for (let s = S_CONE; s <= S_CONE + L_OBRA; s += 5) {
+      const p = project(s, laneOffsetPx(0));
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.theta);
+      ctx.beginPath();
+      ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6);
+      ctx.closePath();
+      ctx.fillStyle = '#ff8c00';
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function drawVehicles() {
+  const sorted = [...vehicles].sort((a, b) => a.s - b.s);
+  for (const veh of sorted) {
+    const p = project(veh.s, veh.visualLaneOffset());
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.theta);
+    ctx.fillStyle = heatColor(veh.v, veh.v0inst);
+    ctx.fillRect(-veh.lenPx / 2, -veh.widPx / 2, veh.lenPx, veh.widPx);
+    ctx.restore();
+  }
+}
+
+function drawMetrics() {
+  document.getElementById('mVehicles').textContent = vehicles.length;
+  document.getElementById('mFlow').textContent = (despawnWindow.length / 30 * 60).toFixed(0);
+  const avgV = vehicles.length > 0
+    ? vehicles.reduce((s, v) => s + v.v, 0) / vehicles.length * 3.6 : 0;
+  document.getElementById('mSpeed').textContent = avgV.toFixed(1);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawRoad();
+  drawObstacles();
+  drawVehicles();
+  drawMetrics();
+}
+
+// ─── CONTROLES UI ────────────────────────────────────────────────────────────
+function toggleLight() {
+  lightRed = !lightRed;
+  const btn = document.getElementById('trafficLightBtn');
+  btn.textContent = lightRed ? 'VERMELHO' : 'VERDE';
+  btn.className   = 'toggle-btn ' + (lightRed ? 'btn-red' : 'btn-green');
+}
+
+function toggleConstruction() {
+  constructionOn = !constructionOn;
+  const btn = document.getElementById('constructionBtn');
+  btn.textContent = constructionOn ? 'ON'  : 'OFF';
+  btn.className   = 'toggle-btn ' + (constructionOn ? 'btn-red' : 'btn-green');
+}
+
+function pauseSim() { paused = !paused; lastTime = null; }
+
+function resetSim() {
+  vehicles = []; spawnAccum = 0; despawnWindow = [];
+  accumulator = 0; lastTime = null;
+}
+
+const DEFAULTS = { spawnRate: 1.0, truckPct: 15, reaction: 1.5, noise: 0.05, vmaxCar: 120, vmaxTruck: 80, amaxCar: 1.5, amaxTruck: 0.7, vdevCar: 10, vdevTruck: 10, timeScale: 1 };
+
+function restoreDefaults() {
+  for (const [key, val] of Object.entries(DEFAULTS)) {
+    const el = document.getElementById(key);
+    if (el) { el.value = val; el.dispatchEvent(new Event('input')); }
+  }
+}
+
+function bindSlider(id, label, fmt, paramKey) {
+  const el  = document.getElementById(id);
+  const lbl = document.getElementById(label);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    lbl.textContent = fmt(v);
+    const isSpeed = paramKey === 'vmaxCar' || paramKey === 'vmaxTruck';
+    const isAmax  = paramKey === 'amaxCar' || paramKey === 'amaxTruck';
+    const isVdev  = paramKey === 'vdevCar' || paramKey === 'vdevTruck';
+    params[paramKey] = isSpeed ? v / 3.6 : isVdev ? v / 100 : v;
+    if (isSpeed) {
+      const type = paramKey === 'vmaxCar' ? 'car' : 'truck';
+      const def  = VEHICLE_DEF[type];
+      for (const veh of vehicles) {
+        if (veh.type === type) {
+          veh.v0base = Math.min(def.v0base, v / 3.6);
+          veh.v0inst = veh.mu * veh.v0base;
+        }
+      }
+    }
+    if (isAmax) {
+      const type = paramKey === 'amaxCar' ? 'car' : 'truck';
+      for (const veh of vehicles) {
+        if (veh.type === type) veh.amax = v;
+      }
+    }
+  });
+}
+
+// ─── RESIZE ──────────────────────────────────────────────────────────────────
+function resizeCanvas() {
+  canvas.width  = window.innerWidth - 280;
+  canvas.height = window.innerHeight;
+  buildWaypoints();
+}
+
+// ─── MAIN LOOP ───────────────────────────────────────────────────────────────
+function frame(ts) {
+  requestAnimationFrame(frame);
+  if (!paused) {
+    if (lastTime === null) lastTime = ts;
+    let delta = (ts - lastTime) / 1000;
+    lastTime = ts;
+    if (delta > 0.25) delta = 0.25;
+    accumulator += delta * params.timeScale;
+    const maxSteps = Math.ceil(params.timeScale) * 5; // evita spiral of death
+    let steps = 0;
+    while (accumulator >= DT && steps++ < maxSteps) { update(DT); accumulator -= DT; }
+  }
+  draw();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  canvas = document.getElementById('canvas');
+  ctx    = canvas.getContext('2d');
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  bindSlider('spawnRate', 'vSpawnRate', v => v.toFixed(1), 'spawnRate');
+  bindSlider('truckPct',  'vTruckPct',  v => v,             'truckPct');
+  bindSlider('reaction',  'vReaction',  v => v.toFixed(1),  'reaction');
+  bindSlider('noise',     'vNoise',     v => v.toFixed(2),  'noise');
+  bindSlider('vmaxCar',   'vVMaxCar',   v => v,             'vmaxCar');
+  bindSlider('vmaxTruck', 'vVMaxTruck', v => v,             'vmaxTruck');
+  bindSlider('amaxCar',   'vAmaxCar',   v => v.toFixed(1),  'amaxCar');
+  bindSlider('amaxTruck', 'vAmaxTruck', v => v.toFixed(1),  'amaxTruck');
+  bindSlider('vdevCar',   'vVdevCar',   v => v,             'vdevCar');
+  bindSlider('vdevTruck', 'vVdevTruck', v => v,             'vdevTruck');
+  bindSlider('timeScale', 'vTimeScale', v => v,             'timeScale');
+
+  params.spawnRate = 1.0; params.truckPct = 15;
+  params.reaction  = 1.5; params.noise    = 0.05;
+  params.vmaxCar   = 120 / 3.6; params.vmaxTruck = 80 / 3.6;
+  params.amaxCar   = 1.5;       params.amaxTruck  = 0.7;
+  params.vdevCar   = 0.10;      params.vdevTruck  = 0.10;
+  params.timeScale = 1;
+
+  requestAnimationFrame(frame);
+});
+</script>
+</body>
+</html>
