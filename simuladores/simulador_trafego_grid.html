@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Simulador de Tráfego</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #111827; color: #d1d5db;
+  font-family: system-ui, Arial, sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px; gap: 10px;
+}
+h1 { font-size: 17px; color: #f9fafb; }
+#topbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; }
+#stats { font-size: 12px; color: #9ca3af; }
+#btnRestart {
+  background: #dc2626; color: #fff; border: none; border-radius: 6px;
+  padding: 6px 16px; font-size: 13px; cursor: pointer; font-weight: 600;
+  transition: background .15s;
+}
+#btnRestart:hover { background: #b91c1c; }
+#controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 1100px; }
+.panel { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 12px 14px; min-width: 168px; }
+.panel h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 8px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin: 5px 0; font-size: 12px; }
+input[type=range] { width: 88px; accent-color: #3b82f6; }
+.val { width: 36px; text-align: right; color: #93c5fd; }
+select { background: #111827; color: #d1d5db; border: 1px solid #374151; border-radius: 4px; padding: 3px 5px; font-size: 12px; flex: 1; }
+.note { font-size: 11px; color: #6b7280; margin-top: 2px; }
+canvas { max-width: 100%; height: auto; display: block; border: 1px solid #374151; }
+</style>
+</head>
+<body>
+<h1>Simulador de Fluxo de Veículos</h1>
+<canvas id="c" width="1050" height="1050"></canvas>
+<div id="topbar">
+  <div id="stats">Carros: 0</div>
+  <button id="btnRestart">&#8635; Reiniciar</button>
+</div>
+<div id="controls">
+  <div class="panel">
+    <h3>Tráfego</h3>
+    <div class="row"><span>Carros/min</span><input type="range" id="sCpm" min="0" max="6000" step="50" value="60"><span class="val" id="vCpm">60</span></div>
+    <div class="row"><span>Velocidade</span><input type="range" id="sSpd" min="1" max="6" value="2"><span class="val" id="vSpd">2</span></div>
+    <div class="row"><span>% curva dir.</span><input type="range" id="sTurn" min="0" max="100" value="25"><span class="val" id="vTurn">25%</span></div>
+    <div class="row"><span>Reação (ms)</span><input type="range" id="sReact" min="0" max="2000" step="50" value="300"><span class="val" id="vReact">300</span></div>
+  </div>
+  <div class="panel">
+    <h3>Semáforos</h3>
+    <div class="row"><span>Verde (s)</span><input type="range" id="sGrn" min="2" max="30" value="7"><span class="val" id="vGrn">7</span></div>
+    <div class="row"><span>Vermelho (s)</span><input type="range" id="sRed" min="2" max="30" value="7"><span class="val" id="vRed">7</span></div>
+  </div>
+  <div class="panel">
+    <h3>Ruas Horizontais</h3>
+    <div class="row"><span>H1 (topo)</span><select id="dH0"><option value="both">↔ Dupla</option><option value="right">→ Direita</option><option value="left">← Esquerda</option></select></div>
+    <div class="row"><span>H2 (meio)</span><select id="dH1"><option value="both">↔ Dupla</option><option value="right">→ Direita</option><option value="left">← Esquerda</option></select></div>
+    <div class="row"><span>H3 (baixo)</span><select id="dH2"><option value="both">↔ Dupla</option><option value="right">→ Direita</option><option value="left">← Esquerda</option></select></div>
+    <div class="note">* Direções: reiniciar para aplicar</div>
+  </div>
+  <div class="panel">
+    <h3>Ruas Verticais</h3>
+    <div class="row"><span>V1 (esq)</span><select id="dV0"><option value="both">↕ Dupla</option><option value="down">↓ Baixo</option><option value="up">↑ Cima</option></select></div>
+    <div class="row"><span>V2 (meio)</span><select id="dV1"><option value="both">↕ Dupla</option><option value="down">↓ Baixo</option><option value="up">↑ Cima</option></select></div>
+    <div class="row"><span>V3 (dir)</span><select id="dV2"><option value="both">↕ Dupla</option><option value="down">↓ Baixo</option><option value="up">↑ Cima</option></select></div>
+    <div class="note">* Direções: reiniciar para aplicar</div>
+  </div>
+</div>
+
+<script>
+const cvs = document.getElementById('c');
+const ctx  = cvs.getContext('2d');
+const W = 1050, H = 1050;
+
+const VX = [150, 525, 900];
+const HY = [150, 525, 900];
+const ROAD = 28;
+const LANE = 7;
+const HALF = 9;
+// Car stops when front hasn't reached the pedestrian crossing yet.
+// Nearest crossing stripe left-edge = ROAD/2 + 4 from intersection center.
+// Car front = d - HALF. Stop while d - HALF >= ROAD/2 + 4  →  d >= STOP_THRESH.
+const STOP_THRESH = HALF + Math.round(ROAD / 2) + 19; // 42  (front stops 5px clear of outermost crossing stripe)
+
+const CAR_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+
+// Real-time settings (sliders)
+const S = { cpm: 60, speed: 2, turnRight: 25, greenMs: 7000, redMs: 7000, reaction: 300 };
+
+// Active road directions — only updated on Restart
+const act = { hDir: ['both','both','both'], vDir: ['both','both','both'] };
+
+let cars = [], uid = 0;
+let phase = 0, phaseT = 0;
+let lastTs = 0, spawnAcc = 0;
+
+// ---------- UI ----------
+function slide(id, key, disp, scale, sfx) {
+  const el = document.getElementById(id);
+  el.oninput = () => {
+    S[key] = +el.value * (scale || 1);
+    document.getElementById(disp).textContent = el.value + (sfx || '');
+  };
+}
+slide('sCpm',   'cpm',      'vCpm');
+slide('sSpd',   'speed',    'vSpd');
+slide('sTurn',  'turnRight','vTurn', 1, '%');
+slide('sGrn',   'greenMs',  'vGrn', 1000);
+slide('sRed',   'redMs',    'vRed', 1000);
+slide('sReact', 'reaction', 'vReact');
+
+function restart() {
+  act.hDir = ['dH0','dH1','dH2'].map(id => document.getElementById(id).value);
+  act.vDir = ['dV0','dV1','dV2'].map(id => document.getElementById(id).value);
+  cars = []; uid = 0; phase = 0; phaseT = 0; spawnAcc = 0;
+}
+document.getElementById('btnRestart').onclick = restart;
+
+// ---------- Entry points (use act directions) ----------
+// Right-hand traffic lane positions:
+//   Eastbound  (dx=+1): right lane = south = y = HY + LANE
+//   Westbound  (dx=-1): right lane = north = y = HY - LANE
+//   Southbound (dy=+1): right lane = west  = x = VX - LANE
+//   Northbound (dy=-1): right lane = east  = x = VX + LANE
+// Two-way: each direction in its right lane.
+// One-way: right lane (rl=true) + left lane (rl=false), same direction.
+function getEntries() {
+  const e = [];
+  HY.forEach((y, i) => {
+    const d = act.hDir[i];
+    if (d === 'both') {
+      e.push({x: -15,  y: y + LANE, dx:  1, dy: 0, rl: true});
+      e.push({x: W+15, y: y - LANE, dx: -1, dy: 0, rl: true});
+    } else if (d === 'right') {
+      e.push({x: -15, y: y + LANE, dx: 1, dy: 0, rl: true});
+      e.push({x: -15, y: y - LANE, dx: 1, dy: 0, rl: false});
+    } else {
+      e.push({x: W+15, y: y - LANE, dx: -1, dy: 0, rl: true});
+      e.push({x: W+15, y: y + LANE, dx: -1, dy: 0, rl: false});
+    }
+  });
+  VX.forEach((x, i) => {
+    const d = act.vDir[i];
+    if (d === 'both') {
+      e.push({x: x - LANE, y: -15,  dx: 0, dy:  1, rl: true});
+      e.push({x: x + LANE, y: H+15, dx: 0, dy: -1, rl: true});
+    } else if (d === 'down') {
+      e.push({x: x - LANE, y: -15, dx: 0, dy: 1, rl: true});
+      e.push({x: x + LANE, y: -15, dx: 0, dy: 1, rl: false});
+    } else {
+      e.push({x: x + LANE, y: H+15, dx: 0, dy: -1, rl: true});
+      e.push({x: x - LANE, y: H+15, dx: 0, dy: -1, rl: false});
+    }
+  });
+  return e;
+}
+
+// ---------- Car ----------
+class Car {
+  constructor(x, y, dx, dy, rl) {
+    this.id = uid++;
+    this.x = x; this.y = y;
+    this.dx = dx; this.dy = dy;
+    this.rl = rl;
+    this.color = CAR_COLORS[this.id % CAR_COLORS.length];
+    this.td = null;
+    this.vel      = 0;
+    this.reacting = false;
+    this.reactMs  = 0;
+    this.stopped  = false;
+  }
+
+  // Next intersection ahead; returns {d, vi, hi} or null.
+  nextX() {
+    if (this.dx !== 0) {
+      const xs = this.dx > 0 ? VX : [...VX].reverse();
+      for (const ix of xs) {
+        const vi = VX.indexOf(ix);
+        const d  = this.dx > 0 ? ix - this.x : this.x - ix;
+        if (d < -ROAD / 2) continue;
+        const hi = HY.findIndex(hy => Math.abs(this.y - hy) < LANE + 6);
+        if (hi !== -1) return {d, vi, hi};
+        break;
+      }
+    } else {
+      const ys = this.dy > 0 ? HY : [...HY].reverse();
+      for (const iy of ys) {
+        const hi = HY.indexOf(iy);
+        const d  = this.dy > 0 ? iy - this.y : this.y - iy;
+        if (d < -ROAD / 2) continue;
+        const vi = VX.findIndex(vx => Math.abs(this.x - vx) < LANE + 6);
+        if (vi !== -1) return {d, vi, hi};
+        break;
+      }
+    }
+    return null;
+  }
+
+  // Can this car turn right at this intersection (direction allowed + right lane)?
+  canRight(vi, hi) {
+    if (!this.rl) return false;
+    if (this.dx >  0) return act.vDir[vi] !== 'up';
+    if (this.dx < 0)  return act.vDir[vi] !== 'down';
+    if (this.dy >  0) return act.hDir[hi] !== 'right';
+    if (this.dy < 0)  return act.hDir[hi] !== 'left';
+    return false;
+  }
+
+  // Is the target lane clear enough to turn into right now?
+  canTurnNow(vi, hi) {
+    const CLEAR = 34, ix = VX[vi], iy = HY[hi];
+    let tx, ty, tdx, tdy;
+    if      (this.dx >  0) { tx = ix - LANE; ty = iy;        tdx = 0;  tdy =  1; } // east→south
+    else if (this.dx < 0)  { tx = ix + LANE; ty = iy;        tdx = 0;  tdy = -1; } // west→north
+    else if (this.dy >  0) { tx = ix;        ty = iy - LANE; tdx = -1; tdy = 0;  } // south→west
+    else                   { tx = ix;        ty = iy + LANE; tdx =  1; tdy = 0;  } // north→east
+
+    for (const o of cars) {
+      if (o === this || o.dx !== tdx || o.dy !== tdy) continue;
+      const lat = tdx !== 0 ? Math.abs(o.y - ty) : Math.abs(o.x - tx);
+      if (lat > LANE + 5) continue;
+      const fwd = tdx !== 0 ? (o.x - tx) * tdx : (o.y - ty) * tdy;
+      if (fwd > -CLEAR && fwd < CLEAR) return false; // car blocking target lane (from either side)
+    }
+    return true;
+  }
+
+  // Snap to correct right lane after executing a right turn.
+  doTurn(vi, hi) {
+    const ix = VX[vi], iy = HY[hi];
+    if      (this.dx >  0) { this.dx = 0; this.dy =  1; this.x = ix - LANE; this.y = iy; }
+    else if (this.dx < 0)  { this.dx = 0; this.dy = -1; this.x = ix + LANE; this.y = iy; }
+    else if (this.dy >  0) { this.dy = 0; this.dx = -1; this.y = iy - LANE; this.x = ix; }
+    else                   { this.dy = 0; this.dx =  1; this.y = iy + LANE; this.x = ix; }
+    this.rl = true;
+  }
+
+  update(dt) {
+    const ni = this.nextX();
+
+    // Make turn decision on first sight (only while still approaching)
+    if (ni && ni.d > ROAD / 2) {
+      const key = `${ni.vi}_${ni.hi}`;
+      if (!this.td || this.td.key !== key) {
+        const wantRight = Math.random() * 100 < S.turnRight && this.canRight(ni.vi, ni.hi);
+        this.td = {key, action: wantRight ? 'right' : 'straight', vi: ni.vi, hi: ni.hi, done: false};
+      }
+    }
+
+    // At intersection center: execute turn or wait for gap
+    let waitTurn = false;
+    if (ni && this.td && !this.td.done &&
+        this.td.key === `${ni.vi}_${ni.hi}` &&
+        ni.d >= 0 && ni.d <= ROAD / 2 + 2) {
+      if (this.td.action === 'right') {
+        if (this.canTurnNow(this.td.vi, this.td.hi)) {
+          this.td.done = true;
+          this.doTurn(this.td.vi, this.td.hi);
+          this.td = null;
+          return;
+        }
+        waitTurn = true;
+      } else {
+        this.td.done = true;
+      }
+    }
+
+    const ni2 = this.nextX();
+
+    // Continuous velocity model — compute desired target speed
+    const DECEL    = S.speed / 60;
+    const ACCEL    = S.speed / 90;
+    const LAT      = 11;
+    const SAFE_GAP = 20; // 2×HALF (car half-length=9) + 2px bumper gap
+    let target = S.speed;
+
+    if (waitTurn) {
+      target = 0;
+    } else {
+      // Smooth braking for red light — only while car hasn't yet crossed the stop line.
+      // Once past STOP_THRESH the car is committed and proceeds through the crossing.
+      if (ni2 && ni2.d >= STOP_THRESH) {
+        const isRed = this.dx !== 0 ? (phase === 0) : (phase === 1);
+        if (isRed) target = Math.min(target, Math.sqrt(2 * DECEL * Math.max(0, ni2.d - STOP_THRESH)));
+      }
+
+      // Smooth car-following: find closest car ahead in the same lane
+      let minFwd = Infinity;
+      for (const o of cars) {
+        if (o === this || o.dx !== this.dx || o.dy !== this.dy) continue;
+        const fwd = this.dx !== 0 ? (o.x - this.x) * this.dx : (o.y - this.y) * this.dy;
+        const lat = this.dx !== 0 ? Math.abs(o.y - this.y) : Math.abs(o.x - this.x);
+        if (fwd > 0 && lat < LAT) minFwd = Math.min(minFwd, fwd);
+      }
+      if (minFwd < Infinity) {
+        // If the car ahead is inside/near the intersection, widen the gap so we stop at the stop line
+        const dAhead = ni2 ? ni2.d - minFwd : Infinity;
+        const effGap = (dAhead >= 0 && dAhead < STOP_THRESH)
+          ? Math.max(SAFE_GAP, STOP_THRESH - dAhead)
+          : SAFE_GAP;
+        target = Math.min(target, Math.sqrt(2 * DECEL * Math.max(0, minFwd - effGap)));
+      }
+    }
+
+    // Reaction delay: fires once on the exact frame vel hits 0 and target becomes >0
+    if (this.vel === 0 && target > 0 && !this.reacting) {
+      this.reacting = true;
+      this.reactMs  = S.reaction;
+    }
+    if (this.reacting) {
+      this.reactMs -= dt;
+      if (this.reactMs <= 0) this.reacting = false;
+      else target = 0;
+    }
+
+    // Deceleration: snap instantly to target (prevents overshoot — braking is always faster than accelerating)
+    // Acceleration: ramp up gradually with ACCEL (realistic slow start from rest)
+    if (target < this.vel) this.vel = target;
+    else if (target > this.vel) this.vel = Math.min(this.vel + ACCEL, target);
+    this.vel = Math.max(0, Math.min(this.vel, S.speed));
+
+    this.x += this.dx * this.vel;
+    this.y += this.dy * this.vel;
+    this.stopped = this.vel === 0;
+  }
+
+  draw() {
+    const ew = this.dx !== 0;
+    const cw = ew ? 18 : 10, ch = ew ? 10 : 18;
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(this.x - cw/2 + 1, this.y - ch/2 + 2, cw, ch);
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x - cw/2, this.y - ch/2, cw, ch);
+    ctx.fillStyle = 'rgba(185,220,255,0.75)';
+    if      (this.dx >  0) ctx.fillRect(this.x + cw/2 - 6, this.y - 3, 5, 6);
+    else if (this.dx < 0)  ctx.fillRect(this.x - cw/2 + 1, this.y - 3, 5, 6);
+    else if (this.dy >  0) ctx.fillRect(this.x - 3, this.y + ch/2 - 6, 6, 5);
+    else                   ctx.fillRect(this.x - 3, this.y - ch/2 + 1, 6, 5);
+  }
+
+  gone() { return this.x < -40 || this.x > W+40 || this.y < -40 || this.y > H+40; }
+}
+
+// ---------- Render ----------
+function drawRoads() {
+  ctx.fillStyle = '#2d5a1b';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#3c3c3c';
+  VX.forEach(x => ctx.fillRect(x - ROAD/2, 0, ROAD, H));
+  HY.forEach(y => ctx.fillRect(0, y - ROAD/2, W, ROAD));
+
+  ctx.fillStyle = '#383838';
+  VX.forEach(x => HY.forEach(y => ctx.fillRect(x - ROAD/2, y - ROAD/2, ROAD, ROAD)));
+
+  ctx.strokeStyle = '#e5c500'; ctx.lineWidth = 1.5; ctx.setLineDash([12, 14]);
+  VX.forEach(x => { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); });
+  HY.forEach(y => { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); });
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.11)';
+  VX.forEach(x => HY.forEach(y => {
+    for (let k = 0; k < 3; k++) {
+      ctx.fillRect(x - ROAD/2, y + ROAD/2 + 1 + k*5, ROAD, 3);
+      ctx.fillRect(x - ROAD/2, y - ROAD/2 - 4 - k*5, ROAD, 3);
+      ctx.fillRect(x + ROAD/2 + 1 + k*5, y - ROAD/2, 3, ROAD);
+      ctx.fillRect(x - ROAD/2 - 4 - k*5, y - ROAD/2, 3, ROAD);
+    }
+  }));
+
+  ctx.fillStyle = 'rgba(255,255,255,0.13)';
+  function arr(ax, ay, a) {
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(a);
+    ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -4); ctx.lineTo(-5, 4);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  HY.forEach((y, i) => {
+    for (let ax = 120; ax < W - 80; ax += 150) {
+      if (VX.some(vx => Math.abs(ax - vx) < 36)) continue;
+      const d = act.hDir[i];
+      if (d !== 'left')  arr(ax, y + LANE, 0);          // → in south/right lane
+      if (d !== 'right') arr(ax, y - LANE, Math.PI);    // ← in north/right-for-west lane
+      if (d === 'right') arr(ax, y - LANE, 0);           // one-way east: left lane also →
+      if (d === 'left')  arr(ax, y + LANE, Math.PI);     // one-way west: left lane also ←
+    }
+  });
+  VX.forEach((x, i) => {
+    for (let ay = 120; ay < H - 80; ay += 150) {
+      if (HY.some(hy => Math.abs(ay - hy) < 36)) continue;
+      const d = act.vDir[i];
+      if (d !== 'up')   arr(x - LANE, ay,  Math.PI/2);  // ↓ in west/right lane
+      if (d !== 'down') arr(x + LANE, ay, -Math.PI/2);  // ↑ in east/right lane
+      if (d === 'down') arr(x + LANE, ay,  Math.PI/2);  // one-way down: left lane also ↓
+      if (d === 'up')   arr(x - LANE, ay, -Math.PI/2);  // one-way up: left lane also ↑
+    }
+  });
+}
+
+function dot(x, y, color) {
+  ctx.fillStyle = '#111'; ctx.fillRect(x - 6, y - 6, 12, 12);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI*2); ctx.fill();
+}
+
+function drawSignals() {
+  // Signal left of road (x-ROAD/2-9, y): faces EW traffic → green when EW green (phase=1)
+  // Signal above road  (x, y-ROAD/2-9): faces NS traffic → green when NS green (phase=0)
+  const ewG = phase === 1;
+  VX.forEach(x => HY.forEach(y => {
+    dot(x - ROAD/2 - 9, y, ewG ? '#22c55e' : '#ef4444');
+    dot(x, y - ROAD/2 - 9, ewG ? '#ef4444' : '#22c55e');
+  }));
+}
+
+// ---------- Main loop ----------
+function loop(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min(ts - lastTs, 80);
+  lastTs = ts;
+
+  // Traffic light phase
+  phaseT += dt;
+  const dur = phase === 0 ? S.greenMs : S.redMs;
+  if (phaseT >= dur) { phaseT = 0; phase ^= 1; }
+
+  // Spawn: accumulate fractional cars based on cpm, pick random entry each time
+  if (S.cpm > 0) {
+    spawnAcc += dt * S.cpm / 60000; // cars to spawn this frame
+    const toSpawn = Math.floor(spawnAcc);
+    spawnAcc -= toSpawn;
+    const pool = getEntries();
+    for (let k = 0; k < toSpawn && pool.length > 0; k++) {
+      const e = pool[Math.floor(Math.random() * pool.length)];
+      // Use direction-aware thresholds so one-way lanes (14 px apart) don't block each other
+      const cx = e.dx !== 0 ? 20 : 12;
+      const cy = e.dy !== 0 ? 20 : 12;
+      if (!cars.some(c => Math.abs(c.x - e.x) < cx && Math.abs(c.y - e.y) < cy))
+        cars.push(new Car(e.x, e.y, e.dx, e.dy, e.rl));
+    }
+  }
+
+  for (const c of cars) c.update(dt);
+  cars = cars.filter(c => !c.gone());
+
+  drawRoads();
+  drawSignals();
+  for (const c of cars) c.draw();
+
+  const rem = ((dur - phaseT) / 1000).toFixed(1);
+  document.getElementById('stats').textContent =
+    `Carros: ${cars.length}  |  ${phase === 0 ? 'NS verde' : 'EW verde'}  |  ${rem}s`;
+
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
