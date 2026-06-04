@@ -227,8 +227,21 @@ function makeBodies() {
   });
 }
 
+// Centraliza posição e velocidade do baricentro em (0,0) com v=0.
+// Garante que o CoM fique na origem durante toda a simulação,
+// mesmo após fusões (que conservam momento linear).
+function fixBarycentre(bs) {
+  const M  = bs.reduce((s, b) => s + b.mass, 0);
+  const cx = bs.reduce((s, b) => s + b.mass * b.x,  0) / M;
+  const cy = bs.reduce((s, b) => s + b.mass * b.y,  0) / M;
+  const vx = bs.reduce((s, b) => s + b.mass * b.vx, 0) / M;
+  const vy = bs.reduce((s, b) => s + b.mass * b.vy, 0) / M;
+  bs.forEach(b => { b.x -= cx; b.y -= cy; b.vx -= vx; b.vy -= vy; });
+}
+
 // ─── ESTADO GLOBAL
 let bodies = makeBodies();
+fixBarycentre(bodies);
 let simTime  = 0;      // dias desde 2026-06-04
 let paused   = false;
 let dps      = 10;     // dias/segundo de wall-clock
@@ -604,6 +617,7 @@ bplay.addEventListener('click', () => {
 
 breset.addEventListener('click', () => {
   bodies = makeBodies();
+  fixBarycentre(bodies);
   simTime = 0; accum = 0;
   lastNow = performance.now();
   slspd.value = 3000; setSpd(3000);
