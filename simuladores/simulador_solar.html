@@ -87,6 +87,11 @@ input[type=checkbox] { accent-color: var(--accent); }
       </label>
       <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
     </div>
+    <div class="ctrl">
+      <label>Duração rastro</label>
+      <input type="range" id="sltr" min="50" max="6000" value="600">
+      <span class="v" id="lbltr">600 pts</span>
+    </div>
     <hr>
     <details open>
       <summary>Massas (×real)</summary>
@@ -218,7 +223,7 @@ let hovered  = -1;
 let needsUI  = false;
 
 const DT     = 0.05;   // passo RK4 em dias (fixo — menor que 0.25 para evitar drift em órbita de Mercúrio)
-const TRMAX  = 600;    // pontos máx por rastro
+let   trMax  = 600;    // pontos máx por rastro (ajustável pelo slider)
 const EPS2   = 1e-12;  // softening AU²
 
 // ─── MOTOR RK4 N-CORPOS
@@ -337,7 +342,7 @@ function pushTrails() {
   if (!showTr) return;
   bodies.forEach(b => {
     b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > TRMAX) b.trail.shift();
+    if (b.trail.length > trMax) b.trail.length = trMax;
   });
 }
 
@@ -591,6 +596,14 @@ breset.addEventListener('click', () => {
 slspd.addEventListener('input', () => setSpd(Number(slspd.value)));
 cbtr.addEventListener('change', () => { showTr = cbtr.checked; });
 bclr.addEventListener('click', () => { bodies.forEach(b => b.trail = []); });
+
+const sltr  = document.getElementById('sltr');
+const lbltr = document.getElementById('lbltr');
+sltr.addEventListener('input', () => {
+  trMax = Number(sltr.value);
+  lbltr.textContent = trMax + ' pts';
+  bodies.forEach(b => { if (b.trail.length > trMax) b.trail.length = trMax; });
+});
 
 // ─── INICIAR
 buildUI();
