@@ -53,6 +53,10 @@ details[open] > summary::before { content: '▾ '; }
 .mrow input[type=range] { flex: 1; accent-color: var(--accent); height: 3px; }
 .mmult { width: 52px; text-align: right; font-size: 10px; color: var(--accent); }
 .mkg   { width: 60px; text-align: right; font-size: 9px; color: var(--dim); }
+.drow  { display: flex; align-items: center; gap: 5px; padding: 2px 0; border-bottom: 1px solid #111120; }
+.dname { width: 58px; font-size: 10px; color: var(--text); overflow: hidden; white-space: nowrap; }
+.ddist { flex: 1; text-align: right; font-size: 10px; color: var(--accent); }
+.dratio{ width: 50px; text-align: right; font-size: 10px; color: var(--dim); }
 #info {
   font-size: 10px; color: var(--dim); min-height: 52px;
   padding: 5px; border: 1px solid var(--border); border-radius: 3px;
@@ -108,6 +112,11 @@ input[type=checkbox] { accent-color: var(--accent); }
     <details open>
       <summary>Massas (×real)</summary>
       <div id="mrows"></div>
+    </details>
+    <hr>
+    <details open>
+      <summary>Distâncias ao Sol</summary>
+      <div id="drows"></div>
     </details>
     <hr>
     <div id="earth-info">
@@ -405,6 +414,7 @@ function handleCollisions() {
             period:        Math.min(bi.period, bj.period),
             trailInterval: Math.min(bi.trailInterval, bj.trailInterval),
             trailTick:     0,
+            refDist:       0,  // corpo fundido — sem referência orbital própria
             elemIdx:       -1, // corpo fundido — sem pré-preenchimento analítico
           };
           bodies.splice(j, 1);
@@ -492,7 +502,6 @@ function draw() {
 
   // corpos
   const DOT = 2; // raio fixo em escala linear
-  const sunBody = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
   bodies.forEach((b, idx) => {
     const { sx, sy } = w2s(b.x, b.y);
     const r = logScale ? b.visualR : DOT;
@@ -524,16 +533,6 @@ function draw() {
     ctx.globalAlpha = 0.85;
     ctx.font = '10px Consolas, monospace';
     ctx.fillText(b.name.split('+')[0], sx + r + 3, sy + 4);
-    // distância atual vs referência inicial (apenas planetas com refDist definido)
-    if (b.refDist > 0) {
-      const ddx = b.x - sunBody.x, ddy = b.y - sunBody.y;
-      const dist = Math.sqrt(ddx*ddx + ddy*ddy);
-      const ratio = dist / b.refDist;
-      ctx.globalAlpha = 0.55;
-      ctx.font = '9px Consolas, monospace';
-      ctx.fillStyle = '#aaaacc';
-      ctx.fillText(dist.toFixed(3) + ' UA  ×' + ratio.toFixed(3), sx + r + 3, sy + 14);
-    }
     ctx.globalAlpha = 1;
   });
 }
@@ -622,6 +621,7 @@ function frame(now) {
   draw();
   document.getElementById('ddate').textContent = fmtDate();
   updateEarthInfo();
+  updateDistances();
 }
 
 // ─── UI DE MASSA
@@ -638,6 +638,49 @@ function fmtMult(m) {
 
 function fmtMsun(msun) {
   return msun.toExponential(1) + ' M☉';
+}
+
+// ─── PAINEL DISTÂNCIAS
+const drowsEl = document.getElementById('drows');
+let distEls = []; // [{b, ddEl, drEl}] — refs às células de cada planeta
+
+function buildDistUI() {
+  drowsEl.innerHTML = '';
+  distEls = [];
+  bodies.forEach(b => {
+    if (!(b.refDist > 0)) return; // pula Sol e corpos fundidos
+    const row = document.createElement('div');
+    row.className = 'drow';
+
+    const dot = document.createElement('div');
+    dot.className = 'mdot';
+    dot.style.background = b.color;
+
+    const nm = document.createElement('div');
+    nm.className = 'dname';
+    nm.textContent = b.name.length > 8 ? b.name.slice(0, 7) + '…' : b.name;
+    nm.title = b.name;
+
+    const dd = document.createElement('span');
+    dd.className = 'ddist';
+
+    const dr = document.createElement('span');
+    dr.className = 'dratio';
+
+    row.append(dot, nm, dd, dr);
+    drowsEl.appendChild(row);
+    distEls.push({ b, dd, dr });
+  });
+}
+
+function updateDistances() {
+  const sunBody = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
+  distEls.forEach(({ b, dd, dr }) => {
+    const dx = b.x - sunBody.x, dy = b.y - sunBody.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    dd.textContent = dist.toFixed(3) + ' UA';
+    dr.textContent = '×' + (dist / b.refDist).toFixed(3);
+  });
 }
 
 function buildUI() {
@@ -678,6 +721,7 @@ function buildUI() {
     row.append(dot, nm, sl, mv, mk);
     mrowsEl.appendChild(row);
   });
+  buildDistUI();
 }
 
 // ─── HOVER INFO
