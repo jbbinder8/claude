@@ -481,13 +481,10 @@ function fmtMult(m) {
   return m.toExponential(1) + '×';
 }
 
-function fmtKg(msun) {
-  const kg = msun * MKG;
-  if (kg >= 1e30) return (kg/1e30).toFixed(2)+'e30';
-  if (kg >= 1e27) return (kg/1e27).toFixed(2)+'e27';
-  if (kg >= 1e24) return (kg/1e24).toFixed(2)+'e24';
-  if (kg >= 1e21) return (kg/1e21).toFixed(2)+'e21';
-  return kg.toExponential(2);
+function fmtMsun(msun) {
+  if (msun >= 0.01)  return msun.toFixed(4) + ' M☉';
+  if (msun >= 1e-6)  return msun.toExponential(3) + ' M☉';
+  return msun.toExponential(2) + ' M☉';
 }
 
 function buildUI() {
@@ -514,13 +511,13 @@ function buildUI() {
 
     const mk    = document.createElement('span');
     mk.className = 'mkg';
-    mk.textContent = fmtKg(b.massMsun) + 'kg';
+    mk.textContent = fmtMsun(b.massMsun);
 
     sl.addEventListener('input', () => {
       const mult = slMult(sl.value);
       bodies[idx].mass = bodies[idx].massMsun * mult;
       mv.textContent = fmtMult(mult);
-      mk.textContent = fmtKg(bodies[idx].mass) + 'kg';
+      mk.textContent = fmtMsun(bodies[idx].mass);
     });
 
     row.append(dot, nm, sl, mv, mk);
@@ -546,7 +543,7 @@ cv.addEventListener('mousemove', e => {
     const v = Math.sqrt(b.vx*b.vx + b.vy*b.vy).toFixed(4);
     el.innerHTML = `<b>${b.name}</b><br>` +
       `r = ${r} AU  |  v = ${v} AU/d<br>` +
-      `m = ${fmtKg(b.mass)}kg`;
+      `m = ${fmtMsun(b.mass)}`;
   } else {
     el.textContent = 'Passe o mouse sobre um planeta.';
   }
