@@ -342,7 +342,7 @@ function pushTrails() {
   if (!showTr) return;
   bodies.forEach(b => {
     b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > trMax) b.trail.length = trMax;
+    if (b.trail.length > trMax) b.trail.shift();
   });
 }
 
@@ -602,7 +602,7 @@ const lbltr = document.getElementById('lbltr');
 sltr.addEventListener('input', () => {
   trMax = Number(sltr.value);
   lbltr.textContent = trMax + ' pts';
-  bodies.forEach(b => { if (b.trail.length > trMax) b.trail.length = trMax; });
+  bodies.forEach(b => { while (b.trail.length > trMax) b.trail.shift(); });
 });
 
 // ─── INICIAR
