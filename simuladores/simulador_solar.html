@@ -58,6 +58,13 @@ details[open] > summary::before { content: '▾ '; }
   padding: 5px; border: 1px solid var(--border); border-radius: 3px;
 }
 #info b { color: var(--text); }
+#earth-info {
+  padding: 6px; border: 1px solid var(--border); border-radius: 3px; font-size: 10px;
+}
+#earth-info .ei-title { color: var(--dim); font-size: 10px; margin-bottom: 4px; }
+.ei-row { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+.ei-k { color: var(--dim); }
+.ei-v { color: var(--accent); font-size: 10px; }
 hr { border: none; border-top: 1px solid var(--border); }
 input[type=checkbox] { accent-color: var(--accent); }
 </style>
@@ -97,6 +104,16 @@ input[type=checkbox] { accent-color: var(--accent); }
       <summary>Massas (×real)</summary>
       <div id="mrows"></div>
     </details>
+    <hr>
+    <div id="earth-info">
+      <div class="ei-title">Terra — órbita atual</div>
+      <div class="ei-row"><span class="ei-k">Periélio</span><span class="ei-v" id="ei-rmin">—</span></div>
+      <div class="ei-row"><span class="ei-k">Afélio</span><span class="ei-v" id="ei-rmax">—</span></div>
+      <div class="ei-row"><span class="ei-k">Dist. média</span><span class="ei-v" id="ei-rmean">—</span></div>
+      <div class="ei-row"><span class="ei-k">Temp. média est.</span><span class="ei-v" id="ei-temp">—</span></div>
+      <div class="ei-row"><span class="ei-k">Período orbital</span><span class="ei-v" id="ei-period">—</span></div>
+      <div class="ei-row"><span class="ei-k">Excentricidade</span><span class="ei-v" id="ei-ecc">—</span></div>
+    </div>
     <hr>
     <div id="info">Passe o mouse sobre um planeta.</div>
   </div>
@@ -497,6 +514,53 @@ function fmtDate() {
   return d.toISOString().slice(0, 10);
 }
 
+// ─── PAINEL TERRA
+// Calcula elementos osculadores instantâneos da Terra (vis-viva) e
+// estima temperatura superficial média via equilíbrio radiativo + efeito estufa.
+function updateEarthInfo() {
+  const setEI = (id, txt) => { document.getElementById(id).textContent = txt; };
+  const earth = bodies.find(b => b.name === 'Terra');
+  const ALL_IDS = ['ei-rmin','ei-rmax','ei-rmean','ei-temp','ei-period','ei-ecc'];
+  if (!earth) {
+    ALL_IDS.forEach(id => setEI(id, '—'));
+    return;
+  }
+  // Atrator dominante (corpo de maior massa, normalmente o Sol)
+  const sun = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
+  const dx = earth.x - sun.x, dy = earth.y - sun.y;
+  const dvx = earth.vx - sun.vx, dvy = earth.vy - sun.vy;
+  const r  = Math.sqrt(dx*dx + dy*dy);
+  const v2 = dvx*dvx + dvy*dvy;
+  const mu = GM * sun.mass; // parâmetro gravitacional do Sol efetivo
+  // vis-viva: v² = μ(2/r − 1/a)  →  a = μ/(2μ/r − v²)
+  const denom = 2*mu/r - v2;
+  if (denom <= 0 || !isFinite(denom)) {
+    ALL_IDS.forEach(id => setEI(id, 'escape'));
+    return;
+  }
+  const a    = mu / denom;
+  const h    = Math.abs(dx*dvy - dy*dvx); // momento angular específico
+  const eSq  = Math.max(0, 1 - h*h/(mu*a));
+  const e    = Math.sqrt(eSq);
+  const rMin  = a * (1 - e);
+  const rMax  = a * (1 + e);
+  const rMean = a * (1 + 0.5*eSq); // média temporal: <r> = a(1 + e²/2)
+  // Temperatura de equilíbrio: T_eq⁴ ∝ <L/r²>_tempo ∝ 1/(a²√(1−e²))
+  // → T_eq = 254 K × (1 AU/a)^½ × (1−e²)^(−1/8)   [albedo Earth=0.30]
+  // Temperatura superficial ≈ T_eq + 33 K (efeito estufa médio)
+  const T_eq = 254.0 / (Math.sqrt(a) * Math.pow(1 - eSq, 0.125));
+  const T_C  = T_eq + 33 - 273.15;
+  // Período orbital: T = 2π√(a³/μ) em dias → converter para anos
+  const period_d = TWO_PI * Math.sqrt(a*a*a / mu);
+  const period_y = period_d / 365.25;
+  setEI('ei-rmin',   rMin.toFixed(3) + ' UA');
+  setEI('ei-rmax',   rMax.toFixed(3) + ' UA');
+  setEI('ei-rmean',  rMean.toFixed(3) + ' UA');
+  setEI('ei-temp',   (T_C >= 0 ? '+' : '') + T_C.toFixed(1) + ' °C');
+  setEI('ei-period', period_y.toFixed(2) + ' anos (' + period_d.toFixed(0) + ' d)');
+  setEI('ei-ecc',    e.toFixed(5));
+}
+
 // ─── LOOP PRINCIPAL
 function frame(now) {
   requestAnimationFrame(frame);
@@ -526,6 +590,7 @@ function frame(now) {
   if (needsUI) { buildUI(); needsUI = false; }
   draw();
   document.getElementById('ddate').textContent = fmtDate();
+  updateEarthInfo();
 }
 
 // ─── UI DE MASSA
