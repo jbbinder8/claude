@@ -141,16 +141,17 @@ const ELEMS = [
   -0.00125196, 0.00002514, -0.00263752,    218.46515314, -0.09688441,  -0.00606302],
 ];
 
+// physR: raio real em AU (1 AU = 149 597 870.7 km)
 const PDATA = [
-  { name: 'Sol',      color: '#ffdd44', visualR: 12, massMsun: 1.0        },
-  { name: 'Mercúrio', color: '#b0a090', visualR:  3, massMsun: 1.6601e-7  },
-  { name: 'Vênus',    color: '#e8c97e', visualR:  4, massMsun: 2.4478e-6  },
-  { name: 'Terra',    color: '#4499dd', visualR:  4, massMsun: 3.0027e-6  },
-  { name: 'Marte',    color: '#cc4411', visualR:  3, massMsun: 3.2271e-7  },
-  { name: 'Júpiter',  color: '#c9a878', visualR:  8, massMsun: 9.5479e-4  },
-  { name: 'Saturno',  color: '#e4d191', visualR:  7, massMsun: 2.8589e-4  },
-  { name: 'Urano',    color: '#7de8e8', visualR:  6, massMsun: 4.3662e-5  },
-  { name: 'Netuno',   color: '#4466ee', visualR:  6, massMsun: 5.1514e-5  },
+  { name: 'Sol',      color: '#ffdd44', visualR: 12, massMsun: 1.0,       physR: 4.6524e-3 },
+  { name: 'Mercúrio', color: '#b0a090', visualR:  3, massMsun: 1.6601e-7, physR: 1.6308e-5 },
+  { name: 'Vênus',    color: '#e8c97e', visualR:  4, massMsun: 2.4478e-6, physR: 4.0454e-5 },
+  { name: 'Terra',    color: '#4499dd', visualR:  4, massMsun: 3.0027e-6, physR: 4.2588e-5 },
+  { name: 'Marte',    color: '#cc4411', visualR:  3, massMsun: 3.2271e-7, physR: 2.2660e-5 },
+  { name: 'Júpiter',  color: '#c9a878', visualR:  8, massMsun: 9.5479e-4, physR: 4.7790e-4 },
+  { name: 'Saturno',  color: '#e4d191', visualR:  7, massMsun: 2.8589e-4, physR: 4.0289e-4 },
+  { name: 'Urano',    color: '#7de8e8', visualR:  6, massMsun: 4.3662e-5, physR: 1.7083e-4 },
+  { name: 'Netuno',   color: '#4466ee', visualR:  6, massMsun: 5.1514e-5, physR: 1.6554e-4 },
 ];
 
 // ─── MECÂNICA ORBITAL
@@ -213,6 +214,7 @@ function makeBodies() {
     return {
       name: pd.name, color: pd.color,
       visualR: pd.visualR,
+      physR: pd.physR,
       massMsun: pd.massMsun,
       mass: pd.massMsun,
       x, y, vx, vy,
@@ -322,15 +324,15 @@ function handleCollisions() {
     outer: for (let i = 0; i < bodies.length; i++) {
       for (let j = i + 1; j < bodies.length; j++) {
         const bi = bodies[i], bj = bodies[j];
-        const pi = w2s(bi.x, bi.y), pj = w2s(bj.x, bj.y);
-        const dpx = pi.sx - pj.sx, dpy = pi.sy - pj.sy;
-        if (Math.sqrt(dpx*dpx + dpy*dpy) < bi.visualR + bj.visualR) {
+        const dx = bi.x - bj.x, dy = bi.y - bj.y;
+        if (Math.sqrt(dx*dx + dy*dy) < bi.physR + bj.physR) {
           const mf  = bi.mass + bj.mass;
           const msf = bi.massMsun + bj.massMsun;
           bodies[i] = {
             name:    bi.name + '+' + bj.name,
             color:   bi.mass >= bj.mass ? bi.color : bj.color,
             visualR: Math.sqrt(bi.visualR*bi.visualR + bj.visualR*bj.visualR),
+            physR:   Math.cbrt(bi.physR**3 + bj.physR**3),
             massMsun: msf,
             mass: mf,
             x:  (bi.mass*bi.x  + bj.mass*bj.x)  / mf,
