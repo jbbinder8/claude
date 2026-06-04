@@ -223,6 +223,7 @@ function makeBodies() {
       period, trailInterval,
       trailTick: 0,
       trail: [],
+      elemIdx: i - 1, // índice em ELEMS (-1 para o Sol)
     };
   });
 }
@@ -239,9 +240,25 @@ function fixBarycentre(bs) {
   bs.forEach(b => { b.x -= cx; b.y -= cy; b.vx -= vx; b.vy -= vy; });
 }
 
+// Pré-preenche os rastros analiticamente usando os elementos keplerianos,
+// para que todos os planetas mostrem nOrbits de história desde o primeiro frame.
+function prefillTrails(bs) {
+  const maxPts = Math.round(nOrbits * PTS_PER_ORBIT);
+  bs.forEach(b => {
+    b.trail = [];
+    if (b.elemIdx < 0) return; // Sol ou corpo fundido
+    const dtC = b.trailInterval * DT / 36525; // passo em séculos entre pontos
+    for (let k = maxPts; k >= 1; k--) {
+      const s = keplerState(ELEMS[b.elemIdx], T - k * dtC);
+      b.trail.push({ x: s.x, y: s.y });
+    }
+  });
+}
+
 // ─── ESTADO GLOBAL
 let bodies = makeBodies();
 fixBarycentre(bodies);
+prefillTrails(bodies);
 let simTime  = 0;      // dias desde 2026-06-04
 let paused   = false;
 let dps      = 10;     // dias/segundo de wall-clock
@@ -356,6 +373,7 @@ function handleCollisions() {
             period:        Math.min(bi.period, bj.period),
             trailInterval: Math.min(bi.trailInterval, bj.trailInterval),
             trailTick:     0,
+            elemIdx:       -1, // corpo fundido — sem pré-preenchimento analítico
           };
           bodies.splice(j, 1);
           needsUI = true;
@@ -618,6 +636,7 @@ bplay.addEventListener('click', () => {
 breset.addEventListener('click', () => {
   bodies = makeBodies();
   fixBarycentre(bodies);
+  prefillTrails(bodies);
   simTime = 0; accum = 0;
   lastNow = performance.now();
   slspd.value = 3000; setSpd(3000);
@@ -636,8 +655,7 @@ const lbltr = document.getElementById('lbltr');
 sltr.addEventListener('input', () => {
   nOrbits = parseFloat(sltr.value);
   lbltr.textContent = nOrbits.toFixed(2).replace(/\.?0+$/, '') + ' órb';
-  const maxPts = Math.round(nOrbits * PTS_PER_ORBIT);
-  bodies.forEach(b => { while (b.trail.length > maxPts) b.trail.shift(); });
+  prefillTrails(bodies);
 });
 
 // ─── INICIAR
