@@ -94,6 +94,11 @@ input[type=checkbox] { accent-color: var(--accent); }
       </label>
       <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
     </div>
+    <div class="row" style="gap:8px">
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
+        <input type="checkbox" id="cblin"> Escala linear
+      </label>
+    </div>
     <div class="ctrl">
       <label>Duração rastro</label>
       <input type="range" id="sltr" min="0.25" max="5" step="0.25" value="1">
@@ -339,15 +344,23 @@ resize();
 // escala log: Netuno (~30 AU) → 44% da meia-menor-dimensão
 const NAUR = 30.1;
 const LOGR0 = 0.1; // AU
+let logScale = true; // false = escala linear real
+
 function logPx(r_au) {
   const half = Math.min(cv.width, cv.height) / 2 - 28;
   const K = half / Math.log10(1 + NAUR / LOGR0);
   return K * Math.log10(1 + r_au / LOGR0);
 }
+function linPx(r_au) {
+  const half = Math.min(cv.width, cv.height) / 2 - 28;
+  return (half / NAUR) * r_au;
+}
+function r2px(r_au) { return logScale ? logPx(r_au) : linPx(r_au); }
+
 function w2s(x, y) {
   const r = Math.sqrt(x*x + y*y);
   const th = Math.atan2(y, x);
-  const rd = r < 1e-10 ? 0 : logPx(r);
+  const rd = r < 1e-10 ? 0 : r2px(r);
   return { sx: cv.width/2 + rd*Math.cos(th), sy: cv.height/2 - rd*Math.sin(th) };
 }
 
@@ -435,7 +448,7 @@ function draw() {
   ctx.strokeStyle = '#151525';
   ctx.lineWidth = 1;
   [0.39, 0.72, 1.0, 1.52, 5.2, 9.54, 19.2, 30.1].forEach(r => {
-    const rd = logPx(r);
+    const rd = r2px(r);
     ctx.beginPath();
     ctx.arc(W/2, H/2, rd, 0, TWO_PI);
     ctx.stroke();
@@ -465,26 +478,31 @@ function draw() {
 
   // brilho do Sol
   const { sx: sox, sy: soy } = w2s(0, 0);
-  const grd = ctx.createRadialGradient(sox, soy, 0, sox, soy, 40);
-  grd.addColorStop(0, '#ffdd4455');
-  grd.addColorStop(1, 'transparent');
-  ctx.beginPath();
-  ctx.arc(sox, soy, 40, 0, TWO_PI);
-  ctx.fillStyle = grd;
-  ctx.fill();
+  if (logScale) {
+    const grd = ctx.createRadialGradient(sox, soy, 0, sox, soy, 40);
+    grd.addColorStop(0, '#ffdd4455');
+    grd.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(sox, soy, 40, 0, TWO_PI);
+    ctx.fillStyle = grd;
+    ctx.fill();
+  }
 
   // corpos
+  const DOT = 2; // raio fixo em escala linear
   bodies.forEach((b, idx) => {
     const { sx, sy } = w2s(b.x, b.y);
-    const r = b.visualR;
-    // halo
-    const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.2);
-    halo.addColorStop(0, b.color + '44');
-    halo.addColorStop(1, 'transparent');
-    ctx.beginPath();
-    ctx.arc(sx, sy, r * 2.2, 0, TWO_PI);
-    ctx.fillStyle = halo;
-    ctx.fill();
+    const r = logScale ? b.visualR : DOT;
+    // halo (apenas em escala log)
+    if (logScale) {
+      const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.2);
+      halo.addColorStop(0, b.color + '44');
+      halo.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 2.2, 0, TWO_PI);
+      ctx.fillStyle = halo;
+      ctx.fill();
+    }
     // corpo
     ctx.beginPath();
     ctx.arc(sx, sy, r, 0, TWO_PI);
@@ -714,6 +732,7 @@ breset.addEventListener('click', () => {
 
 slspd.addEventListener('input', () => setSpd(Number(slspd.value)));
 cbtr.addEventListener('change', () => { showTr = cbtr.checked; });
+document.getElementById('cblin').addEventListener('change', e => { logScale = !e.target.checked; });
 bclr.addEventListener('click', () => { bodies.forEach(b => b.trail = []); });
 
 const sltr  = document.getElementById('sltr');
