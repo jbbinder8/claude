@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador do Sistema Solar</title>
+<style>
+:root {
+  --bg: #060609;
+  --panel: #0e0e18;
+  --border: #1e1e30;
+  --text: #c0c0d8;
+  --dim: #555570;
+  --accent: #5577ff;
+  --btn: #141424;
+  --btn-h: #1e1e34;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text);
+  font: 12px/1.5 'Consolas', 'Courier New', monospace; overflow: hidden; }
+#app { display: grid; grid-template-columns: 1fr 290px; height: 100vh; }
+#c { display: block; width: 100%; height: 100%; }
+#panel {
+  background: var(--panel); border-left: 1px solid var(--border);
+  overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+h2 { font-size: 13px; color: #fff; letter-spacing: .06em; }
+.lbl { color: var(--dim); font-size: 10px; margin-bottom: 1px; }
+.val { color: var(--accent); font-size: 11px; }
+.row { display: flex; align-items: center; gap: 6px; }
+button {
+  background: var(--btn); border: 1px solid var(--border); color: var(--text);
+  padding: 4px 9px; cursor: pointer; border-radius: 3px; font: inherit; font-size: 11px;
+}
+button:hover { background: var(--btn-h); border-color: var(--accent); }
+.ctrl { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+.ctrl label { color: var(--dim); white-space: nowrap; min-width: 78px; }
+.ctrl input[type=range] { flex: 1; accent-color: var(--accent); height: 4px; }
+.ctrl .v { min-width: 64px; text-align: right; color: var(--accent); font-size: 10px; }
+details > summary {
+  cursor: pointer; font-size: 11px; color: var(--dim);
+  padding: 3px 0; user-select: none; list-style: none;
+}
+details > summary:hover { color: var(--text); }
+details > summary::before { content: '▸ '; }
+details[open] > summary::before { content: '▾ '; }
+.mrow {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 0; border-bottom: 1px solid #111120;
+}
+.mdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.mname { width: 58px; font-size: 10px; color: var(--text); overflow: hidden; }
+.mrow input[type=range] { flex: 1; accent-color: var(--accent); height: 3px; }
+.mmult { width: 52px; text-align: right; font-size: 10px; color: var(--accent); }
+.mkg   { width: 60px; text-align: right; font-size: 9px; color: var(--dim); }
+#info {
+  font-size: 10px; color: var(--dim); min-height: 52px;
+  padding: 5px; border: 1px solid var(--border); border-radius: 3px;
+}
+#info b { color: var(--text); }
+hr { border: none; border-top: 1px solid var(--border); }
+input[type=checkbox] { accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <div id="panel">
+    <h2>☀ Sistema Solar</h2>
+    <div>
+      <div class="lbl">Data simulada</div>
+      <div class="val" id="ddate">2026-06-04</div>
+    </div>
+    <hr>
+    <div class="row">
+      <button id="bplay">⏸ Pausar</button>
+      <button id="breset">↻ Reset</button>
+    </div>
+    <div class="ctrl">
+      <label>Velocidade</label>
+      <input type="range" id="slspd" min="0" max="6000" value="3000">
+      <span class="v" id="lblspd">10 d/s</span>
+    </div>
+    <div class="row" style="gap:8px">
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
+        <input type="checkbox" id="cbtr" checked> Rastros
+      </label>
+      <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
+    </div>
+    <hr>
+    <details open>
+      <summary>Massas (×real)</summary>
+      <div id="mrows"></div>
+    </details>
+    <hr>
+    <div id="info">Passe o mouse sobre um planeta.</div>
+  </div>
+</div>
+<script>
+// ─── CONSTANTES FÍSICAS
+const GM  = 2.9591220828559e-4; // G·M☉ em AU³/dia²  (k² gaussiana)
+const MKG = 1.98892e30;          // kg por M☉
+const D2R = Math.PI / 180;
+const TWO_PI = 2 * Math.PI;
+
+// Época alvo: 2026-06-04 00:00 UTC
+// T_J2000 = (JD_target − 2451545.0) / 36525 = 9650.5 / 36525
+const T = 9650.5 / 36525;        // séculos desde J2000  ≈ 0.26420
+
+// ─── ELEMENTOS KEPLERIANOS J2000 (Standish 1992/2010)
+// Colunas: a(AU), e, i(°), L(°), lp(°), Om(°) + taxas /século
+const ELEMS = [
+  // Mercúrio
+  [0.38709843, 0.20563661,  7.00559432, 252.25166724,  77.45771895,  48.33961819,
+   0,          0.00002123, -0.00590158, 149472.67486623,  0.15940013, -12.98429154],
+  // Vênus
+  [0.72332102, 0.00676399,  3.39777545, 181.97970850, 131.76755713,  76.67261496,
+  -0.00000026,-0.00005107,  0.00043494,  58517.81560260,  0.05679648, -18.16690231],
+  // Terra
+  [1.00000018, 0.01673163, -0.00054346, 100.46691572, 102.93005885,  -5.11260389,
+  -0.00000003,-0.00003661, -0.01337178,  35999.37306329,  0.31795260,  -0.24123856],
+  // Marte
+  [1.52366231, 0.09341233,  1.85181869,  -4.56813164, -23.91744784,  49.71320984,
+   0.00001000, 0.00011902, -0.00724757,  19140.29934243,  0.45223625,  -0.26852431],
+  // Júpiter
+  [5.20336301, 0.04839266,  1.29861416,  34.33479152,  14.27495244, 100.29282654,
+   0.00060737,-0.00012880, -0.00322699,   3034.90371757,  0.18199196,   0.13024619],
+  // Saturno
+  [9.53707032, 0.05415060,  2.49424102,  50.07571329,  92.86136063, 113.63998702,
+  -0.00301530,-0.00036762,  0.00451969,   1222.11494724,  0.54179478,  -0.25015002],
+  // Urano
+  [19.19126393,0.04716771,  0.76986663, 314.20276625, 172.43404441,  73.96250215,
+   0.00152025,-0.00019150, -0.00180155,    428.49512595,  0.09266985,   0.05739699],
+  // Netuno
+  [30.06896348,0.00858587,  1.76995259, 304.22289189,  46.68158724, 131.78635853,
+  -0.00125196, 0.00002514, -0.00263752,    218.46515314, -0.09688441,  -0.00606302],
+];
+
+const PDATA = [
+  { name: 'Sol',      color: '#ffdd44', visualR: 12, massMsun: 1.0        },
+  { name: 'Mercúrio', color: '#b0a090', visualR:  3, massMsun: 1.6601e-7  },
+  { name: 'Vênus',    color: '#e8c97e', visualR:  4, massMsun: 2.4478e-6  },
+  { name: 'Terra',    color: '#4499dd', visualR:  4, massMsun: 3.0027e-6  },
+  { name: 'Marte',    color: '#cc4411', visualR:  3, massMsun: 3.2271e-7  },
+  { name: 'Júpiter',  color: '#c9a878', visualR:  8, massMsun: 9.5479e-4  },
+  { name: 'Saturno',  color: '#e4d191', visualR:  7, massMsun: 2.8589e-4  },
+  { name: 'Urano',    color: '#7de8e8', visualR:  6, massMsun: 4.3662e-5  },
+  { name: 'Netuno',   color: '#4466ee', visualR:  6, massMsun: 5.1514e-5  },
+];
+
+// ─── MECÂNICA ORBITAL
+function normRad(r) { return ((r % TWO_PI) + TWO_PI) % TWO_PI; }
+
+function solveKepler(M, e) {
+  let E = M + e * Math.sin(M);
+  for (let i = 0; i < 50; i++) {
+    const dE = (M - E + e * Math.sin(E)) / (1 - e * Math.cos(E));
+    E += dE;
+    if (Math.abs(dE) < 1e-12) break;
+  }
+  return E;
+}
+
+function keplerState(el, Tc) {
+  const a   = el[0] + el[6]  * Tc;
+  const e   = el[1] + el[7]  * Tc;
+  const i   = (el[2] + el[8]  * Tc) * D2R;
+  const L   = normRad((el[3] + el[9]  * Tc) * D2R);
+  const lp  = (el[4] + el[10] * Tc) * D2R;
+  const Om  = (el[5] + el[11] * Tc) * D2R;
+  const w   = lp - Om;
+  const M   = normRad(L - lp);
+  const E   = solveKepler(M, e);
+  const s1e = Math.sqrt(1 - e * e);
+  const xo  = a * (Math.cos(E) - e);
+  const yo  = a * s1e * Math.sin(E);
+  const n   = TWO_PI / (Math.pow(a, 1.5) * 365.25); // rad/dia
+  const dn  = 1 - e * Math.cos(E);
+  const vxo = -a * n * Math.sin(E) / dn;
+  const vyo =  a * n * s1e * Math.cos(E) / dn;
+  const cO = Math.cos(Om), sO = Math.sin(Om);
+  const cw = Math.cos(w),  sw = Math.sin(w);
+  const ci = Math.cos(i);
+  const Px = cw*cO - sw*sO*ci,  Py = cw*sO + sw*cO*ci;
+  const Qx =-sw*cO - cw*sO*ci,  Qy =-sw*sO + cw*cO*ci;
+  return {
+    x:  Px*xo  + Qx*yo,
+    y:  Py*xo  + Qy*yo,
+    vx: Px*vxo + Qx*vyo,
+    vy: Py*vxo + Qy*vyo,
+  };
+}
+
+function makeBodies() {
+  return PDATA.map((pd, i) => {
+    let x = 0, y = 0, vx = 0, vy = 0;
+    if (i > 0) { const s = keplerState(ELEMS[i - 1], T); x=s.x; y=s.y; vx=s.vx; vy=s.vy; }
+    return {
+      name: pd.name, color: pd.color,
+      visualR: pd.visualR,
+      massMsun: pd.massMsun,   // real (imutável)
+      mass: pd.massMsun,        // efetiva (slider)
+      x, y, vx, vy,
+      trail: [],
+    };
+  });
+}
+
+// ─── ESTADO GLOBAL
+let bodies = makeBodies();
+let simTime  = 0;      // dias desde 2026-06-04
+let paused   = false;
+let dps      = 10;     // dias/segundo de wall-clock
+let showTr   = true;
+let accum    = 0;
+let lastNow  = null;
+let hovered  = -1;
+let needsUI  = false;
+
+const DT     = 0.25;   // passo RK4 em dias (fixo)
+const TRMAX  = 600;    // pontos máx por rastro
+const EPS2   = 1e-12;  // softening AU²
+
+// ─── MOTOR RK4 N-CORPOS
+function derivs(state, masses) {
+  return state.map((si, i) => {
+    let ax = 0, ay = 0;
+    for (let j = 0; j < state.length; j++) {
+      if (i === j) continue;
+      const dx = state[j].x - si.x, dy = state[j].y - si.y;
+      const r2 = dx*dx + dy*dy + EPS2;
+      const r3 = r2 * Math.sqrt(r2);
+      const gm = GM * masses[j];
+      ax += gm * dx / r3;
+      ay += gm * dy / r3;
+    }
+    return { dx: si.vx, dy: si.vy, dvx: ax, dvy: ay };
+  });
+}
+
+function addS(s, d, h) {
+  return s.map((si, i) => ({
+    x:  si.x  + h * d[i].dx,
+    y:  si.y  + h * d[i].dy,
+    vx: si.vx + h * d[i].dvx,
+    vy: si.vy + h * d[i].dvy,
+  }));
+}
+
+function rk4Step(bs, dt) {
+  const masses = bs.map(b => b.mass);
+  const s0 = bs.map(b => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy }));
+  const k1 = derivs(s0,              masses);
+  const k2 = derivs(addS(s0, k1, dt/2), masses);
+  const k3 = derivs(addS(s0, k2, dt/2), masses);
+  const k4 = derivs(addS(s0, k3, dt),   masses);
+  bs.forEach((b, i) => {
+    b.x  += dt/6 * (k1[i].dx  + 2*k2[i].dx  + 2*k3[i].dx  + k4[i].dx);
+    b.y  += dt/6 * (k1[i].dy  + 2*k2[i].dy  + 2*k3[i].dy  + k4[i].dy);
+    b.vx += dt/6 * (k1[i].dvx + 2*k2[i].dvx + 2*k3[i].dvx + k4[i].dvx);
+    b.vy += dt/6 * (k1[i].dvy + 2*k2[i].dvy + 2*k3[i].dvy + k4[i].dvy);
+  });
+}
+
+// ─── CANVAS
+const cv  = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+function resize() { cv.width = cv.clientWidth; cv.height = cv.clientHeight; }
+window.addEventListener('resize', () => { resize(); genStars(); });
+resize();
+
+// escala log: Netuno (~30 AU) → 44% da meia-menor-dimensão
+const NAUR = 30.1;
+const LOGR0 = 0.1; // AU
+function logPx(r_au) {
+  const half = Math.min(cv.width, cv.height) / 2 - 28;
+  const K = half / Math.log10(1 + NAUR / LOGR0);
+  return K * Math.log10(1 + r_au / LOGR0);
+}
+function w2s(x, y) {
+  const r = Math.sqrt(x*x + y*y);
+  const th = Math.atan2(y, x);
+  const rd = r < 1e-10 ? 0 : logPx(r);
+  return { sx: cv.width/2 + rd*Math.cos(th), sy: cv.height/2 - rd*Math.sin(th) };
+}
+
+// ─── ESTRELAS
+let STARS = [];
+function genStars() {
+  STARS = Array.from({length: 220}, () => ({
+    x: Math.random() * cv.width,
+    y: Math.random() * cv.height,
+    r: Math.random() * 1.2 + 0.3,
+    a: Math.random() * 0.7 + 0.15,
+  }));
+}
+genStars();
+
+// ─── COLISÕES
+function handleCollisions() {
+  let again = true;
+  while (again) {
+    again = false;
+    outer: for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const bi = bodies[i], bj = bodies[j];
+        const pi = w2s(bi.x, bi.y), pj = w2s(bj.x, bj.y);
+        const dpx = pi.sx - pj.sx, dpy = pi.sy - pj.sy;
+        if (Math.sqrt(dpx*dpx + dpy*dpy) < bi.visualR + bj.visualR) {
+          const mf  = bi.mass + bj.mass;
+          const msf = bi.massMsun + bj.massMsun;
+          bodies[i] = {
+            name:    bi.name + '+' + bj.name,
+            color:   bi.mass >= bj.mass ? bi.color : bj.color,
+            visualR: Math.sqrt(bi.visualR*bi.visualR + bj.visualR*bj.visualR),
+            massMsun: msf,
+            mass: mf,
+            x:  (bi.mass*bi.x  + bj.mass*bj.x)  / mf,
+            y:  (bi.mass*bi.y  + bj.mass*bj.y)  / mf,
+            vx: (bi.mass*bi.vx + bj.mass*bj.vx) / mf,
+            vy: (bi.mass*bi.vy + bj.mass*bj.vy) / mf,
+            trail: bi.trail,
+          };
+          bodies.splice(j, 1);
+          needsUI = true;
+          again = true;
+          break outer;
+        }
+      }
+    }
+  }
+}
+
+// ─── RASTROS
+function pushTrails() {
+  if (!showTr) return;
+  bodies.forEach(b => {
+    b.trail.push({ x: b.x, y: b.y });
+    if (b.trail.length > TRMAX) b.trail.shift();
+  });
+}
+
+// ─── RENDER
+function draw() {
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // estrelas
+  STARS.forEach(s => {
+    ctx.globalAlpha = s.a;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, TWO_PI);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // anéis de referência orbital
+  ctx.strokeStyle = '#151525';
+  ctx.lineWidth = 1;
+  [0.39, 0.72, 1.0, 1.52, 5.2, 9.54, 19.2, 30.1].forEach(r => {
+    const rd = logPx(r);
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, rd, 0, TWO_PI);
+    ctx.stroke();
+  });
+
+  // rastros
+  bodies.forEach(b => {
+    if (!showTr || b.trail.length < 2) return;
+    const pts = b.trail.map(p => w2s(p.x, p.y));
+    // rastro completo, tênue
+    ctx.beginPath();
+    ctx.moveTo(pts[0].sx, pts[0].sy);
+    for (let k = 1; k < pts.length; k++) ctx.lineTo(pts[k].sx, pts[k].sy);
+    ctx.strokeStyle = b.color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.18;
+    ctx.stroke();
+    // parte recente, mais brilhante
+    const cut = Math.max(0, pts.length - 80);
+    ctx.beginPath();
+    ctx.moveTo(pts[cut].sx, pts[cut].sy);
+    for (let k = cut + 1; k < pts.length; k++) ctx.lineTo(pts[k].sx, pts[k].sy);
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // brilho do Sol
+  const { sx: sox, sy: soy } = w2s(0, 0);
+  const grd = ctx.createRadialGradient(sox, soy, 0, sox, soy, 40);
+  grd.addColorStop(0, '#ffdd4455');
+  grd.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(sox, soy, 40, 0, TWO_PI);
+  ctx.fillStyle = grd;
+  ctx.fill();
+
+  // corpos
+  bodies.forEach((b, idx) => {
+    const { sx, sy } = w2s(b.x, b.y);
+    const r = b.visualR;
+    // halo
+    const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 2.2);
+    halo.addColorStop(0, b.color + '44');
+    halo.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(sx, sy, r * 2.2, 0, TWO_PI);
+    ctx.fillStyle = halo;
+    ctx.fill();
+    // corpo
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, TWO_PI);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    // contorno hover
+    if (idx === hovered) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, r + 3, 0, TWO_PI);
+      ctx.strokeStyle = '#ffffff99';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    // label
+    ctx.fillStyle = b.color;
+    ctx.globalAlpha = 0.85;
+    ctx.font = '10px Consolas, monospace';
+    ctx.fillText(b.name.split('+')[0], sx + r + 3, sy + 4);
+    ctx.globalAlpha = 1;
+  });
+}
+
+// ─── DATA FORMATADA
+const T0 = new Date('2026-06-04T00:00:00Z');
+function fmtDate() {
+  const d = new Date(T0.getTime() + simTime * 86400000);
+  return d.toISOString().slice(0, 10);
+}
+
+// ─── LOOP PRINCIPAL
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (lastNow === null) { lastNow = now; return; }
+  const dt_wall = Math.min((now - lastNow) / 1000, 0.1);
+  lastNow = now;
+
+  if (!paused) {
+    accum += dt_wall * dps;
+    let steps = 0;
+    while (accum >= DT && steps < 1000) {
+      rk4Step(bodies, DT);
+      handleCollisions();
+      simTime += DT;
+      accum -= DT;
+      steps++;
+    }
+    if (accum > 0 && steps < 1000) {
+      rk4Step(bodies, accum);
+      simTime += accum;
+      accum = 0;
+    }
+    pushTrails();
+  }
+
+  if (needsUI) { buildUI(); needsUI = false; }
+  draw();
+  document.getElementById('ddate').textContent = fmtDate();
+}
+
+// ─── UI DE MASSA
+const mrowsEl = document.getElementById('mrows');
+
+function slMult(v) { return Math.pow(10, (v - 2000) / 1000); }
+
+function fmtMult(m) {
+  if (m >= 1000) return m.toExponential(1) + '×';
+  if (m >= 10)   return m.toFixed(0) + '×';
+  if (m >= 1)    return m.toFixed(2) + '×';
+  return m.toExponential(1) + '×';
+}
+
+function fmtKg(msun) {
+  const kg = msun * MKG;
+  if (kg >= 1e30) return (kg/1e30).toFixed(2)+'e30';
+  if (kg >= 1e27) return (kg/1e27).toFixed(2)+'e27';
+  if (kg >= 1e24) return (kg/1e24).toFixed(2)+'e24';
+  if (kg >= 1e21) return (kg/1e21).toFixed(2)+'e21';
+  return kg.toExponential(2);
+}
+
+function buildUI() {
+  mrowsEl.innerHTML = '';
+  bodies.forEach((b, idx) => {
+    const row   = document.createElement('div');
+    row.className = 'mrow';
+
+    const dot   = document.createElement('div');
+    dot.className = 'mdot';
+    dot.style.background = b.color;
+
+    const nm    = document.createElement('div');
+    nm.className = 'mname';
+    nm.title = b.name;
+    nm.textContent = b.name.length > 8 ? b.name.slice(0, 7) + '…' : b.name;
+
+    const sl    = document.createElement('input');
+    sl.type = 'range'; sl.min = 0; sl.max = 8000; sl.value = 2000;
+
+    const mv    = document.createElement('span');
+    mv.className = 'mmult';
+    mv.textContent = '1.00×';
+
+    const mk    = document.createElement('span');
+    mk.className = 'mkg';
+    mk.textContent = fmtKg(b.massMsun) + 'kg';
+
+    sl.addEventListener('input', () => {
+      const mult = slMult(sl.value);
+      bodies[idx].mass = bodies[idx].massMsun * mult;
+      mv.textContent = fmtMult(mult);
+      mk.textContent = fmtKg(bodies[idx].mass) + 'kg';
+    });
+
+    row.append(dot, nm, sl, mv, mk);
+    mrowsEl.appendChild(row);
+  });
+}
+
+// ─── HOVER INFO
+cv.addEventListener('mousemove', e => {
+  const rc = cv.getBoundingClientRect();
+  const mx = e.clientX - rc.left, my = e.clientY - rc.top;
+  let best = -1, bestD = 22;
+  bodies.forEach((b, i) => {
+    const { sx, sy } = w2s(b.x, b.y);
+    const d = Math.hypot(mx - sx, my - sy);
+    if (d < bestD) { best = i; bestD = d; }
+  });
+  hovered = best;
+  const el = document.getElementById('info');
+  if (best >= 0) {
+    const b = bodies[best];
+    const r = Math.sqrt(b.x*b.x + b.y*b.y).toFixed(3);
+    const v = Math.sqrt(b.vx*b.vx + b.vy*b.vy).toFixed(4);
+    el.innerHTML = `<b>${b.name}</b><br>` +
+      `r = ${r} AU  |  v = ${v} AU/d<br>` +
+      `m = ${fmtKg(b.mass)}kg`;
+  } else {
+    el.textContent = 'Passe o mouse sobre um planeta.';
+  }
+});
+cv.addEventListener('mouseleave', () => {
+  hovered = -1;
+  document.getElementById('info').textContent = 'Passe o mouse sobre um planeta.';
+});
+
+// ─── CONTROLES GLOBAIS
+const bplay  = document.getElementById('bplay');
+const breset = document.getElementById('breset');
+const slspd  = document.getElementById('slspd');
+const lblspd = document.getElementById('lblspd');
+const cbtr   = document.getElementById('cbtr');
+const bclr   = document.getElementById('bclr');
+
+function spdVal(v) { return Math.pow(10, v / 1000 - 2); }
+function spdLbl(s) {
+  if (s >= 1000) return s.toFixed(0) + ' d/s';
+  if (s >= 1)    return s.toFixed(1) + ' d/s';
+  return s.toFixed(3) + ' d/s';
+}
+function setSpd(v) { dps = spdVal(v); lblspd.textContent = spdLbl(dps); }
+
+bplay.addEventListener('click', () => {
+  paused = !paused;
+  bplay.textContent = paused ? '▶ Continuar' : '⏸ Pausar';
+  if (!paused) lastNow = performance.now();
+});
+
+breset.addEventListener('click', () => {
+  bodies = makeBodies();
+  simTime = 0; accum = 0;
+  lastNow = performance.now();
+  slspd.value = 3000; setSpd(3000);
+  paused = false;
+  bplay.textContent = '⏸ Pausar';
+  buildUI();
+});
+
+slspd.addEventListener('input', () => setSpd(Number(slspd.value)));
+cbtr.addEventListener('change', () => { showTr = cbtr.checked; });
+bclr.addEventListener('click', () => { bodies.forEach(b => b.trail = []); });
+
+// ─── INICIAR
+buildUI();
+setSpd(3000);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
