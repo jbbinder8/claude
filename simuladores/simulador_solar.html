@@ -488,9 +488,7 @@ function fmtMult(m) {
 }
 
 function fmtMsun(msun) {
-  if (msun >= 0.01)  return msun.toFixed(4) + ' M☉';
-  if (msun >= 1e-6)  return msun.toExponential(3) + ' M☉';
-  return msun.toExponential(2) + ' M☉';
+  return msun.toExponential(1) + ' M☉';
 }
 
 function buildUI() {
