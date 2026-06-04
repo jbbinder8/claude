@@ -455,6 +455,7 @@ function frame(now) {
       simTime += DT;
       accum -= DT;
       steps++;
+      if (steps % 5 === 0) pushTrails();
     }
     if (accum > 0 && steps < 3000) {
       rk4Step(bodies, accum);
