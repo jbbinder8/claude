@@ -245,6 +245,8 @@ function makeBodies() {
       period, trailInterval,
       trailTick: 0,
       trail: [],
+      // semi-eixo maior na época inicial = distância média de referência (0 para o Sol)
+      refDist: i === 0 ? 0 : ELEMS[i - 1][0] + ELEMS[i - 1][6] * T,
       elemIdx: i - 1, // índice em ELEMS (-1 para o Sol)
     };
   });
@@ -490,6 +492,7 @@ function draw() {
 
   // corpos
   const DOT = 2; // raio fixo em escala linear
+  const sunBody = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
   bodies.forEach((b, idx) => {
     const { sx, sy } = w2s(b.x, b.y);
     const r = logScale ? b.visualR : DOT;
@@ -521,6 +524,16 @@ function draw() {
     ctx.globalAlpha = 0.85;
     ctx.font = '10px Consolas, monospace';
     ctx.fillText(b.name.split('+')[0], sx + r + 3, sy + 4);
+    // distância atual vs referência inicial (apenas planetas com refDist definido)
+    if (b.refDist > 0) {
+      const ddx = b.x - sunBody.x, ddy = b.y - sunBody.y;
+      const dist = Math.sqrt(ddx*ddx + ddy*ddy);
+      const ratio = dist / b.refDist;
+      ctx.globalAlpha = 0.55;
+      ctx.font = '9px Consolas, monospace';
+      ctx.fillStyle = '#aaaacc';
+      ctx.fillText(dist.toFixed(3) + ' UA  ×' + ratio.toFixed(3), sx + r + 3, sy + 14);
+    }
     ctx.globalAlpha = 1;
   });
 }
