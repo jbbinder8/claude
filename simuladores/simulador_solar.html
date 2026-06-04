@@ -89,8 +89,8 @@ input[type=checkbox] { accent-color: var(--accent); }
     </div>
     <div class="ctrl">
       <label>Duração rastro</label>
-      <input type="range" id="sltr" min="50" max="6000" value="600">
-      <span class="v" id="lbltr">150 d</span>
+      <input type="range" id="sltr" min="0.25" max="5" step="0.25" value="1">
+      <span class="v" id="lbltr">1.0 órb</span>
     </div>
     <hr>
     <details open>
@@ -196,16 +196,28 @@ function keplerState(el, Tc) {
   };
 }
 
+const PTS_PER_ORBIT = 400; // pontos de rastro por órbita (resolução angular fixa)
+
+function bodyPeriod(i) {
+  // período orbital em dias a partir de a₀ (Kepler); Sol usa período de Júpiter
+  if (i === 0) return Math.pow(ELEMS[4][0], 1.5) * 365.25; // ~4332 d
+  return Math.pow(ELEMS[i - 1][0], 1.5) * 365.25;
+}
+
 function makeBodies() {
   return PDATA.map((pd, i) => {
     let x = 0, y = 0, vx = 0, vy = 0;
     if (i > 0) { const s = keplerState(ELEMS[i - 1], T); x=s.x; y=s.y; vx=s.vx; vy=s.vy; }
+    const period = bodyPeriod(i);
+    const trailInterval = Math.max(1, Math.round(period / (PTS_PER_ORBIT * DT)));
     return {
       name: pd.name, color: pd.color,
       visualR: pd.visualR,
-      massMsun: pd.massMsun,   // real (imutável)
-      mass: pd.massMsun,        // efetiva (slider)
+      massMsun: pd.massMsun,
+      mass: pd.massMsun,
       x, y, vx, vy,
+      period, trailInterval,
+      trailTick: 0,
       trail: [],
     };
   });
@@ -223,7 +235,7 @@ let hovered  = -1;
 let needsUI  = false;
 
 const DT     = 0.05;   // passo RK4 em dias (fixo — menor que 0.25 para evitar drift em órbita de Mercúrio)
-let   trMax  = 600;    // pontos máx por rastro (ajustável pelo slider)
+let   nOrbits = 1.0;   // duração do rastro em número de órbitas de cada planeta
 const EPS2   = 1e-12;  // softening AU²
 
 // ─── MOTOR RK4 N-CORPOS
@@ -326,6 +338,9 @@ function handleCollisions() {
             vx: (bi.mass*bi.vx + bj.mass*bj.vx) / mf,
             vy: (bi.mass*bi.vy + bj.mass*bj.vy) / mf,
             trail: bi.trail,
+            period:        Math.min(bi.period, bj.period),
+            trailInterval: Math.min(bi.trailInterval, bj.trailInterval),
+            trailTick:     0,
           };
           bodies.splice(j, 1);
           needsUI = true;
@@ -338,11 +353,16 @@ function handleCollisions() {
 }
 
 // ─── RASTROS
-function pushTrails() {
+function tickTrails() {
   if (!showTr) return;
+  const maxPts = Math.round(nOrbits * PTS_PER_ORBIT);
   bodies.forEach(b => {
-    b.trail.push({ x: b.x, y: b.y });
-    if (b.trail.length > trMax) b.trail.shift();
+    b.trailTick++;
+    if (b.trailTick >= b.trailInterval) {
+      b.trailTick = 0;
+      b.trail.push({ x: b.x, y: b.y });
+      if (b.trail.length > maxPts) b.trail.shift();
+    }
   });
 }
 
@@ -460,14 +480,13 @@ function frame(now) {
       simTime += DT;
       accum -= DT;
       steps++;
-      if (steps % 5 === 0) pushTrails();
+      tickTrails();
     }
     if (accum > 0 && steps < 3000) {
       rk4Step(bodies, accum);
       simTime += accum;
       accum = 0;
     }
-    pushTrails();
   }
 
   if (needsUI) { buildUI(); needsUI = false; }
@@ -586,6 +605,7 @@ breset.addEventListener('click', () => {
   simTime = 0; accum = 0;
   lastNow = performance.now();
   slspd.value = 3000; setSpd(3000);
+  sltr.value = '1'; nOrbits = 1; lbltr.textContent = '1 órb';
   paused = false;
   bplay.textContent = '⏸ Pausar';
   buildUI();
@@ -598,9 +618,10 @@ bclr.addEventListener('click', () => { bodies.forEach(b => b.trail = []); });
 const sltr  = document.getElementById('sltr');
 const lbltr = document.getElementById('lbltr');
 sltr.addEventListener('input', () => {
-  trMax = Number(sltr.value);
-  lbltr.textContent = Math.round(trMax * 0.25) + ' d';
-  bodies.forEach(b => { while (b.trail.length > trMax) b.trail.shift(); });
+  nOrbits = parseFloat(sltr.value);
+  lbltr.textContent = nOrbits.toFixed(2).replace(/\.?0+$/, '') + ' órb';
+  const maxPts = Math.round(nOrbits * PTS_PER_ORBIT);
+  bodies.forEach(b => { while (b.trail.length > maxPts) b.trail.shift(); });
 });
 
 // ─── INICIAR
