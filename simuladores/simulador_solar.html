@@ -503,15 +503,17 @@ function buildUI() {
     nm.textContent = b.name.length > 8 ? b.name.slice(0, 7) + '…' : b.name;
 
     const sl    = document.createElement('input');
-    sl.type = 'range'; sl.min = 0; sl.max = 8000; sl.value = 2000;
+    sl.type = 'range'; sl.min = 0; sl.max = 8000;
+    const curMult = b.mass / b.massMsun;
+    sl.value = Math.round(Math.max(0, Math.min(8000, 2000 + 1000 * Math.log10(curMult))));
 
     const mv    = document.createElement('span');
     mv.className = 'mmult';
-    mv.textContent = '1.00×';
+    mv.textContent = fmtMult(curMult);
 
     const mk    = document.createElement('span');
     mk.className = 'mkg';
-    mk.textContent = fmtMsun(b.massMsun);
+    mk.textContent = fmtMsun(b.mass);
 
     sl.addEventListener('input', () => {
       const mult = slMult(sl.value);
