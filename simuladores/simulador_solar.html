@@ -90,7 +90,7 @@ input[type=checkbox] { accent-color: var(--accent); }
     <div class="ctrl">
       <label>Duração rastro</label>
       <input type="range" id="sltr" min="50" max="6000" value="600">
-      <span class="v" id="lbltr">600 pts</span>
+      <span class="v" id="lbltr">150 d</span>
     </div>
     <hr>
     <details open>
@@ -599,7 +599,7 @@ const sltr  = document.getElementById('sltr');
 const lbltr = document.getElementById('lbltr');
 sltr.addEventListener('input', () => {
   trMax = Number(sltr.value);
-  lbltr.textContent = trMax + ' pts';
+  lbltr.textContent = Math.round(trMax * 0.25) + ' d';
   bodies.forEach(b => { while (b.trail.length > trMax) b.trail.shift(); });
 });
 
