@@ -86,7 +86,9 @@ input[type=checkbox] { accent-color: var(--accent); }
     <div class="row">
       <button id="bplay">⏸ Pausar</button>
       <button id="breset">↻ Reset</button>
+      <button id="bcenter" title="Centralizar câmera">⊙ Centrar</button>
     </div>
+    <div style="font-size:9px;color:var(--dim)">Scroll: zoom · Arrastar: pan</div>
     <div class="ctrl">
       <label>Velocidade</label>
       <input type="range" id="slspd" min="0" max="6000" value="3000">
@@ -301,6 +303,12 @@ let lastNow  = null;
 let hovered  = -1;
 let needsUI  = false;
 
+// ─── CÂMERA (pan + zoom)
+let panX = 0, panY = 0, camZoom = 1;
+let isDragging = false;
+let dragMoved  = false;
+const dragStart = { x: 0, y: 0 };
+
 const EPS2   = 1e-12;  // softening AU²
 
 // ─── MOTOR RK4 N-CORPOS
@@ -372,7 +380,10 @@ function w2s(x, y) {
   const r = Math.sqrt(x*x + y*y);
   const th = Math.atan2(y, x);
   const rd = r < 1e-10 ? 0 : r2px(r);
-  return { sx: cv.width/2 + rd*Math.cos(th), sy: cv.height/2 - rd*Math.sin(th) };
+  return {
+    sx: cv.width/2  + panX + camZoom * rd * Math.cos(th),
+    sy: cv.height/2 + panY - camZoom * rd * Math.sin(th),
+  };
 }
 
 // ─── ESTRELAS
@@ -460,9 +471,9 @@ function draw() {
   ctx.strokeStyle = '#151525';
   ctx.lineWidth = 1;
   [0.39, 0.72, 1.0, 1.52, 5.2, 9.54, 19.2, 30.1].forEach(r => {
-    const rd = r2px(r);
+    const rd = r2px(r) * camZoom;
     ctx.beginPath();
-    ctx.arc(W/2, H/2, rd, 0, TWO_PI);
+    ctx.arc(W/2 + panX, H/2 + panY, rd, 0, TWO_PI);
     ctx.stroke();
   });
 
@@ -491,11 +502,12 @@ function draw() {
   // brilho do Sol
   const { sx: sox, sy: soy } = w2s(0, 0);
   if (logScale) {
-    const grd = ctx.createRadialGradient(sox, soy, 0, sox, soy, 40);
+    const glowR = Math.max(15, Math.min(40 * camZoom, 80));
+    const grd = ctx.createRadialGradient(sox, soy, 0, sox, soy, glowR);
     grd.addColorStop(0, '#ffdd4455');
     grd.addColorStop(1, 'transparent');
     ctx.beginPath();
-    ctx.arc(sox, soy, 40, 0, TWO_PI);
+    ctx.arc(sox, soy, glowR, 0, TWO_PI);
     ctx.fillStyle = grd;
     ctx.fill();
   }
@@ -726,6 +738,7 @@ function buildUI() {
 
 // ─── HOVER INFO
 cv.addEventListener('mousemove', e => {
+  if (isDragging) return;
   const rc = cv.getBoundingClientRect();
   const mx = e.clientX - rc.left, my = e.clientY - rc.top;
   let best = -1, bestD = 22;
@@ -735,6 +748,7 @@ cv.addEventListener('mousemove', e => {
     if (d < bestD) { best = i; bestD = d; }
   });
   hovered = best;
+  cv.style.cursor = best >= 0 ? 'pointer' : 'grab';
   const el = document.getElementById('info');
   if (best >= 0) {
     const b = bodies[best];
@@ -748,8 +762,51 @@ cv.addEventListener('mousemove', e => {
   }
 });
 cv.addEventListener('mouseleave', () => {
+  if (isDragging) return;
   hovered = -1;
   document.getElementById('info').textContent = 'Passe o mouse sobre um planeta.';
+});
+
+// ─── CÂMERA: zoom com scroll
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  const rc = cv.getBoundingClientRect();
+  const mx = e.clientX - rc.left;
+  const my = e.clientY - rc.top;
+  const W = cv.width, H = cv.height;
+  // mantém o ponto sob o cursor fixo
+  panX = (mx - W/2) * (1 - factor) + factor * panX;
+  panY = (my - H/2) * (1 - factor) + factor * panY;
+  camZoom = Math.max(0.05, Math.min(camZoom * factor, 80));
+}, { passive: false });
+
+// ─── CÂMERA: pan com arrastar
+cv.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  isDragging = true;
+  dragMoved  = false;
+  const rc = cv.getBoundingClientRect();
+  dragStart.x = e.clientX - rc.left - panX;
+  dragStart.y = e.clientY - rc.top  - panY;
+  cv.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const rc = cv.getBoundingClientRect();
+  const nx = e.clientX - rc.left - dragStart.x;
+  const ny = e.clientY - rc.top  - dragStart.y;
+  if (Math.abs(nx - panX) > 1 || Math.abs(ny - panY) > 1) dragMoved = true;
+  panX = nx;
+  panY = ny;
+});
+
+window.addEventListener('mouseup', () => {
+  if (!isDragging) return;
+  isDragging = false;
+  cv.style.cursor = hovered >= 0 ? 'pointer' : 'grab';
 });
 
 // ─── CONTROLES GLOBAIS
@@ -784,7 +841,12 @@ breset.addEventListener('click', () => {
   sltr.value = '1'; nOrbits = 1; lbltr.textContent = '1 órb';
   paused = false;
   bplay.textContent = '⏸ Pausar';
+  panX = 0; panY = 0; camZoom = 1;
   buildUI();
+});
+
+document.getElementById('bcenter').addEventListener('click', () => {
+  panX = 0; panY = 0; camZoom = 1;
 });
 
 slspd.addEventListener('input', () => setSpd(Number(slspd.value)));
