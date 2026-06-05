@@ -685,7 +685,6 @@ function buildDistUI() {
 
     const dp = document.createElement('span');
     dp.className = 'dperiod';
-    dp.textContent = fmtPeriod(b.period);
 
     const dd = document.createElement('span');
     dd.className = 'ddist';
@@ -695,17 +694,28 @@ function buildDistUI() {
 
     row.append(dot, nm, dp, dd, dr);
     drowsEl.appendChild(row);
-    distEls.push({ b, dd, dr });
+    distEls.push({ b, dp, dd, dr });
   });
 }
 
 function updateDistances() {
   const sunBody = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
-  distEls.forEach(({ b, dd, dr }) => {
+  const mu = GM * sunBody.mass;
+  distEls.forEach(({ b, dp, dd, dr }) => {
     const dx = b.x - sunBody.x, dy = b.y - sunBody.y;
+    const dvx = b.vx - sunBody.vx, dvy = b.vy - sunBody.vy;
     const dist = Math.sqrt(dx*dx + dy*dy);
     dd.textContent = dist.toFixed(3) + ' UA';
     dr.textContent = '×' + (dist / b.refDist).toFixed(3);
+    const v2 = dvx*dvx + dvy*dvy;
+    const denom = 2*mu/dist - v2;
+    if (denom > 0) {
+      const a = mu / denom;
+      const period_d = TWO_PI * Math.sqrt(a*a*a / mu);
+      dp.textContent = fmtPeriod(period_d);
+    } else {
+      dp.textContent = '∞';
+    }
   });
 }
 
