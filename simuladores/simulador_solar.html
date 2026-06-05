@@ -55,7 +55,8 @@ details[open] > summary::before { content: '▾ '; }
 .mkg   { width: 68px; text-align: right; font-size: 10px; color: var(--dim); }
 .drow  { display: flex; align-items: center; gap: 5px; padding: 2px 0; border-bottom: 1px solid #111120; }
 .dname { width: 66px; font-size: 11px; color: var(--text); overflow: hidden; white-space: nowrap; }
-.dperiod{ width: 48px; text-align: right; font-size: 11px; color: var(--dim); }
+.dperiod{ width: 48px; text-align: right; font-size: 11px; color: var(--accent); }
+.dpratio{ width: 48px; text-align: right; font-size: 11px; color: var(--dim); }
 .ddist { flex: 1; text-align: right; font-size: 11px; color: var(--accent); }
 .dratio{ width: 52px; text-align: right; font-size: 11px; color: var(--dim); }
 #info {
@@ -757,22 +758,25 @@ function buildDistUI() {
     const dp = document.createElement('span');
     dp.className = 'dperiod';
 
+    const dpr = document.createElement('span');
+    dpr.className = 'dpratio';
+
     const dd = document.createElement('span');
     dd.className = 'ddist';
 
     const dr = document.createElement('span');
     dr.className = 'dratio';
 
-    row.append(dot, nm, dp, dd, dr);
+    row.append(dot, nm, dp, dpr, dd, dr);
     drowsEl.appendChild(row);
-    distEls.push({ b, dp, dd, dr });
+    distEls.push({ b, dp, dpr, dd, dr });
   });
 }
 
 function updateDistances() {
   const sunBody   = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
   const earthBody = bodies.find(b => b.name === 'Terra') || sunBody;
-  distEls.forEach(({ b, dp, dd, dr }) => {
+  distEls.forEach(({ b, dp, dpr, dd, dr }) => {
     const ref  = b.geocentric ? earthBody : sunBody;
     const mu   = GM * ref.mass;
     const dx   = b.x  - ref.x,  dy  = b.y  - ref.y;
@@ -791,8 +795,10 @@ function updateDistances() {
       const a_vis = mu / denom;
       const period_d = TWO_PI * Math.sqrt(a_vis*a_vis*a_vis / mu);
       dp.textContent = b.geocentric ? period_d.toFixed(1) + ' d' : fmtPeriod(period_d);
+      dpr.textContent = '×' + (period_d / b.period).toFixed(3);
     } else {
       dp.textContent = '∞';
+      dpr.textContent = '—';
     }
   });
 }
