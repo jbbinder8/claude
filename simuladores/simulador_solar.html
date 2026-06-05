@@ -55,8 +55,9 @@ details[open] > summary::before { content: '▾ '; }
 .mkg   { width: 68px; text-align: right; font-size: 10px; color: var(--dim); }
 .drow  { display: flex; align-items: center; gap: 5px; padding: 2px 0; border-bottom: 1px solid #111120; }
 .dname { width: 66px; font-size: 11px; color: var(--text); overflow: hidden; white-space: nowrap; }
+.dperiod{ width: 48px; text-align: right; font-size: 11px; color: var(--dim); }
 .ddist { flex: 1; text-align: right; font-size: 11px; color: var(--accent); }
-.dratio{ width: 56px; text-align: right; font-size: 11px; color: var(--dim); }
+.dratio{ width: 52px; text-align: right; font-size: 11px; color: var(--dim); }
 #info {
   font-size: 11px; color: var(--dim); min-height: 56px;
   padding: 6px; border: 1px solid var(--border); border-radius: 3px;
@@ -650,6 +651,14 @@ function fmtMsun(msun) {
   return msun.toExponential(1) + ' M☉';
 }
 
+function fmtPeriod(days) {
+  const y = days / 365.25;
+  if (y < 1)   return y.toFixed(3) + 'a';
+  if (y < 10)  return y.toFixed(2) + 'a';
+  if (y < 100) return y.toFixed(1) + 'a';
+  return y.toFixed(0) + 'a';
+}
+
 // ─── PAINEL DISTÂNCIAS
 const drowsEl = document.getElementById('drows');
 let distEls = []; // [{b, ddEl, drEl}] — refs às células de cada planeta
@@ -671,13 +680,17 @@ function buildDistUI() {
     nm.textContent = b.name.length > 8 ? b.name.slice(0, 7) + '…' : b.name;
     nm.title = b.name;
 
+    const dp = document.createElement('span');
+    dp.className = 'dperiod';
+    dp.textContent = fmtPeriod(b.period);
+
     const dd = document.createElement('span');
     dd.className = 'ddist';
 
     const dr = document.createElement('span');
     dr.className = 'dratio';
 
-    row.append(dot, nm, dd, dr);
+    row.append(dot, nm, dp, dd, dr);
     drowsEl.appendChild(row);
     distEls.push({ b, dd, dr });
   });
