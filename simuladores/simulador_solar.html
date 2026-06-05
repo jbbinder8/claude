@@ -798,6 +798,7 @@ function updateDistances() {
 function buildUI() {
   mrowsEl.innerHTML = '';
   bodies.forEach((b, idx) => {
+    if (b.isIntruder) return;
     const row   = document.createElement('div');
     row.className = 'mrow';
 
@@ -1019,7 +1020,7 @@ document.getElementById('bintruder').addEventListener('click', () => {
     massMsun: mass, mass,
     x: x0, y: y0, vx, vy,
     period: 0, trailInterval: 1, trailTick: 0, trail: [],
-    refDist: 0, elemIdx: -1,
+    refDist: 0, elemIdx: -1, isIntruder: true,
   });
   buildUI();
 });
