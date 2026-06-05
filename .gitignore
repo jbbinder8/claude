@@ -16,3 +16,7 @@ documento/
 
 # Claude
 .claude/
+
+# Bolão — backups e arquivos temporários
+bolao/bkp*.zip
+bolao/readme.txt
