@@ -116,6 +116,22 @@ input[type=checkbox] { accent-color: var(--accent); }
       <span class="v" id="lbltr">1.0 órb</span>
     </div>
     <hr>
+    <div class="lbl">Corpo intruso</div>
+    <div class="row" style="gap:6px">
+      <button id="bintruder" style="white-space:nowrap">☄ Lançar</button>
+      <span style="font-size:11px;color:var(--dim)">Ângulo</span>
+      <input type="range" id="slang" min="-90" max="90" value="0" style="flex:1;accent-color:#ff7733;height:4px">
+      <span id="lblang" style="font-size:10px;color:#ff7733;min-width:28px;text-align:right">0°</span>
+    </div>
+    <div class="row" style="gap:6px">
+      <span style="font-size:11px;color:var(--dim);white-space:nowrap;min-width:36px">Massa</span>
+      <input type="range" id="slimass" min="0" max="4000" value="1000" style="flex:1;accent-color:#ff7733;height:4px">
+      <span id="lblimass" style="font-size:10px;color:#ff7733;min-width:50px;text-align:right">0.10 M☉</span>
+      <span style="font-size:11px;color:var(--dim);margin-left:4px">Vel.</span>
+      <input type="range" id="slivel" min="0" max="3000" value="1000" style="flex:1;accent-color:#ff7733;height:4px">
+      <span id="lblivel" style="font-size:10px;color:#ff7733;min-width:40px;text-align:right">1.0 v⊕</span>
+    </div>
+    <hr>
     <details open>
       <summary>Massas (×real)</summary>
       <div id="mrows"></div>
@@ -922,6 +938,7 @@ breset.addEventListener('click', () => {
   paused = false;
   bplay.textContent = '⏸ Pausar';
   panX = 0; panY = 0; camZoom = 1;
+  intruderCount = 0;
   buildUI();
 });
 
@@ -941,6 +958,59 @@ sltr.addEventListener('input', () => {
   nOrbits = parseFloat(sltr.value);
   lbltr.textContent = nOrbits.toFixed(2).replace(/\.?0+$/, '') + ' órb';
   prefillTrails(bodies);
+});
+
+// ─── CORPO INTRUSO
+const V_EARTH = 2 * Math.PI / 365.25;  // velocidade orbital circular da Terra (AU/dia)
+let intruderCount = 0;
+
+function iMass(v)  { return Math.pow(10, (v - 2000) / 1000); }
+function iSpeed(v) { return V_EARTH * Math.pow(10, (v - 1000) / 1000); }
+function fmtIMass(m) {
+  if (m >= 10) return m.toFixed(1) + ' M☉';
+  if (m >= 1)  return m.toFixed(2) + ' M☉';
+  return m.toFixed(2) + ' M☉';
+}
+function fmtISpeed(f) {
+  if (f >= 10) return f.toFixed(0) + ' v⊕';
+  if (f >= 1)  return f.toFixed(1) + ' v⊕';
+  return f.toFixed(2) + ' v⊕';
+}
+
+const slang    = document.getElementById('slang');
+const lblang   = document.getElementById('lblang');
+const slimass  = document.getElementById('slimass');
+const lblimass = document.getElementById('lblimass');
+const slivel   = document.getElementById('slivel');
+const lblivel  = document.getElementById('lblivel');
+
+slang.addEventListener('input',   () => { lblang.textContent   = slang.value + '°'; });
+slimass.addEventListener('input', () => { lblimass.textContent = fmtIMass(iMass(+slimass.value)); });
+slivel.addEventListener('input',  () => { lblivel.textContent  = fmtISpeed(iSpeed(+slivel.value) / V_EARTH); });
+
+document.getElementById('bintruder').addEventListener('click', () => {
+  const angle = Number(slang.value) * D2R;
+  const mass  = iMass(Number(slimass.value));
+  const speed = iSpeed(Number(slivel.value));
+  const sun   = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
+  const D = 50;  // AU — além de Netuno, garante entrada de fora do sistema
+  // posição inicial: sem gravidade, o corpo passaria pelo Sol após D/speed dias
+  const x0 = sun.x - D * Math.cos(angle);
+  const y0 = sun.y - D * Math.sin(angle);
+  const vx = speed * Math.cos(angle);
+  const vy = speed * Math.sin(angle);
+  intruderCount++;
+  const label = 'Intruso' + (intruderCount > 1 ? ' ' + intruderCount : '');
+  const vR = Math.max(3, Math.min(20, Math.round(7 * Math.pow(mass, 0.25))));
+  bodies.push({
+    name: label, color: '#ff7733',
+    visualR: vR, physR: 4.6524e-3 * Math.cbrt(mass),
+    massMsun: mass, mass,
+    x: x0, y: y0, vx, vy,
+    period: 0, trailInterval: 1, trailTick: 0, trail: [],
+    refDist: 0, elemIdx: -1,
+  });
+  needsUI = true;
 });
 
 // ─── INICIAR
