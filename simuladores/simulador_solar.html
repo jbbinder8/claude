@@ -502,7 +502,7 @@ function handleCollisions() {
             trailTick:     0,
             refDist:       0,  // corpo fundido — sem referência orbital própria
             elemIdx:       -1, // corpo fundido — sem pré-preenchimento analítico
-            isIntruder: bi.isIntruder || bj.isIntruder,  // propaga se qualquer um for intruso
+            isIntruder: bi.isIntruder && bj.isIntruder,  // só permanece intruso se ambos forem
           };
           bodies.splice(j, 1);
           needsUI = true;
