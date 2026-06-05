@@ -119,7 +119,7 @@ input[type=checkbox] { accent-color: var(--accent); }
     </details>
     <hr>
     <details open>
-      <summary>Distâncias ao Sol</summary>
+      <summary>Período Orbital e Distância ao Sol/Terra</summary>
       <div id="drows"></div>
     </details>
     <hr>
@@ -753,13 +753,19 @@ function updateDistances() {
     const dx   = b.x  - ref.x,  dy  = b.y  - ref.y;
     const dvx  = b.vx - ref.vx, dvy = b.vy - ref.vy;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    dd.textContent = dist.toFixed(b.geocentric ? 5 : 3) + (b.geocentric ? ' UA⊕' : ' UA');
+    if (b.geocentric) {
+      const km = Math.round(dist * 149597870.7);
+      dd.textContent = km.toLocaleString('pt-BR') + ' km';
+    } else {
+      dd.textContent = dist.toFixed(3) + ' UA';
+    }
     dr.textContent = '×' + (dist / b.refDist).toFixed(3);
     const v2 = dvx*dvx + dvy*dvy;
     const denom = 2*mu/dist - v2;
     if (denom > 0) {
       const a_vis = mu / denom;
-      dp.textContent = fmtPeriod(TWO_PI * Math.sqrt(a_vis*a_vis*a_vis / mu));
+      const period_d = TWO_PI * Math.sqrt(a_vis*a_vis*a_vis / mu);
+      dp.textContent = b.geocentric ? period_d.toFixed(1) + ' d' : fmtPeriod(period_d);
     } else {
       dp.textContent = '∞';
     }
