@@ -137,8 +137,9 @@ input[type=checkbox] { accent-color: var(--accent); }
 </div>
 <script>
 // ─── CONSTANTES FÍSICAS
-const GM  = 2.9591220828559e-4; // G·M☉ em AU³/dia²  (k² gaussiana)
-const MKG = 1.98892e30;          // kg por M☉
+const GM       = 2.9591220828559e-4; // G·M☉ em AU³/dia²  (k² gaussiana)
+const GM_EARTH = GM * 3.0027e-6;     // G·M⊕ em AU³/dia²
+const MKG = 1.98892e30;              // kg por M☉
 const D2R = Math.PI / 180;
 const TWO_PI = 2 * Math.PI;
 
@@ -231,6 +232,40 @@ function keplerState(el, Tc) {
   };
 }
 
+// ─── LUA: elementos orbitais em torno da Terra (J2000, taxas por século)
+const MOON_EL = {
+  a:  0.002570,                        // AU  (~384 400 km)
+  e:  0.054900,
+  i:  5.1454 * D2R,
+  N0: 125.1228 * D2R,  N1: -1934.136 * D2R,   // nó ascendente
+  w0: 318.0634 * D2R,  w1:  6003.150 * D2R,   // argumento do perigeu
+  M0: 115.3654 * D2R,  M1: 477198.868 * D2R,  // anomalia média
+};
+
+function lunarState(Tc) {
+  const { a, e, i, N0, N1, w0, w1, M0, M1 } = MOON_EL;
+  const N   = normRad(N0 + N1 * Tc);
+  const w   = normRad(w0 + w1 * Tc);
+  const M   = normRad(M0 + M1 * Tc);
+  const E   = solveKepler(M, e);
+  const s1e = Math.sqrt(1 - e*e);
+  const xo  = a * (Math.cos(E) - e);
+  const yo  = a * s1e * Math.sin(E);
+  const n   = Math.sqrt(GM_EARTH / (a*a*a)); // rad/dia
+  const dn  = 1 - e * Math.cos(E);
+  const vxo = -a * n * Math.sin(E) / dn;
+  const vyo =  a * n * s1e * Math.cos(E) / dn;
+  const cO = Math.cos(N), sO = Math.sin(N);
+  const cw = Math.cos(w), sw = Math.sin(w);
+  const ci = Math.cos(i);
+  const Px = cw*cO - sw*sO*ci,  Py = cw*sO + sw*cO*ci;
+  const Qx =-sw*cO - cw*sO*ci,  Qy =-sw*sO + cw*cO*ci;
+  return {
+    x:  Px*xo  + Qx*yo,  y:  Py*xo  + Qy*yo,
+    vx: Px*vxo + Qx*vyo, vy: Py*vxo + Qy*vyo,
+  };
+}
+
 const DT    = 0.05;  // passo RK4 em dias (fixo)
 let nOrbits = 1.0;   // duração do rastro em número de órbitas de cada planeta
 const PTS_PER_ORBIT = 400; // pontos de rastro por órbita (resolução angular fixa)
@@ -242,7 +277,7 @@ function bodyPeriod(i) {
 }
 
 function makeBodies() {
-  return PDATA.map((pd, i) => {
+  const bs = PDATA.map((pd, i) => {
     let x = 0, y = 0, vx = 0, vy = 0;
     if (i > 0) { const s = keplerState(ELEMS[i - 1], T); x=s.x; y=s.y; vx=s.vx; vy=s.vy; }
     const period = bodyPeriod(i);
@@ -257,11 +292,24 @@ function makeBodies() {
       period, trailInterval,
       trailTick: 0,
       trail: [],
-      // semi-eixo maior na época inicial = distância média de referência (0 para o Sol)
       refDist: i === 0 ? 0 : ELEMS[i - 1][0] + ELEMS[i - 1][6] * T,
-      elemIdx: i - 1, // índice em ELEMS (-1 para o Sol)
+      elemIdx: i - 1,
     };
   });
+  // Lua em torno da Terra (Terra é sempre bs[3])
+  const earth = bs[3];
+  const ls = lunarState(T);
+  bs.push({
+    name: 'Lua', color: '#c8c8d8',
+    visualR: 2, physR: 1.161e-5,
+    massMsun: 3.694e-8, mass: 3.694e-8,
+    x: earth.x + ls.x, y: earth.y + ls.y,
+    vx: earth.vx + ls.vx, vy: earth.vy + ls.vy,
+    period: 27.32158, trailInterval: 1, trailTick: 0, trail: [],
+    refDist: 0,   // não aparece no painel de distâncias ao Sol
+    elemIdx: -1,  // sem elementos heliocentricos
+  });
+  return bs;
 }
 
 // Centraliza posição e velocidade do baricentro em (0,0) com v=0.
