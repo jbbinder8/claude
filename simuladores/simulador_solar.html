@@ -78,10 +78,12 @@ input[type=checkbox] { accent-color: var(--accent); }
 <div id="app">
   <canvas id="c"></canvas>
   <div id="panel">
-    <h2>☀ Sistema Solar</h2>
-    <div class="row" style="justify-content:space-between">
-      <span class="lbl">Data simulada</span>
-      <span class="val" id="ddate">2026-06-04</span>
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h2>☀ Sistema Solar</h2>
+      <span style="display:flex;align-items:center;gap:5px">
+        <span class="lbl">Data simulada</span>
+        <span class="val" id="ddate">2026-06-04</span>
+      </span>
     </div>
     <hr>
     <div class="row">
@@ -89,7 +91,6 @@ input[type=checkbox] { accent-color: var(--accent); }
       <button id="breset">↻ Reset</button>
       <button id="bcenter" title="Centralizar câmera">⊙ Centrar</button>
     </div>
-    <div style="font-size:9px;color:var(--dim)">Scroll: zoom · Arrastar: pan</div>
     <div class="ctrl">
       <label>Velocidade</label>
       <input type="range" id="slspd" min="0" max="6000" value="3000">
@@ -100,7 +101,8 @@ input[type=checkbox] { accent-color: var(--accent); }
         <input type="checkbox" id="cbtr" checked> Rastros
       </label>
       <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);margin-left:6px">
+      <span style="flex:1"></span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
         <input type="radio" name="escala" id="rblog" value="log" checked> Log
       </label>
       <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
