@@ -116,7 +116,7 @@ input[type=checkbox] { accent-color: var(--accent); }
       <span class="v" id="lbltr">1.0 órb</span>
     </div>
     <hr>
-    <div class="row" style="justify-content:space-between;align-items:center">
+    <div class="row" style="gap:6px;align-items:center">
       <span class="lbl">Corpo intruso</span>
       <button id="bintruder" style="white-space:nowrap">☄ Lançar</button>
     </div>
@@ -127,8 +127,8 @@ input[type=checkbox] { accent-color: var(--accent); }
     </div>
     <div class="ctrl">
       <label style="color:var(--dim)">Massa</label>
-      <input type="range" id="slimass" min="0" max="4000" value="1000" style="accent-color:#ff7733">
-      <span class="v" id="lblimass" style="color:#ff7733">0.10 M☉</span>
+      <input type="range" id="slimass" min="0" max="8000" value="4000" style="accent-color:#ff7733">
+      <span class="v" id="lblimass" style="color:#ff7733">100 M⊕</span>
     </div>
     <div class="ctrl">
       <label style="color:var(--dim)">Velocidade</label>
@@ -965,15 +965,22 @@ sltr.addEventListener('input', () => {
 });
 
 // ─── CORPO INTRUSO
-const V_EARTH = 2 * Math.PI / 365.25;  // velocidade orbital circular da Terra (AU/dia)
+const V_EARTH      = 2 * Math.PI / 365.25;  // velocidade orbital circular da Terra (AU/dia)
+const M_EARTH_MSUN = 3.0027e-6;              // massa terrestre em M☉
+const LAUNCH_OFFSET_Y = 1e6 / 149597870.7;  // 1 000 000 km em AU — evita colisão com Sol
 let intruderCount = 0;
 
-function iMass(v)  { return Math.pow(10, (v - 2000) / 1000); }
-function iSpeed(v) { return V_EARTH * Math.pow(10, (v - 1000) / 1000); }
-function fmtIMass(m) {
-  if (m >= 10) return m.toFixed(1) + ' M☉';
-  if (m >= 1)  return m.toFixed(2) + ' M☉';
-  return m.toFixed(2) + ' M☉';
+// massa em M⊕ → M☉ para simulação
+function iMassEarth(v) { return Math.pow(10, (v - 2000) / 1000); }          // retorna M⊕
+function iMass(v)      { return iMassEarth(v) * M_EARTH_MSUN; }             // retorna M☉
+function iSpeed(v)     { return V_EARTH * Math.pow(10, (v - 1000) / 1000); }
+
+function fmtIMass(mEarth) {
+  if (mEarth >= 100000) return (mEarth / 333000).toFixed(1) + ' M☉';
+  if (mEarth >= 1000)   return mEarth.toFixed(0)            + ' M⊕';
+  if (mEarth >= 10)     return mEarth.toFixed(1)            + ' M⊕';
+  if (mEarth >= 1)      return mEarth.toFixed(2)            + ' M⊕';
+  return                       mEarth.toFixed(3)            + ' M⊕';
 }
 function fmtISpeed(f) {
   if (f >= 10) return f.toFixed(0) + ' v⊕';
@@ -989,7 +996,7 @@ const slivel   = document.getElementById('slivel');
 const lblivel  = document.getElementById('lblivel');
 
 slang.addEventListener('input',   () => { lblang.textContent   = slang.value + '°'; });
-slimass.addEventListener('input', () => { lblimass.textContent = fmtIMass(iMass(+slimass.value)); });
+slimass.addEventListener('input', () => { lblimass.textContent = fmtIMass(iMassEarth(+slimass.value)); });
 slivel.addEventListener('input',  () => { lblivel.textContent  = fmtISpeed(iSpeed(+slivel.value) / V_EARTH); });
 
 document.getElementById('bintruder').addEventListener('click', () => {
@@ -998,9 +1005,9 @@ document.getElementById('bintruder').addEventListener('click', () => {
   const speed = iSpeed(Number(slivel.value));
   const sun   = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
   const D = 50;  // AU — além de Netuno, garante entrada de fora do sistema
-  // posição inicial: sem gravidade, o corpo passaria pelo Sol após D/speed dias
+  // posição: sem gravidade, corpo passaria pelo Sol + offset de 1 000 000 km (evita colisão)
   const x0 = sun.x - D * Math.cos(angle);
-  const y0 = sun.y - D * Math.sin(angle);
+  const y0 = sun.y - D * Math.sin(angle) + LAUNCH_OFFSET_Y;
   const vx = speed * Math.cos(angle);
   const vy = speed * Math.sin(angle);
   intruderCount++;
@@ -1014,7 +1021,7 @@ document.getElementById('bintruder').addEventListener('click', () => {
     period: 0, trailInterval: 1, trailTick: 0, trail: [],
     refDist: 0, elemIdx: -1,
   });
-  needsUI = true;
+  buildUI();
 });
 
 // ─── INICIAR
