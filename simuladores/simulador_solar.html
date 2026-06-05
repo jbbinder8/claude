@@ -78,9 +78,9 @@ input[type=checkbox] { accent-color: var(--accent); }
   <canvas id="c"></canvas>
   <div id="panel">
     <h2>☀ Sistema Solar</h2>
-    <div>
-      <div class="lbl">Data simulada</div>
-      <div class="val" id="ddate">2026-06-04</div>
+    <div class="row" style="justify-content:space-between">
+      <span class="lbl">Data simulada</span>
+      <span class="val" id="ddate">2026-06-04</span>
     </div>
     <hr>
     <div class="row">
@@ -99,10 +99,8 @@ input[type=checkbox] { accent-color: var(--accent); }
         <input type="checkbox" id="cbtr" checked> Rastros
       </label>
       <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
-    </div>
-    <div class="row" style="gap:8px">
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
-        <input type="checkbox" id="cblin"> Escala linear
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);margin-left:4px">
+        <input type="checkbox" id="cblin"> Linear
       </label>
     </div>
     <div class="ctrl">
