@@ -1006,9 +1006,9 @@ document.getElementById('bintruder').addEventListener('click', () => {
   const speed = iSpeed(Number(slivel.value));
   const sun   = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
   const D = 50;  // AU — além de Netuno, garante entrada de fora do sistema
-  // posição: sem gravidade, corpo passaria pelo Sol + offset de 1 000 000 km (evita colisão)
-  const x0 = sun.x - D * Math.cos(angle);
-  const y0 = sun.y - D * Math.sin(angle) + LAUNCH_OFFSET_Y;
+  // ponto fixo: sempre 50 AU à esquerda do Sol; o ângulo só muda a direção da velocidade
+  const x0 = sun.x - D;
+  const y0 = sun.y + LAUNCH_OFFSET_Y;
   const vx = speed * Math.cos(angle);
   const vy = speed * Math.sin(angle);
   intruderCount++;
