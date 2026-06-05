@@ -306,8 +306,9 @@ function makeBodies() {
     x: earth.x + ls.x, y: earth.y + ls.y,
     vx: earth.vx + ls.vx, vy: earth.vy + ls.vy,
     period: 27.32158, trailInterval: 1, trailTick: 0, trail: [],
-    refDist: 0,   // não aparece no painel de distâncias ao Sol
-    elemIdx: -1,  // sem elementos heliocentricos
+    refDist: MOON_EL.a,  // distância média Terra-Lua (referencial = Terra)
+    geocentric: true,
+    elemIdx: -1,
   });
   return bs;
 }
@@ -744,20 +745,21 @@ function buildDistUI() {
 }
 
 function updateDistances() {
-  const sunBody = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
-  const mu = GM * sunBody.mass;
+  const sunBody   = bodies.reduce((a, b) => b.mass > a.mass ? b : a, bodies[0]);
+  const earthBody = bodies.find(b => b.name === 'Terra') || sunBody;
   distEls.forEach(({ b, dp, dd, dr }) => {
-    const dx = b.x - sunBody.x, dy = b.y - sunBody.y;
-    const dvx = b.vx - sunBody.vx, dvy = b.vy - sunBody.vy;
+    const ref  = b.geocentric ? earthBody : sunBody;
+    const mu   = GM * ref.mass;
+    const dx   = b.x  - ref.x,  dy  = b.y  - ref.y;
+    const dvx  = b.vx - ref.vx, dvy = b.vy - ref.vy;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    dd.textContent = dist.toFixed(3) + ' UA';
+    dd.textContent = dist.toFixed(b.geocentric ? 5 : 3) + (b.geocentric ? ' UA⊕' : ' UA');
     dr.textContent = '×' + (dist / b.refDist).toFixed(3);
     const v2 = dvx*dvx + dvy*dvy;
     const denom = 2*mu/dist - v2;
     if (denom > 0) {
-      const a = mu / denom;
-      const period_d = TWO_PI * Math.sqrt(a*a*a / mu);
-      dp.textContent = fmtPeriod(period_d);
+      const a_vis = mu / denom;
+      dp.textContent = fmtPeriod(TWO_PI * Math.sqrt(a_vis*a_vis*a_vis / mu));
     } else {
       dp.textContent = '∞';
     }
