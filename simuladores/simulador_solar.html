@@ -100,8 +100,11 @@ input[type=checkbox] { accent-color: var(--accent); }
         <input type="checkbox" id="cbtr" checked> Rastros
       </label>
       <button id="bclr" style="font-size:10px;padding:3px 7px">Limpar</button>
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);margin-left:4px">
-        <input type="checkbox" id="cblin"> Linear
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);margin-left:6px">
+        <input type="radio" name="escala" id="rblog" value="log" checked> Log
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim)">
+        <input type="radio" name="escala" id="rblin" value="lin"> Linear
       </label>
     </div>
     <div class="ctrl">
@@ -862,7 +865,8 @@ document.getElementById('bcenter').addEventListener('click', () => {
 
 slspd.addEventListener('input', () => setSpd(Number(slspd.value)));
 cbtr.addEventListener('change', () => { showTr = cbtr.checked; });
-document.getElementById('cblin').addEventListener('change', e => { logScale = !e.target.checked; });
+document.getElementById('rblog').addEventListener('change', () => { logScale = true; });
+document.getElementById('rblin').addEventListener('change', () => { logScale = false; });
 bclr.addEventListener('click', () => { bodies.forEach(b => b.trail = []); });
 
 const sltr  = document.getElementById('sltr');
