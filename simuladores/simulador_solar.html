@@ -589,12 +589,14 @@ function draw() {
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
-    // label
-    ctx.fillStyle = b.color;
-    ctx.globalAlpha = 0.85;
-    ctx.font = '10px Consolas, monospace';
-    ctx.fillText(b.name.split('+')[0], sx + r + 3, sy + 4);
-    ctx.globalAlpha = 1;
+    // label (omite a Lua — fica colada à Terra no zoom padrão)
+    if (b.name !== 'Lua') {
+      ctx.fillStyle = b.color;
+      ctx.globalAlpha = 0.85;
+      ctx.font = '10px Consolas, monospace';
+      ctx.fillText(b.name.split('+')[0], sx + r + 3, sy + 4);
+      ctx.globalAlpha = 1;
+    }
   });
 }
 
