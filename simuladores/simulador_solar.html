@@ -129,7 +129,6 @@ input[type=checkbox] { accent-color: var(--accent); }
       <div class="ei-row"><span class="ei-k">Afélio</span><span class="ei-v" id="ei-rmax">—</span></div>
       <div class="ei-row"><span class="ei-k">Dist. média</span><span class="ei-v" id="ei-rmean">—</span></div>
       <div class="ei-row"><span class="ei-k">Temp. média est.</span><span class="ei-v" id="ei-temp">—</span></div>
-      <div class="ei-row"><span class="ei-k">Período orbital</span><span class="ei-v" id="ei-period">—</span></div>
       <div class="ei-row"><span class="ei-k">Excentricidade</span><span class="ei-v" id="ei-ecc">—</span></div>
     </div>
     <hr>
@@ -564,7 +563,7 @@ function fmtDate() {
 function updateEarthInfo() {
   const setEI = (id, txt) => { document.getElementById(id).textContent = txt; };
   const earth = bodies.find(b => b.name === 'Terra');
-  const ALL_IDS = ['ei-rmin','ei-rmax','ei-rmean','ei-temp','ei-period','ei-ecc'];
+  const ALL_IDS = ['ei-rmin','ei-rmax','ei-rmean','ei-temp','ei-ecc'];
   if (!earth) {
     ALL_IDS.forEach(id => setEI(id, '—'));
     return;
@@ -594,14 +593,10 @@ function updateEarthInfo() {
   // Temperatura superficial ≈ T_eq + 33 K (efeito estufa médio)
   const T_eq = 254.0 / (Math.sqrt(a) * Math.pow(1 - eSq, 0.125));
   const T_C  = T_eq + 33 - 273.15;
-  // Período orbital: T = 2π√(a³/μ) em dias → converter para anos
-  const period_d = TWO_PI * Math.sqrt(a*a*a / mu);
-  const period_y = period_d / 365.25;
   setEI('ei-rmin',   rMin.toFixed(3) + ' UA');
   setEI('ei-rmax',   rMax.toFixed(3) + ' UA');
   setEI('ei-rmean',  rMean.toFixed(3) + ' UA');
   setEI('ei-temp',   (T_C >= 0 ? '+' : '') + T_C.toFixed(1) + ' °C');
-  setEI('ei-period', period_y.toFixed(2) + ' anos (' + period_d.toFixed(0) + ' d)');
   setEI('ei-ecc',    e.toFixed(5));
 }
 
