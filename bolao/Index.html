@@ -518,9 +518,52 @@
     }
     .score-table tbody tr:hover{background:rgba(18,36,24,.03)}
     .section-gap{margin-top:28px}
+    .score-table tbody tr.estat-total td{
+      font-weight:700;border-top:2px solid var(--ink);
+      background:rgba(18,36,24,.03);
+    }
+    .estat-note{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;color:var(--ink-soft);margin-top:8px;
+    }
     @media (max-width:560px){
       .rank-bar-wrap{display:none}
       .rank-row{grid-template-columns:36px 1fr auto}
+    }
+
+    /* ---------- contagem regressiva ---------- */
+    .cd-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+      gap:12px;
+    }
+    .cd-card{
+      background:var(--bg-card);
+      border:1px solid var(--line);
+      border-left:4px solid var(--accent);
+      border-radius:var(--radius);
+      padding:14px 16px;
+      box-shadow:var(--shadow);
+    }
+    .cd-card.cd-started{border-left-color:var(--accent-2)}
+    .cd-rodada{
+      font-family:'IBM Plex Mono', monospace;
+      font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--accent);font-weight:600;margin-bottom:6px;
+    }
+    .cd-card.cd-started .cd-rodada{color:var(--accent-2)}
+    .cd-jogo{
+      font-size:12px;color:var(--ink-soft);margin-bottom:10px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    }
+    .cd-timer{
+      font-family:'Archivo Black', sans-serif;
+      font-size:26px;letter-spacing:.02em;color:var(--ink);
+      font-variant-numeric:tabular-nums;
+    }
+    .cd-timer.cd-live{
+      font-size:15px;color:var(--accent-2);
+      letter-spacing:.12em;text-transform:uppercase;
     }
 
     /* ---------- footer ---------- */
@@ -564,7 +607,8 @@
 
   <nav class="tabs">
     <button class="tab-btn active" data-tab="palpites">Palpites</button>
-    <button class="tab-btn" data-tab="stats">Estatísticas</button>
+    <button class="tab-btn" data-tab="stats">Resultados</button>
+    <button class="tab-btn" data-tab="estatistica">Estatística</button>
   </nav>
 
   <div id="tab-palpites">
@@ -580,8 +624,7 @@
     <div class="rules-label">Regras</div>
     <ul class="rules-list">
       <li>
-        Na <b>fase de grupos</b>, palpites apenas nos jogos com
-        <em>cabeças de chave</em>.
+        Não são consideradas as disputas por <em>pênaltis</em>.
       </li>
       <li>
         Acertar o <b>resultado</b> da partida (empate ou vencedor):
@@ -630,6 +673,20 @@
 
     <div class="section-label section-gap">Pontuação por fase</div>
     <div id="placar-fase-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+  </div>
+
+  <div id="tab-estatistica" style="display:none">
+    <div class="section-label">Contagem regressiva
+      <button class="refresh-btn" id="estat-refresh-btn">↻ atualizar</button>
+    </div>
+    <div id="countdown-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+
+    <div class="section-label section-gap">Estatísticas por rodada</div>
+    <div id="estat-table-content">
       <div class="state"><div class="spinner"></div>Carregando…</div>
     </div>
   </div>
@@ -1097,22 +1154,29 @@ function lerResultadoEdit(resultEdit){
 
 /* ---- Abas ---- */
 let statsCarregado = false;
+let estatCarregado = false;
 
 document.querySelectorAll('.tab-btn').forEach(function(btn) {
   btn.addEventListener('click', function() {
     document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
     const tab = btn.dataset.tab;
-    document.getElementById('tab-palpites').style.display = tab === 'palpites' ? '' : 'none';
-    document.getElementById('tab-stats').style.display    = tab === 'stats'    ? '' : 'none';
+    document.getElementById('tab-palpites').style.display    = tab === 'palpites'    ? '' : 'none';
+    document.getElementById('tab-stats').style.display       = tab === 'stats'       ? '' : 'none';
+    document.getElementById('tab-estatistica').style.display = tab === 'estatistica' ? '' : 'none';
     if (tab === 'stats' && !statsCarregado) {
       statsCarregado = true;
       carregarStats();
+    }
+    if (tab === 'estatistica' && !estatCarregado) {
+      estatCarregado = true;
+      carregarEstatistica();
     }
   });
 });
 
 document.getElementById('stats-refresh-btn').addEventListener('click', carregarStats);
+document.getElementById('estat-refresh-btn').addEventListener('click', carregarEstatistica);
 
 function carregarStats(){
   const btn = document.getElementById('stats-refresh-btn');
@@ -1231,6 +1295,170 @@ function renderStats(data) {
   }).join('');
 
   el.innerHTML = '<div class="rank-list">' + rows + '</div>';
+}
+
+/* ====================================================================
+   Aba Estatística — contagem regressiva + estatísticas por rodada
+   ==================================================================== */
+const ESTAT = { agoraIso: null, t0: 0 };
+let cdInterval = null;
+
+function carregarEstatistica(){
+  const btn = document.getElementById('estat-refresh-btn');
+  if (btn) btn.disabled = true;
+
+  document.getElementById('countdown-content').innerHTML =
+    '<div class="state"><div class="spinner"></div>Carregando…</div>';
+  document.getElementById('estat-table-content').innerHTML =
+    '<div class="state"><div class="spinner"></div>Carregando…</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data){ if (btn) btn.disabled = false; renderEstatistica(data); })
+    .withFailureHandler(function(err){
+      if (btn) btn.disabled = false;
+      const msg = '<div class="state" style="color:var(--err)">Erro: ' +
+        escapeHtml(String(err && err.message || err)) + '</div>';
+      document.getElementById('countdown-content').innerHTML = msg;
+      document.getElementById('estat-table-content').innerHTML = msg;
+    })
+    .getEstatisticasRodadas();
+}
+
+function renderEstatistica(data){
+  ESTAT.agoraIso = data.agoraIso || null;
+  ESTAT.t0 = Date.now();
+  const rodadas = data.rodadas || [];
+
+  // ---- Contagem regressiva ----
+  const cdEl = document.getElementById('countdown-content');
+  if (!rodadas.length){
+    cdEl.innerHTML = '<div class="state">Nenhuma rodada encontrada.</div>';
+  } else {
+    cdEl.innerHTML = '<div class="cd-grid">' + rodadas.map(function(r){
+      const quando = r.inicioIso ? fmtDataHora(r.inicioIso) : 'sem data';
+      return '<div class="cd-card' + (r.iniciado ? ' cd-started' : '') + '">' +
+        '<div class="cd-rodada">' + escapeHtml(rotuloRodada(r.rodada)) + '</div>' +
+        '<div class="cd-jogo">1.º jogo · ' + escapeHtml(quando) + '</div>' +
+        '<div class="cd-timer" data-cd-timer data-target="' +
+          escapeHtml(r.inicioIso || '') + '">—</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  // ---- Tabela por rodada ----
+  renderEstatTable(rodadas);
+
+  startCountdown();
+}
+
+function renderEstatTable(rodadas){
+  const el = document.getElementById('estat-table-content');
+  if (!rodadas.length){
+    el.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
+    return;
+  }
+
+  const tot = { jogos: 0, gols: 0, empates: 0, zero: 0 };
+  const rows = rodadas.map(function(r){
+    tot.jogos   += r.jogosComResultado;
+    tot.gols    += r.totalGols;
+    tot.empates += r.empates;
+    tot.zero    += r.empates0a0;
+    const temJogos = r.jogosComResultado > 0;
+    const gp = temJogos ? fmt1(r.golsPorPartida)        : '—';
+    const pe = temJogos ? fmt1(r.pctEmpates) + '%'       : '—';
+    return '<tr>' +
+      '<td>' + escapeHtml(rotuloRodada(r.rodada)) + '</td>' +
+      '<td>' + r.jogosComResultado + '</td>' +
+      '<td>' + r.totalGols + '</td>' +
+      '<td>' + gp + '</td>' +
+      '<td>' + r.empates + '</td>' +
+      '<td>' + pe + '</td>' +
+      '<td>' + r.empates0a0 + '</td>' +
+    '</tr>';
+  }).join('');
+
+  const gpTot = tot.jogos > 0 ? fmt1(tot.gols / tot.jogos)            : '—';
+  const peTot = tot.jogos > 0 ? fmt1(tot.empates / tot.jogos * 100) + '%' : '—';
+  const totalRow = '<tr class="estat-total">' +
+    '<td>Total</td>' +
+    '<td>' + tot.jogos   + '</td>' +
+    '<td>' + tot.gols    + '</td>' +
+    '<td>' + gpTot       + '</td>' +
+    '<td>' + tot.empates + '</td>' +
+    '<td>' + peTot       + '</td>' +
+    '<td>' + tot.zero    + '</td>' +
+  '</tr>';
+
+  el.innerHTML = '<div class="score-wrap"><table class="score-table">' +
+    '<thead><tr>' +
+      '<th>Rodada</th><th>Jogos</th><th>Gols</th><th>Gols/jogo</th>' +
+      '<th>Empates</th><th>% Emp.</th><th>0×0</th>' +
+    '</tr></thead>' +
+    '<tbody>' + rows + totalRow + '</tbody></table></div>' +
+    '<div class="estat-note">* considera apenas jogos com resultado já registrado</div>';
+}
+
+/* ---- Contagem regressiva ao vivo ----
+   Usamos o "agora" do servidor (Brasília) e o início de cada jogo (também
+   em horário de Brasília). Como ambos são interpretados no MESMO referencial
+   de relógio de parede, a diferença entre eles independe do fuso do navegador. */
+function startCountdown(){
+  if (cdInterval) clearInterval(cdInterval);
+  tickCountdown();
+  cdInterval = setInterval(tickCountdown, 1000);
+}
+
+function tickCountdown(){
+  if (!ESTAT.agoraIso) return;
+  const nowMs = parseLocalIso(ESTAT.agoraIso) + (Date.now() - ESTAT.t0);
+  document.querySelectorAll('[data-cd-timer]').forEach(function(el){
+    const alvo = el.getAttribute('data-target');
+    if (!alvo){ el.textContent = '—'; return; }
+    const rem = parseLocalIso(alvo) - nowMs;
+    if (rem <= 0){
+      el.textContent = 'em andamento';
+      el.classList.add('cd-live');
+    } else {
+      el.textContent = fmtCountdown(rem);
+      el.classList.remove('cd-live');
+    }
+  });
+}
+
+function fmtCountdown(ms){
+  let s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400); s -= d * 86400;
+  const h = Math.floor(s / 3600);  s -= h * 3600;
+  const m = Math.floor(s / 60);    s -= m * 60;
+  const pad = function(n){ return (n < 10 ? '0' : '') + n; };
+  return (d > 0 ? d + 'd ' : '') + pad(h) + ':' + pad(m) + ':' + pad(s);
+}
+
+// "yyyy-MM-ddTHH:mm:ss" (ou com espaço) -> ms no relógio LOCAL do navegador
+function parseLocalIso(iso){
+  if (!iso) return NaN;
+  const partes = String(iso).split(/[T ]/);
+  const dp = partes[0].split('-').map(Number);
+  const tp = (partes[1] || '0:0:0').split(':').map(Number);
+  return new Date(dp[0], (dp[1] || 1) - 1, dp[2] || 1,
+                  tp[0] || 0, tp[1] || 0, tp[2] || 0).getTime();
+}
+
+function fmtDataHora(iso){
+  const partes = String(iso).split(/[T ]/);
+  const dp = partes[0].split('-');
+  const hhmm = (partes[1] || '').slice(0, 5);
+  return dp[2] + '/' + dp[1] + ' ' + hhmm;
+}
+
+function rotuloRodada(r){
+  const s = String(r).trim();
+  return /^\d+$/.test(s) ? ('Rodada ' + s) : s;
+}
+
+function fmt1(n){
+  return parseFloat(Number(n).toFixed(1)).toString();
 }
 
 function escapeHtml(s){

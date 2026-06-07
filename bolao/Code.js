@@ -38,7 +38,8 @@ const COL_TITULO        = 10;  // J
 const COL_RESULTADO1    = 11;  // K — gols reais selecao1
 const COL_RESULTADO2    = 12;  // L — gols reais selecao2
 const COL_EDIT_RESULTADO = 13; // M — 1 = permite editar resultado após início
-const COL_FIM           = 13;  // até onde lemos
+const COL_FIM           = 13;  // até onde lemos (lógica de palpites/resultados)
+const COL_RODADA        = 14;  // N — rodada (usada só na aba Estatística)
 
 // Colunas da aba "palpites"
 const PCOL_JOGO         = 1;
@@ -535,6 +536,108 @@ function getEstatisticas() {
   });
 
   return { usuarios: usuarios, totalJogos: totalJogos };
+}
+
+
+// =========================================================================
+// API: estatísticas agregadas POR RODADA (coluna N da aba "tabela").
+// Para cada rodada devolve:
+//   - inicioIso  : início do PRIMEIRO jogo da rodada (p/ contagem regressiva)
+//   - totalGols  : soma de gols (colunas K + L) dos jogos JÁ realizados
+//   - jogosComResultado : nº de jogos com K e L preenchidos
+//   - golsPorPartida    : totalGols / jogosComResultado
+//   - empates    : jogos em que K == L
+//   - pctEmpates : empates / jogosComResultado * 100
+//   - empates0a0 : empates em que K == L == 0
+// Também devolve "agoraIso" (horário do servidor em Brasília) para que o
+// front-end calcule a contagem regressiva sem depender do relógio local.
+// =========================================================================
+function getEstatisticasRodadas() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tabela = ss.getSheetByName(SHEET_TABELA);
+  if (!tabela) throw new Error('Aba "tabela" não encontrada.');
+
+  const agoraIso = _agoraIso();
+  const mapa = {};   // rodada -> agregados
+  const lastRow = tabela.getLastRow();
+
+  if (lastRow >= 2) {
+    const range    = tabela.getRange(2, 1, lastRow - 1, COL_RODADA);
+    const values   = range.getValues();
+    const displays = range.getDisplayValues();
+
+    for (let i = 0; i < values.length; i++) {
+      const row = values[i];
+
+      const rodadaRaw = row[COL_RODADA - 1];
+      if (rodadaRaw === '' || rodadaRaw === null || rodadaRaw === undefined) continue;
+      const rodada = String(rodadaRaw).trim();
+      if (!rodada) continue;
+
+      if (!mapa[rodada]) {
+        mapa[rodada] = {
+          rodada:            rodada,
+          inicioIso:         null,
+          totalJogos:        0,
+          jogosComResultado: 0,
+          totalGols:         0,
+          empates:           0,
+          empates0a0:        0
+        };
+      }
+      const agg = mapa[rodada];
+      agg.totalJogos++;
+
+      // Início do primeiro jogo da rodada (menor data/hora)
+      const inicioIso = _extrairInicioIso(row[COL_TITULO - 1], displays[i][COL_DATA_BR - 1]);
+      if (inicioIso && (agg.inicioIso === null || inicioIso < agg.inicioIso)) {
+        agg.inicioIso = inicioIso;
+      }
+
+      // Resultado oficial (K e L). Só conta se AMBOS forem numéricos.
+      const r1 = row[COL_RESULTADO1 - 1];
+      const r2 = row[COL_RESULTADO2 - 1];
+      const tem1 = (r1 !== '' && r1 !== null && r1 !== undefined && !isNaN(Number(r1)));
+      const tem2 = (r2 !== '' && r2 !== null && r2 !== undefined && !isNaN(Number(r2)));
+      if (tem1 && tem2) {
+        const g1 = Number(r1), g2 = Number(r2);
+        agg.jogosComResultado++;
+        agg.totalGols += g1 + g2;
+        if (g1 === g2) {
+          agg.empates++;
+          if (g1 === 0) agg.empates0a0++;
+        }
+      }
+    }
+  }
+
+  const rodadas = Object.keys(mapa).map(function(k) {
+    const a = mapa[k];
+    return {
+      rodada:            a.rodada,
+      inicioIso:         a.inicioIso,
+      iniciado:          a.inicioIso ? (agoraIso >= a.inicioIso) : false,
+      totalJogos:        a.totalJogos,
+      jogosComResultado: a.jogosComResultado,
+      totalGols:         a.totalGols,
+      golsPorPartida:    a.jogosComResultado > 0 ? a.totalGols / a.jogosComResultado : 0,
+      empates:           a.empates,
+      pctEmpates:        a.jogosComResultado > 0 ? a.empates / a.jogosComResultado * 100 : 0,
+      empates0a0:        a.empates0a0
+    };
+  });
+
+  // Ordena pela data do primeiro jogo; rodadas sem data vão para o fim.
+  rodadas.sort(function(a, b) {
+    if (a.inicioIso && b.inicioIso) {
+      return a.inicioIso < b.inicioIso ? -1 : (a.inicioIso > b.inicioIso ? 1 : 0);
+    }
+    if (a.inicioIso) return -1;
+    if (b.inicioIso) return 1;
+    return 0;
+  });
+
+  return { agoraIso: agoraIso, rodadas: rodadas };
 }
 
 
