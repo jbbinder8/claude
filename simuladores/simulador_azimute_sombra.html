@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Bússola da Sombra · Curitiba 2026</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#11161f; --border:#222a38;
+    --text:#c8d0e0; --dim:#6b7588; --accent:#54b9ff;
+    --shadow:#9aa6bd; --sun:#ffce3a; --north:#ff5470;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text);
+    font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-text-size-adjust:100%;}
+  #wrap{max-width:460px;margin:0 auto;padding:14px 14px 36px;}
+  h1{font-size:18px;color:#fff;font-weight:600;letter-spacing:.01em;}
+  .sub{font-size:12.5px;color:var(--dim);margin:3px 0 12px;}
+  #compass-box{background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:8px;}
+  svg#compass{display:block;width:100%;height:auto;}
+  /* readout */
+  #readout{margin:12px 0;display:flex;flex-direction:column;gap:8px;}
+  .card{background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:11px 13px;}
+  .big{font-size:13px;color:var(--dim);}
+  .big b{display:block;font-size:23px;color:#fff;font-weight:600;margin-top:1px;}
+  .big b .deg{color:var(--shadow);}
+  .grid3{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .stat .k{font-size:11px;color:var(--dim);}
+  .stat .v{font-size:16px;color:var(--accent);font-weight:600;}
+  #tip{font-size:12.5px;color:var(--text);}
+  #tip.night{color:#8aa0c8;}
+  #tip.noon{color:#9af5b0;}
+  /* presets */
+  #presets{display:flex;gap:8px;margin:10px 0 4px;}
+  #presets button{flex:1;background:#161d2a;border:1px solid var(--border);
+    color:var(--text);padding:9px 4px;border-radius:9px;font:inherit;font-size:12.5px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  #presets button:active{background:#1f2a3d;border-color:var(--accent);}
+  /* sliders — um por linha */
+  #controls{margin-top:4px;display:flex;flex-direction:column;gap:14px;}
+  .srow .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+  .srow .lbl{font-size:13px;color:var(--dim);}
+  .srow .num{font-size:16px;color:#fff;font-weight:600;}
+  .srow .num small{color:var(--dim);font-weight:400;font-size:12px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;
+    background:transparent;cursor:pointer;}
+  input[type=range]::-webkit-slider-runnable-track{height:7px;border-radius:6px;
+    background:linear-gradient(90deg,var(--accent) var(--p,0%),#243044 var(--p,0%));}
+  input[type=range]::-moz-range-track{height:7px;border-radius:6px;background:#243044;}
+  input[type=range]::-moz-range-progress{height:7px;border-radius:6px;background:var(--accent);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--accent);
+    margin-top:-10px;box-shadow:0 1px 4px rgba(0,0,0,.5);}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;
+    background:#fff;border:3px solid var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.5);}
+  #help{margin-top:20px;font-size:12.5px;color:var(--dim);line-height:1.65;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px;}
+  #help b{color:var(--text);}
+  #help .leg{display:flex;align-items:center;gap:7px;margin-top:6px;}
+  #help .swatch{width:22px;height:4px;border-radius:3px;flex-shrink:0;}
+  .foot{margin-top:14px;font-size:11px;color:var(--dim);text-align:center;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>🧭 Bússola da Sombra</h1>
+  <p class="sub">Curitiba · ano 2026 · horário oficial (UTC−3, sem horário de verão)</p>
+
+  <!-- Sliders primeiro: ajuste e veja o resultado logo abaixo, sem rolar -->
+  <div id="controls">
+    <div class="srow" data-k="mes">
+      <div class="top"><span class="lbl">Mês</span><span class="num" id="vmes">–</span></div>
+      <input type="range" id="mes" min="1" max="12" step="1" value="6">
+    </div>
+    <div class="srow" data-k="dia">
+      <div class="top"><span class="lbl">Dia</span><span class="num" id="vdia">–</span></div>
+      <input type="range" id="dia" min="1" max="31" step="1" value="21">
+    </div>
+    <div class="srow" data-k="hora">
+      <div class="top"><span class="lbl">Hora</span><span class="num" id="vhora">–</span></div>
+      <input type="range" id="hora" min="5" max="19" step="1" value="9">
+    </div>
+    <div class="srow" data-k="min">
+      <div class="top"><span class="lbl">Minuto</span><span class="num" id="vmin">–</span></div>
+      <input type="range" id="min" min="0" max="59" step="1" value="0">
+    </div>
+  </div>
+
+  <div id="presets">
+    <button data-ev="rise">☀ Nascer</button>
+    <button data-ev="noon">⛛ Meio-dia solar</button>
+    <button data-ev="set">🌇 Pôr</button>
+  </div>
+
+  <div id="compass-box">
+    <svg id="compass" viewBox="0 0 400 400" aria-label="Bússola da sombra">
+      <defs>
+        <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff6c8"/>
+          <stop offset="55%" stop-color="#ffce3a"/>
+          <stop offset="100%" stop-color="#ff9d00"/>
+        </radialGradient>
+        <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="var(--shadow)"/>
+        </marker>
+      </defs>
+      <g id="grid"></g>
+      <!-- raio do sol (tracejado) -->
+      <line id="sunRay" x1="200" y1="200" x2="200" y2="200"
+            stroke="var(--sun)" stroke-width="1.6" stroke-dasharray="4 5" opacity="0"/>
+      <!-- sombra -->
+      <line id="shadow" x1="200" y1="200" x2="200" y2="200"
+            stroke="var(--shadow)" stroke-width="7" stroke-linecap="round"
+            marker-end="url(#arrow)"/>
+      <!-- objeto (gnômon) -->
+      <circle cx="200" cy="200" r="6.5" fill="#fff" stroke="#0d1117" stroke-width="2"/>
+      <!-- sol -->
+      <circle id="sun" cx="200" cy="200" r="11" fill="url(#sunGrad)" opacity="0"/>
+    </svg>
+  </div>
+
+  <div id="readout">
+    <div class="card big">A sombra aponta para
+      <b><span id="shAz">–</span><span class="deg">°</span> · <span id="shName">–</span></b>
+    </div>
+    <div class="grid3">
+      <div class="card stat"><div class="k">Sol — direção (azimute)</div><div class="v" id="sunAz">–</div></div>
+      <div class="card stat"><div class="k">Sol — altura</div><div class="v" id="sunEl">–</div></div>
+      <div class="card stat"><div class="k">Comprimento da sombra</div><div class="v" id="shLen">–</div></div>
+      <div class="card stat"><div class="k">Data e hora</div><div class="v" id="dt" style="font-size:13px">–</div></div>
+    </div>
+    <div class="card"><div id="tip">–</div></div>
+  </div>
+
+  <div id="help">
+    <b>Como descobrir o Norte geográfico:</b> finque um objeto vertical (graveto, caneta, lápis)
+    sob o sol e veja para onde a sombra real dele aponta. Ajuste os sliders acima para o
+    horário da observação: gire mentalmente a bússola até a <b>linha cinza</b> coincidir com a
+    sombra real — então o <b style="color:var(--north)">N</b> em vermelho marca o Norte verdadeiro.
+    <div class="leg"><span class="swatch" style="background:var(--shadow)"></span> sombra (lado oposto ao sol)</div>
+    <div class="leg"><span class="swatch" style="background:var(--sun)"></span> direção do sol</div>
+    <p style="margin-top:9px">No <b>meio-dia solar</b> (~12h15–12h25 em Curitiba) a sombra aponta exatamente
+    para o <b>Sul</b>; o Norte fica diretamente atrás dela.</p>
+  </div>
+
+  <div class="foot">Cálculo solar embutido (algoritmo NOAA) · precisão &lt; 1° · funciona offline</div>
+</div>
+
+<script>
+"use strict";
+const LAT=-25.4284, LON=-49.2733, TZ=-3, ANO=2026;
+const DIM=[31,28,31,30,31,30,31,31,30,31,30,31];          // 2026 não é bissexto
+const MES=['janeiro','fevereiro','março','abril','maio','junho','julho',
+           'agosto','setembro','outubro','novembro','dezembro'];
+const NOME8=['Norte','Nordeste','Leste','Sudeste','Sul','Sudoeste','Oeste','Noroeste'];
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI, clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+
+// ── Posição solar — algoritmo NOAA ────────────────────────────────────────────
+function jd0(y,m,d){ if(m<=2){y-=1;m+=12;} const A=Math.floor(y/100),B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5; }
+
+function solar(mo,da,hh,mm){
+  const locMin=hh*60+mm;
+  const jd=jd0(ANO,mo,da)+(locMin-TZ*60)/1440;
+  const T=(jd-2451545.0)/36525.0;
+  let L0=(280.46646+T*(36000.76983+T*0.0003032))%360; if(L0<0)L0+=360;
+  const M=357.52911+T*(35999.05029-0.0001537*T);
+  const e=0.016708634-T*(0.000042037+0.0000001267*T);
+  const Mr=rad(M);
+  const C=Math.sin(Mr)*(1.914602-T*(0.004817+0.000014*T))
+         +Math.sin(2*Mr)*(0.019993-0.000101*T)+Math.sin(3*Mr)*0.000289;
+  const omega=125.04-1934.136*T;
+  const lambda=L0+C-0.00569-0.00478*Math.sin(rad(omega));
+  const sec=21.448-T*(46.8150+T*(0.00059-T*0.001813));
+  const eps=23.0+(26.0+sec/60.0)/60.0+0.00256*Math.cos(rad(omega));
+  const decl=deg(Math.asin(Math.sin(rad(eps))*Math.sin(rad(lambda))));
+  let y=Math.tan(rad(eps)/2); y*=y;
+  const Et=y*Math.sin(2*rad(L0))-2*e*Math.sin(Mr)+4*e*y*Math.sin(Mr)*Math.cos(2*rad(L0))
+          -0.5*y*y*Math.sin(4*rad(L0))-1.25*e*e*Math.sin(2*Mr);
+  const eqTime=deg(Et)*4.0;
+  const timeOffset=eqTime+4*LON-60*TZ;
+  let tst=(locMin+timeOffset)%1440; if(tst<0)tst+=1440;
+  const ha=tst/4-180;
+  const latR=rad(LAT),declR=rad(decl);
+  const csz=clamp(Math.sin(latR)*Math.sin(declR)+Math.cos(latR)*Math.cos(declR)*Math.cos(rad(ha)),-1,1);
+  const zen=deg(Math.acos(csz)), elev=90-zen;
+  let az; const den=Math.cos(latR)*Math.sin(rad(zen));
+  if(Math.abs(den)>0.001){ let ar=clamp((Math.sin(latR)*Math.cos(rad(zen))-Math.sin(declR))/den,-1,1);
+    az=180-deg(Math.acos(ar)); if(ha>0)az=-az; } else { az=(LAT>0)?180:0; }
+  az=((az%360)+360)%360;
+  return {az,elev,decl,timeOffset};
+}
+
+// Nascer / meio-dia solar / pôr (minutos locais) para o dia escolhido
+function eventos(mo,da){
+  const {decl,timeOffset}=solar(mo,da,12,0);
+  const cosH=clamp(-Math.tan(rad(LAT))*Math.tan(rad(decl)),-1,1);
+  const H=deg(Math.acos(cosH));            // semi-arco diurno em graus
+  return { rise:(720-4*H)-timeOffset, noon:720-timeOffset, set:(720+4*H)-timeOffset };
+}
+
+// ── Geometria da bússola ──────────────────────────────────────────────────────
+const CX=200,CY=200,R=150;
+const P=(az,r)=>[CX+r*Math.sin(rad(az)), CY-r*Math.cos(rad(az))];
+
+(function buildGrid(){
+  const g=document.getElementById('grid'); let s='';
+  s+=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="#0a0e15" stroke="#2b3445" stroke-width="2"/>`;
+  s+=`<circle cx="${CX}" cy="${CY}" r="${R*0.62}" fill="none" stroke="#1a2230" stroke-width="1"/>`;
+  for(let a=0;a<360;a+=15){
+    const major=(a%45===0);
+    const [x1,y1]=P(a,R), [x2,y2]=P(a,R-(major?15:8));
+    s+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+        stroke="#39455a" stroke-width="${major?2:1}"/>`;
+  }
+  const lab=[['N',0,'var(--north)'],['NE',45,'#8a93a8'],['L',90,'#8a93a8'],['SE',135,'#8a93a8'],
+             ['S',180,'#cfd6e4'],['SO',225,'#8a93a8'],['O',270,'#8a93a8'],['NO',315,'#8a93a8']];
+  for(const [t,a,c] of lab){
+    const [x,y]=P(a,R-32);
+    const fs=(t==='N'||t==='S')?17:14;
+    s+=`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="${c}" font-size="${fs}"
+        font-weight="${t==='N'?700:600}" text-anchor="middle" dominant-baseline="central">${t}</text>`;
+  }
+  // seta vermelha do Norte (referência do que se quer achar)
+  const [nx,ny]=P(0,R+4);
+  s+=`<path d="M${nx} ${ny-10} l6 12 l-6 -4 l-6 4 z" fill="var(--north)"/>`;
+  g.innerHTML=s;
+})();
+
+// ── Estado e atualização ──────────────────────────────────────────────────────
+const el={mes:document.getElementById('mes'),dia:document.getElementById('dia'),
+  hora:document.getElementById('hora'),min:document.getElementById('min')};
+const out={shAz:'shAz',shName:'shName',sunAz:'sunAz',sunEl:'sunEl',shLen:'shLen',dt:'dt',tip:'tip',
+  vmes:'vmes',vdia:'vdia',vhora:'vhora',vmin:'vmin'};
+for(const k in out) out[k]=document.getElementById(out[k]);
+const shadowLine=document.getElementById('shadow'),
+      sunDot=document.getElementById('sun'), sunRay=document.getElementById('sunRay');
+
+function fillTrack(input){
+  const p=(input.value-input.min)/(input.max-input.min)*100;
+  input.style.setProperty('--p',p+'%');
+}
+function nome8(az){ return NOME8[Math.round(az/45)%8]; }
+function fmtHM(min){ min=((Math.round(min)%1440)+1440)%1440;
+  return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0'); }
+
+function render(){
+  const mo=+el.mes.value;
+  const diaSlider=+el.dia.value;
+  const da=Math.min(diaSlider, DIM[mo-1]);          // limita ao máximo do mês
+  const hh=+el.hora.value, mm=+el.min.value;
+
+  // rótulos dos sliders
+  out.vmes.textContent=MES[mo-1].replace(/^./,c=>c.toUpperCase());
+  out.vdia.innerHTML = diaSlider>DIM[mo-1]
+      ? `${da} <small>(${diaSlider}→máx ${DIM[mo-1]})</small>` : `${da}`;
+  out.vhora.textContent=String(hh).padStart(2,'0')+'h';
+  out.vmin.textContent=String(mm).padStart(2,'0')+'min';
+  for(const k in el) fillTrack(el[k]);
+
+  const s=solar(mo,da,hh,mm);
+  const shAz=(s.az+180)%360;
+  out.dt.textContent=`${String(da).padStart(2,'0')}/${String(mo).padStart(2,'0')} ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+
+  if(s.elev<=0){
+    // sol abaixo do horizonte — sem sombra
+    out.shAz.textContent='—'; out.shName.textContent='sem sombra';
+    out.sunAz.textContent='abaixo do horizonte';
+    out.sunEl.textContent=s.elev.toFixed(1)+'°';
+    out.shLen.textContent='—';
+    shadowLine.setAttribute('x2',CX); shadowLine.setAttribute('y2',CY);
+    shadowLine.style.opacity=0; sunDot.style.opacity=0; sunRay.style.opacity=0;
+    const ev=eventos(mo,da);
+    out.tip.className='night';
+    out.tip.innerHTML=`🌙 Sol abaixo do horizonte — não há sombra.<br>
+      Neste dia: nascer ${fmtHM(ev.rise)} · pôr ${fmtHM(ev.set)}.`;
+    return;
+  }
+
+  // sombra visível
+  const cot=1/Math.tan(rad(s.elev));               // comprimento = altura × cot(elevação)
+  const lenFrac=clamp(cot/4,0.18,0.95);
+  const [sx,sy]=P(shAz, R*lenFrac);
+  shadowLine.setAttribute('x2',sx.toFixed(1)); shadowLine.setAttribute('y2',sy.toFixed(1));
+  shadowLine.style.opacity=1;
+  const [ux,uy]=P(s.az, R-14);
+  sunDot.setAttribute('cx',ux.toFixed(1)); sunDot.setAttribute('cy',uy.toFixed(1)); sunDot.style.opacity=1;
+  const [rx,ry]=P(s.az, R-26);
+  sunRay.setAttribute('x2',rx.toFixed(1)); sunRay.setAttribute('y2',ry.toFixed(1)); sunRay.style.opacity=.7;
+
+  out.shAz.textContent=Math.round(shAz)%360;
+  out.shName.textContent=nome8(shAz);
+  out.sunAz.textContent=`${Math.round(s.az)%360}° (${nome8(s.az)})`;
+  out.sunEl.textContent=s.elev.toFixed(1)+'°';
+  out.shLen.textContent=cot.toFixed(2)+'× a altura';
+
+  // dica contextual
+  const ev=eventos(mo,da);
+  const locMin=hh*60+mm;
+  if(Math.abs(locMin-ev.noon)<=6){
+    out.tip.className='noon';
+    out.tip.innerHTML='🧭 Meio-dia solar: a sombra aponta para o <b>Sul</b> — o <b>Norte</b> está exatamente atrás dela.';
+  }else{
+    out.tip.className='';
+    const lado=s.az<180?'manhã (sol a leste, sombra a oeste)':'tarde (sol a oeste, sombra a leste)';
+    out.tip.innerHTML=`Alinhe a sombra real com a linha cinza; o <b style="color:var(--north)">N</b> apontará o Norte. Período: ${lado}.`;
+  }
+}
+
+// sliders
+for(const k in el) el[k].addEventListener('input',render);
+// presets
+document.getElementById('presets').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  const mo=+el.mes.value, da=Math.min(+el.dia.value,DIM[mo-1]);
+  const ev=eventos(mo,da);
+  let t=ev[b.dataset.ev];
+  if(b.dataset.ev==='rise')t+=3;  // alguns minutos após o nascer p/ haver sombra
+  if(b.dataset.ev==='set') t-=3;  // alguns minutos antes do pôr
+  t=((Math.round(t)%1440)+1440)%1440;
+  el.hora.value=clamp(Math.floor(t/60), +el.hora.min, +el.hora.max);
+  el.min.value=t%60;
+  render();
+});
+
+// valores padrão = data/hora atuais ao carregar
+(function inicioAgora(){
+  const n=new Date();
+  el.mes.value = n.getMonth()+1;
+  el.dia.value = clamp(n.getDate(), 1, 31);
+  el.hora.value= clamp(n.getHours(), +el.hora.min, +el.hora.max);
+  el.min.value = clamp(n.getMinutes(), 0, 59);
+})();
+
+render();
+</script>
+</body>
+</html>
