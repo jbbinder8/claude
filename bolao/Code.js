@@ -19,10 +19,12 @@
  *      somente-leitura com todos.
  */
 
-const SHEET_TABELA       = 'tabela';
-const SHEET_PALPITES     = 'palpites';
-const SHEET_PLACAR_TIPO  = 'placar_tipo';
-const SHEET_PLACAR_FASE  = 'placar_fase';
+const SHEET_TABELA        = 'tabela';
+const SHEET_PALPITES      = 'palpites';
+const SHEET_PLACAR_TIPO   = 'placar_tipo';
+const SHEET_PLACAR_FASE   = 'placar_fase';
+const SHEET_PLACAR_RODADA = 'placar_rodada';
+const SHEET_RESULT        = 'result';
 const TZ                = 'America/Sao_Paulo';
 const GOLS_MIN          = 0;
 const GOLS_MAX          = 20;
@@ -47,6 +49,13 @@ const PCOL_USUARIO      = 2;
 const PCOL_TIMESTAMP    = 3;
 const PCOL_GOLS1        = 4;
 const PCOL_GOLS2        = 5;
+
+// Colunas da aba "result" (uma linha por palpite, enriquecida com pontuação)
+const RCOL_JOGO         = 1;   // A
+const RCOL_USUARIO      = 2;   // B
+const RCOL_GOLS1        = 4;   // D
+const RCOL_GOLS2        = 5;   // E
+const RCOL_RODADA       = 14;  // N — rodada (Gr1, Gr2, ...)
 
 
 // =========================================================================
@@ -261,7 +270,7 @@ function getJogosEPalpites() {
     });
   }
 
-  return { email: email, jogos: jogos };
+  return { email: email, jogos: jogos, agoraIso: _agoraIso() };
 }
 
 
@@ -440,7 +449,7 @@ function getPalpitesJogo(jogoId) {
 
 
 // =========================================================================
-// API: retorna placar_tipo e placar_fase (lidas diretamente das abas).
+// API: retorna placar_tipo e placar_rodada (lidas diretamente das abas).
 // =========================================================================
 function getPlacar() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -451,60 +460,64 @@ function getPlacar() {
     return sh.getRange(2, 1, sh.getLastRow() - 1, ncols).getValues();
   }
 
-  // placar_tipo: usuario | pt_venc | pt_placar | pt_gols | pt_total
-  const tipo = _ler(SHEET_PLACAR_TIPO, 5)
+  // placar_tipo: usuario | pt_venc | pt_placar | pt_gols | pt_total | jogos
+  //              | pt_venc_apr (G) | pt_total_apr (H)
+  // As colunas G e H são frações 0..1 (aproveitamento).
+  const tipo = _ler(SHEET_PLACAR_TIPO, 8)
     .filter(function(r) { return r[0]; })
     .map(function(r) {
       return {
-        nome:      String(r[0]).split('@')[0],
-        pt_venc:   Number(r[1]) || 0,
-        pt_placar: Number(r[2]) || 0,
-        pt_gols:   Number(r[3]) || 0,
-        pt_total:  Number(r[4]) || 0
+        nome:       String(r[0]).split('@')[0],
+        pt_venc:    Number(r[1]) || 0,
+        pt_placar:  Number(r[2]) || 0,
+        pt_gols:    Number(r[3]) || 0,
+        pt_total:   Number(r[4]) || 0,
+        aprov_venc:  Number(r[6]) || 0,   // coluna G
+        aprov_total: Number(r[7]) || 0    // coluna H
       };
     })
     .sort(function(a, b) { return b.pt_total - a.pt_total || a.nome.localeCompare(b.nome); });
 
-  // Cabeçalhos da linha 1 da aba placar_fase (colunas B a I)
-  const defaultFaseHeaders = ['Grupos','16-avos','Oitavas','Quartas','Semi','3.º lugar','Final','Total'];
-  let faseHeaders = defaultFaseHeaders.slice();
-  const shFase = ss.getSheetByName(SHEET_PLACAR_FASE);
-  if (shFase && shFase.getLastRow() >= 1) {
-    const raw = shFase.getRange(1, 2, 1, 8).getValues()[0];
-    faseHeaders = raw.map(function(h, i) {
-      const s = String(h == null ? '' : h).trim();
-      return s || defaultFaseHeaders[i];
+  // placar_rodada: usuario (A) | rodadas (B..J) | total (K)
+  // Cabeçalhos lidos da linha 1, colunas B a K (9 rodadas + total).
+  let rodadaHeaders = [];
+  const shRodada = ss.getSheetByName(SHEET_PLACAR_RODADA);
+  if (shRodada && shRodada.getLastRow() >= 1) {
+    rodadaHeaders = shRodada.getRange(1, 2, 1, 10).getValues()[0].map(function(h) {
+      return String(h == null ? '' : h).trim();
     });
   }
 
-  // placar_fase: usuario | grupos | 16-avos | oitavas | quartas | semifinal | 3.o lugar | final | total
-  const fase = _ler(SHEET_PLACAR_FASE, 9)
+  const rodada = _ler(SHEET_PLACAR_RODADA, 11)
     .filter(function(r) { return r[0]; })
     .map(function(r) {
+      const valores = [];
+      for (let c = 1; c <= 10; c++) valores.push(Number(r[c]) || 0);  // B..K
       return {
-        nome:      String(r[0]).split('@')[0],
-        grupos:    Number(r[1]) || 0,
-        avos16:    Number(r[2]) || 0,
-        oitavas:   Number(r[3]) || 0,
-        quartas:   Number(r[4]) || 0,
-        semifinal: Number(r[5]) || 0,
-        lugar3:    Number(r[6]) || 0,
-        final:     Number(r[7]) || 0,
-        total:     Number(r[8]) || 0
+        nome:    String(r[0]).split('@')[0],
+        valores: valores   // 9 rodadas + total (última posição)
       };
     })
-    .sort(function(a, b) { return b.total - a.total || a.nome.localeCompare(b.nome); });
+    .sort(function(a, b) {
+      const ta = a.valores[a.valores.length - 1];
+      const tb = b.valores[b.valores.length - 1];
+      return tb - ta || a.nome.localeCompare(b.nome);
+    });
 
-  return { tipo: tipo, fase: fase, faseHeaders: faseHeaders };
+  return { tipo: tipo, rodada: rodada, rodadaHeaders: rodadaHeaders };
 }
 
 
 // =========================================================================
-// API: retorna contagem de palpites por usuário + total de jogos ativos.
+// API: retorna contagem de palpites por usuário, detalhada por rodada.
+// A quantidade por rodada vem da aba "result" (coluna N), na mesma ordem
+// das demais tabelas (cabeçalhos de placar_rodada: Gr1..F). O "total" por
+// usuário é a soma — equivale ao número de palpites já registrados.
 // =========================================================================
 function getEstatisticas() {
-  // Total de jogos ativos (considerar = 1)
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Total de jogos ativos (considerar = 1)
   const tabela = ss.getSheetByName(SHEET_TABELA);
   let totalJogos = 0;
   if (tabela && tabela.getLastRow() >= 2) {
@@ -512,30 +525,44 @@ function getEstatisticas() {
     vals.forEach(function(r) { if (r[COL_CONSIDERAR - 1] == 1) totalJogos++; });
   }
 
-  // Contagem de palpites por usuário
-  const sp = _abaPalpites();
-  const lastRow = sp.getLastRow();
-  const contagem = {};
-  if (lastRow >= 2) {
-    const pdata = sp.getRange(2, 1, lastRow - 1, 5).getValues();
-    pdata.forEach(function(r) {
-      const email = String(r[PCOL_USUARIO - 1] || '').toLowerCase().trim();
-      const g1 = r[PCOL_GOLS1 - 1];
-      const g2 = r[PCOL_GOLS2 - 1];
+  // Ordem das rodadas = cabeçalhos B..J da aba placar_rodada (Gr1..F).
+  let rodadaLabels = [];
+  const shRodada = ss.getSheetByName(SHEET_PLACAR_RODADA);
+  if (shRodada && shRodada.getLastRow() >= 1) {
+    rodadaLabels = shRodada.getRange(1, 2, 1, 9).getValues()[0]
+      .map(function(h) { return String(h == null ? '' : h).trim(); })
+      .filter(function(h) { return h; });
+  }
+
+  // Contagem por usuário e por rodada a partir da aba "result"
+  // (col A=jogo, B=usuario, D/E=gols, N=rodada). Uma linha por palpite.
+  const porUser = {};   // email -> { total, rodadas: { label: n } }
+  const shResult = ss.getSheetByName(SHEET_RESULT);
+  if (shResult && shResult.getLastRow() >= 2) {
+    const rdata = shResult.getRange(2, 1, shResult.getLastRow() - 1, RCOL_RODADA).getValues();
+    rdata.forEach(function(r) {
+      const email = String(r[RCOL_USUARIO - 1] || '').toLowerCase().trim();
+      const g1 = r[RCOL_GOLS1 - 1];
+      const g2 = r[RCOL_GOLS2 - 1];
       if (!email) return;
       if (g1 === '' || g1 === null || g2 === '' || g2 === null) return;
-      contagem[email] = (contagem[email] || 0) + 1;
+      const rod = String(r[RCOL_RODADA - 1] == null ? '' : r[RCOL_RODADA - 1]).trim();
+      if (!porUser[email]) porUser[email] = { total: 0, rodadas: {} };
+      porUser[email].total++;
+      if (rod) porUser[email].rodadas[rod] = (porUser[email].rodadas[rod] || 0) + 1;
     });
   }
 
-  const usuarios = Object.keys(contagem).map(function(email) {
-    return { nome: email.split('@')[0], total: contagem[email] };
+  const usuarios = Object.keys(porUser).map(function(email) {
+    const u = porUser[email];
+    const porRodada = rodadaLabels.map(function(lbl) { return u.rodadas[lbl] || 0; });
+    return { nome: email.split('@')[0], total: u.total, porRodada: porRodada };
   });
   usuarios.sort(function(a, b) {
     return b.total - a.total || a.nome.localeCompare(b.nome);
   });
 
-  return { usuarios: usuarios, totalJogos: totalJogos };
+  return { usuarios: usuarios, totalJogos: totalJogos, rodadaLabels: rodadaLabels };
 }
 
 
@@ -559,6 +586,7 @@ function getEstatisticasRodadas() {
 
   const agoraIso = _agoraIso();
   const mapa = {};   // rodada -> agregados
+  let proximo = null;   // próximo JOGO individual ainda não iniciado
   const lastRow = tabela.getLastRow();
 
   if (lastRow >= 2) {
@@ -592,6 +620,19 @@ function getEstatisticasRodadas() {
       const inicioIso = _extrairInicioIso(row[COL_TITULO - 1], displays[i][COL_DATA_BR - 1]);
       if (inicioIso && (agg.inicioIso === null || inicioIso < agg.inicioIso)) {
         agg.inicioIso = inicioIso;
+      }
+
+      // Próximo JOGO individual ainda não iniciado (pode ser no meio de um grupo).
+      // Considera apenas jogos ativos (considerar = 1) com início futuro.
+      if (inicioIso && row[COL_CONSIDERAR - 1] == 1 && inicioIso > agoraIso) {
+        if (!proximo || inicioIso < proximo.inicioIso) {
+          proximo = {
+            inicioIso: inicioIso,
+            selecao1:  row[COL_SELECAO1 - 1] || '',
+            selecao2:  row[COL_SELECAO2 - 1] || '',
+            rodada:    rodada
+          };
+        }
       }
 
       // Resultado oficial (K e L). Só conta se AMBOS forem numéricos.
@@ -637,7 +678,7 @@ function getEstatisticasRodadas() {
     return 0;
   });
 
-  return { agoraIso: agoraIso, rodadas: rodadas };
+  return { agoraIso: agoraIso, rodadas: rodadas, proximoJogo: proximo };
 }
 
 

@@ -194,6 +194,26 @@
       color:var(--accent);font-weight:600;margin-left:auto;
     }
 
+    /* ---------- grupo recolhível de jogos passados ---------- */
+    .past-group{margin-bottom:30px}
+    .past-toggle{
+      display:flex;align-items:center;gap:10px;width:100%;
+      font-family:'IBM Plex Mono', monospace;
+      font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+      color:var(--ink-soft);background:var(--bg-card);
+      border:1px solid var(--line);border-radius:var(--radius);
+      padding:12px 16px;cursor:pointer;text-align:left;
+      box-shadow:var(--shadow);transition:color .15s,border-color .15s;
+    }
+    .past-toggle:hover{color:var(--ink);border-color:#b8ad94}
+    .past-toggle .past-caret{color:var(--accent);font-size:13px;line-height:1}
+    .past-toggle .past-count{
+      margin-left:auto;font-size:10px;letter-spacing:.12em;
+      color:var(--ink-soft);font-weight:500;
+    }
+    .past-panel{display:none;margin-top:16px}
+    .past-panel.open{display:block}
+
     /* ---------- cartão do jogo ---------- */
     .jogo{
       display:grid;
@@ -552,6 +572,8 @@
       color:var(--accent);font-weight:600;margin-bottom:6px;
     }
     .cd-card.cd-started .cd-rodada{color:var(--accent-2)}
+    .cd-card.cd-prox{border-left-color:var(--gold);border-left-width:5px}
+    .cd-card.cd-prox .cd-rodada{color:var(--gold)}
     .cd-jogo{
       font-size:12px;color:var(--ink-soft);margin-bottom:10px;
       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -659,20 +681,20 @@
   </div><!-- #tab-palpites -->
 
   <div id="tab-stats" style="display:none">
-    <div class="section-label">Palpites registrados
+    <div class="section-label">Pontuação por tipo
       <button class="refresh-btn" id="stats-refresh-btn">↻ atualizar</button>
     </div>
-    <div id="stats-content">
-      <div class="state"><div class="spinner"></div>Carregando…</div>
-    </div>
-
-    <div class="section-label section-gap">Pontuação por tipo</div>
     <div id="placar-tipo-content">
       <div class="state"><div class="spinner"></div>Carregando…</div>
     </div>
 
-    <div class="section-label section-gap">Pontuação por fase</div>
-    <div id="placar-fase-content">
+    <div class="section-label section-gap">Pontuação por rodada</div>
+    <div id="placar-rodada-content">
+      <div class="state"><div class="spinner"></div>Carregando…</div>
+    </div>
+
+    <div class="section-label section-gap">Palpites registrados</div>
+    <div id="stats-content">
       <div class="state"><div class="spinner"></div>Carregando…</div>
     </div>
   </div>
@@ -703,6 +725,7 @@
 const ESTADO = {
   email: '',
   jogos: [],
+  agoraIso: null,      // "agora" no horário de Brasília (vindo do servidor)
   saved: {},           // jogoId -> { gols1, gols2 } palpites confirmados
   savedResultado: {},  // jogoId -> { gols1, gols2 } resultados confirmados
 };
@@ -721,6 +744,7 @@ window.addEventListener('DOMContentLoaded', () => {
 function onBootOk(data){
   ESTADO.email = data.email;
   ESTADO.jogos = data.jogos || [];
+  ESTADO.agoraIso = data.agoraIso || null;
   ESTADO.jogos.forEach(j => {
     if (j.gols1 != null && j.gols2 != null){
       ESTADO.saved[j.numero] = { gols1: Number(j.gols1), gols2: Number(j.gols2) };
@@ -745,6 +769,10 @@ function renderJogos(){
     return;
   }
 
+  // "Hoje" no horário de Brasília (vindo do servidor); fallback p/ relógio local.
+  const hoje = (ESTADO.agoraIso || '').slice(0,10) ||
+               new Date().toISOString().slice(0,10);
+
   // Agrupa por data (yyyy-MM-dd da inicioIso)
   const groups = new Map();
   ESTADO.jogos.forEach(j => {
@@ -753,14 +781,42 @@ function renderJogos(){
     groups.get(dia).push(j);
   });
 
-  let html = '';
+  // Dias anteriores a hoje ficam recolhidos num único grupo "Jogos anteriores",
+  // oculto por padrão. Os jogos de hoje e dos próximos dias seguem visíveis.
+  let pastHtml = '', mainHtml = '';
+  let pastJogos = 0, pastDias = 0;
   for (const [dia, lista] of groups){
-    html += renderDayGroup(dia, lista);
+    if (dia < hoje){
+      pastHtml += renderDayGroup(dia, lista);
+      pastDias++;
+      pastJogos += lista.length;
+    } else {
+      mainHtml += renderDayGroup(dia, lista);
+    }
   }
+
+  let html = '';
+  if (pastHtml){
+    html +=
+      '<section class="past-group">' +
+        '<button class="past-toggle" id="past-toggle" aria-expanded="false">' +
+          '<span class="past-caret">▸</span>' +
+          '<span>Jogos anteriores</span>' +
+          '<span class="past-count">' +
+            pastJogos + ' jogo' + (pastJogos !== 1 ? 's' : '') +
+            ' · ' + pastDias + ' dia' + (pastDias !== 1 ? 's' : '') +
+          '</span>' +
+        '</button>' +
+        '<div class="past-panel" id="past-panel">' + pastHtml + '</div>' +
+      '</section>';
+  }
+  html += mainHtml;
+
   container.innerHTML = html;
   attachHandlers();
   attachBetsToggles();
   attachResultadoHandlers();
+  attachPastToggle();
   refreshCounters();
 }
 
@@ -794,13 +850,12 @@ function renderJogo(j){
   const v1 = j.gols1 != null ? j.gols1 : '';
   const v2 = j.gols2 != null ? j.gols2 : '';
   const n = j.totalPalpites || 0;
-  const palpitesStr = n > 0 ? ` · ${n} palpite${n !== 1 ? 's' : ''}` : '';
 
   const dis = locked ? 'disabled' : '';
   return `
     <div class="jogo${locked ? ' locked' : ''}" data-jogo="${j.numero}">
       <div class="corpo">
-        <div class="fase">#${j.numero} · ${hora}${fase ? ` · ${escapeHtml(fase)}` : ''}${palpitesStr}</div>
+        <div class="fase">#${j.numero} · ${hora}${fase ? ` · ${escapeHtml(fase)}` : ''}</div>
         ${locked ? '<div class="lock-row"><span class="lock-badge">🔒 encerrado</span></div>' : ''}
         <div class="matchup">
           <div class="team">
@@ -860,7 +915,7 @@ function renderJogo(j){
           </div>
         </div>` : ''}
         <div class="bets-wrap">
-          <button class="bets-toggle" data-jogo-bets="${j.numero}">▸ ver palpites</button>
+          <button class="bets-toggle" data-jogo-bets="${j.numero}">▸ ver palpites (${n})</button>
           <div class="bets-panel" id="bets-${j.numero}">
             <div class="bets-list"></div>
           </div>
@@ -906,16 +961,17 @@ function attachBetsToggles(){
     btn.addEventListener('click', () => {
       const jogoId = Number(btn.dataset.jogoBets);
       const panel  = document.getElementById('bets-' + jogoId);
+      const j      = ESTADO.jogos.find(x => x.numero === jogoId);
+      const n      = (j && j.totalPalpites) || 0;
       const isOpen = panel.classList.contains('open');
       if (isOpen) {
         panel.classList.remove('open');
-        btn.textContent = '▸ ver palpites';
+        btn.textContent = '▸ ver palpites (' + n + ')';
       } else {
         panel.classList.add('open');
         btn.textContent = '▾ ocultar palpites';
         if (!panel.dataset.loaded) {
           panel.dataset.loaded = '1';
-          const j = ESTADO.jogos.find(x => x.numero === jogoId);
           renderBets(panel, {
             ok:       true,
             iniciado: j ? j.iniciado : false,
@@ -924,6 +980,19 @@ function attachBetsToggles(){
         }
       }
     });
+  });
+}
+
+/* ---- Recolher/expandir o grupo de jogos passados ---- */
+function attachPastToggle(){
+  const btn   = document.getElementById('past-toggle');
+  const panel = document.getElementById('past-panel');
+  if (!btn || !panel) return;
+  btn.addEventListener('click', () => {
+    const open  = panel.classList.toggle('open');
+    const caret = btn.querySelector('.past-caret');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (caret) caret.textContent = open ? '▾' : '▸';
   });
 }
 
@@ -1200,7 +1269,7 @@ function carregarStats(){
   // Placar
   document.getElementById('placar-tipo-content').innerHTML =
     '<div class="state"><div class="spinner"></div>Carregando…</div>';
-  document.getElementById('placar-fase-content').innerHTML =
+  document.getElementById('placar-rodada-content').innerHTML =
     '<div class="state"><div class="spinner"></div>Carregando…</div>';
   google.script.run
     .withSuccessHandler(function(data){ done(); renderPlacar(data); })
@@ -1208,7 +1277,7 @@ function carregarStats(){
       done();
       var msg = '<div class="state" style="color:var(--err)">Erro: ' + escapeHtml(String(err && err.message || err)) + '</div>';
       document.getElementById('placar-tipo-content').innerHTML = msg;
-      document.getElementById('placar-fase-content').innerHTML = msg;
+      document.getElementById('placar-rodada-content').innerHTML = msg;
     })
     .getPlacar();
 }
@@ -1217,12 +1286,17 @@ function fmtPts(n){
   return parseFloat(Number(n).toFixed(2)).toString();
 }
 
+// Aproveitamento: fração 0..1 -> porcentagem (ex.: 0.7778 -> "77.8%")
+function fmtPct(n){
+  return parseFloat((Number(n) * 100).toFixed(1)).toString() + '%';
+}
+
 function renderPlacar(data){
   var tipo = data.tipo || [];
-  var fase = data.fase || [];
-  var faseHeaders = data.faseHeaders || ['Grupos','16-avos','Oitavas','Quartas','Semi','3.º lugar','Final','Total'];
+  var rodada = data.rodada || [];
+  var rodadaHeaders = data.rodadaHeaders || [];
 
-  // Tabela pontuação por tipo
+  // Tabela pontuação por tipo (+ aproveitamento vencedor/total ao final)
   var elTipo = document.getElementById('placar-tipo-content');
   if (!tipo.length) {
     elTipo.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
@@ -1235,66 +1309,59 @@ function renderPlacar(data){
         '<td>' + fmtPts(u.pt_placar) + '</td>' +
         '<td>' + fmtPts(u.pt_gols)   + '</td>' +
         '<td class="col-total">' + fmtPts(u.pt_total) + '</td>' +
+        '<td>' + fmtPct(u.aprov_venc)  + '</td>' +
+        '<td>' + fmtPct(u.aprov_total) + '</td>' +
       '</tr>';
     }).join('');
     elTipo.innerHTML = '<div class="score-wrap"><table class="score-table">' +
-      '<thead><tr><th>Usuário</th><th>Vencedor</th><th>Placar</th><th>Gols</th><th>Total</th></tr></thead>' +
+      '<thead><tr><th>Usuário</th><th>Vencedor</th><th>Placar</th><th>Gols</th><th>Total</th>' +
+      '<th>Aprov. Venc.</th><th>Aprov. Total</th></tr></thead>' +
       '<tbody>' + rowsTipo + '</tbody></table></div>';
   }
 
-  // Tabela pontuação por fase
-  var elFase = document.getElementById('placar-fase-content');
-  if (!fase.length) {
-    elFase.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
+  // Tabela pontuação por rodada (cabeçalhos vêm da linha 1 da aba placar_rodada;
+  // última coluna é o total).
+  var elRodada = document.getElementById('placar-rodada-content');
+  if (!rodada.length) {
+    elRodada.innerHTML = '<div class="state" style="padding:20px">Sem dados.</div>';
   } else {
-    var rowsFase = fase.map(function(u, i){
+    var rowsRodada = rodada.map(function(u, i){
       var pos = i + 1;
-      return '<tr>' +
-        '<td>' + pos + '. ' + escapeHtml(u.nome) + '</td>' +
-        '<td>' + fmtPts(u.grupos)    + '</td>' +
-        '<td>' + fmtPts(u.avos16)   + '</td>' +
-        '<td>' + fmtPts(u.oitavas)  + '</td>' +
-        '<td>' + fmtPts(u.quartas)  + '</td>' +
-        '<td>' + fmtPts(u.semifinal)+ '</td>' +
-        '<td>' + fmtPts(u.lugar3)   + '</td>' +
-        '<td>' + fmtPts(u.final)    + '</td>' +
-        '<td class="col-total">' + fmtPts(u.total) + '</td>' +
-      '</tr>';
+      var tds = u.valores.map(function(v, idx){
+        var isTotal = (idx === u.valores.length - 1);
+        return '<td' + (isTotal ? ' class="col-total"' : '') + '>' + fmtPts(v) + '</td>';
+      }).join('');
+      return '<tr><td>' + pos + '. ' + escapeHtml(u.nome) + '</td>' + tds + '</tr>';
     }).join('');
-    var thFase = faseHeaders.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('');
-    elFase.innerHTML = '<div class="score-wrap"><table class="score-table">' +
-      '<thead><tr><th>Usuário</th>' + thFase + '</tr></thead>' +
-      '<tbody>' + rowsFase + '</tbody></table></div>';
+    var thRodada = rodadaHeaders.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('');
+    elRodada.innerHTML = '<div class="score-wrap"><table class="score-table">' +
+      '<thead><tr><th>Usuário</th>' + thRodada + '</tr></thead>' +
+      '<tbody>' + rowsRodada + '</tbody></table></div>';
   }
 }
 
 function renderStats(data) {
-  const usuarios   = data.usuarios   || [];
-  const totalJogos = data.totalJogos || 0;
-  const el         = document.getElementById('stats-content');
+  const usuarios     = data.usuarios     || [];
+  const rodadaLabels = data.rodadaLabels || [];
+  const el           = document.getElementById('stats-content');
 
   if (!usuarios.length) {
     el.innerHTML = '<div class="state">Nenhum palpite registrado ainda.</div>';
     return;
   }
 
-  const maxTotal = usuarios[0].total;
+  // Palpites por rodada (Gr1..F) + total — mesma ordem/estilo das outras tabelas.
   const rows = usuarios.map(function(u, i) {
-    const pos    = i + 1;
-    const pct    = maxTotal > 0 ? Math.round(u.total / maxTotal * 100) : 0;
-    const classe = pos === 1 ? ' top1' : pos === 2 ? ' top2' : pos === 3 ? ' top3' : '';
-    const de     = totalJogos > 0 ? '<span>/ ' + totalJogos + '</span>' : '';
-    return '<div class="rank-row' + classe + '">' +
-      '<div class="rank-pos">'  + pos + '</div>' +
-      '<div class="rank-nome">' + escapeHtml(u.nome) + '</div>' +
-      '<div class="rank-bar-wrap"><div class="rank-bar-bg">' +
-        '<div class="rank-bar-fill" style="width:' + pct + '%"></div>' +
-      '</div></div>' +
-      '<div class="rank-count">' + u.total + de + '</div>' +
-    '</div>';
+    const pos = i + 1;
+    const tds = (u.porRodada || []).map(function(n){ return '<td>' + n + '</td>'; }).join('');
+    return '<tr><td>' + pos + '. ' + escapeHtml(u.nome) + '</td>' + tds +
+      '<td class="col-total">' + u.total + '</td></tr>';
   }).join('');
+  const th = rodadaLabels.map(function(h){ return '<th>' + escapeHtml(h) + '</th>'; }).join('');
 
-  el.innerHTML = '<div class="rank-list">' + rows + '</div>';
+  el.innerHTML = '<div class="score-wrap"><table class="score-table">' +
+    '<thead><tr><th>Usuário</th>' + th + '<th>Total</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div>';
 }
 
 /* ====================================================================
@@ -1330,19 +1397,41 @@ function renderEstatistica(data){
   const rodadas = data.rodadas || [];
 
   // ---- Contagem regressiva ----
+  // 1.º card: "próximo jogo" = próximo JOGO individual ainda não iniciado
+  //   (pode ser no meio de um grupo já em andamento).
+  // Demais cards: contagem até o 1.º jogo de cada rodada cujo 1.º jogo ainda
+  //   não começou (rodadas já em andamento não aparecem).
   const cdEl = document.getElementById('countdown-content');
-  if (!rodadas.length){
-    cdEl.innerHTML = '<div class="state">Nenhuma rodada encontrada.</div>';
+  const futuras = rodadas.filter(function(r){ return !r.iniciado; });
+  const prox = data.proximoJogo || null;
+
+  let cards = '';
+  if (prox && prox.inicioIso){
+    const quando  = fmtDataHora(prox.inicioIso);
+    const matchup = (prox.selecao1 && prox.selecao2)
+      ? (prox.selecao1 + ' x ' + prox.selecao2)
+      : rotuloRodada(prox.rodada);
+    cards += '<div class="cd-card cd-prox">' +
+      '<div class="cd-rodada">próximo jogo</div>' +
+      '<div class="cd-jogo">' + escapeHtml(matchup + ' · ' + quando) + '</div>' +
+      '<div class="cd-timer" data-cd-timer data-target="' +
+        escapeHtml(prox.inicioIso) + '">—</div>' +
+    '</div>';
+  }
+  cards += futuras.map(function(r){
+    const quando = r.inicioIso ? fmtDataHora(r.inicioIso) : 'sem data';
+    return '<div class="cd-card">' +
+      '<div class="cd-rodada">' + escapeHtml(rotuloRodada(r.rodada)) + '</div>' +
+      '<div class="cd-jogo">1.º jogo · ' + escapeHtml(quando) + '</div>' +
+      '<div class="cd-timer" data-cd-timer data-target="' +
+        escapeHtml(r.inicioIso || '') + '">—</div>' +
+    '</div>';
+  }).join('');
+
+  if (!cards){
+    cdEl.innerHTML = '<div class="state">Nenhum jogo aguardando início.</div>';
   } else {
-    cdEl.innerHTML = '<div class="cd-grid">' + rodadas.map(function(r){
-      const quando = r.inicioIso ? fmtDataHora(r.inicioIso) : 'sem data';
-      return '<div class="cd-card' + (r.iniciado ? ' cd-started' : '') + '">' +
-        '<div class="cd-rodada">' + escapeHtml(rotuloRodada(r.rodada)) + '</div>' +
-        '<div class="cd-jogo">1.º jogo · ' + escapeHtml(quando) + '</div>' +
-        '<div class="cd-timer" data-cd-timer data-target="' +
-          escapeHtml(r.inicioIso || '') + '">—</div>' +
-      '</div>';
-    }).join('') + '</div>';
+    cdEl.innerHTML = '<div class="cd-grid">' + cards + '</div>';
   }
 
   // ---- Tabela por rodada ----
@@ -1417,11 +1506,11 @@ function tickCountdown(){
     if (!alvo){ el.textContent = '—'; return; }
     const rem = parseLocalIso(alvo) - nowMs;
     if (rem <= 0){
-      el.textContent = 'em andamento';
-      el.classList.add('cd-live');
+      // Jogo começou: some da contagem regressiva (só mostramos o que não começou).
+      const card = el.closest('.cd-card');
+      if (card) card.style.display = 'none';
     } else {
       el.textContent = fmtCountdown(rem);
-      el.classList.remove('cd-live');
     }
   });
 }
