@@ -5,6 +5,8 @@ data/
 output/*
 !output/receitas/
 !output/receitas/**
+!abm/output/
+!abm/output/**
 siconfi_dca/
 
 # Cache Python
