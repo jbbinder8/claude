@@ -1,0 +1,25 @@
+{
+  "id": "S1",
+  "nome": "selic_baixa",
+  "n_familias": 1000,
+  "g": 0.0,
+  "retorno_media_faixa": [
+    0.01,
+    0.03,
+    0.035,
+    0.035
+  ],
+  "retorno_dp_faixa": [
+    0.01,
+    0.015,
+    0.025,
+    0.025
+  ],
+  "transferencia_base": 0.0,
+  "limiar": Infinity,
+  "limiar_usa_renda_total": false,
+  "alpha_seguro": 0.7,
+  "max_choques_edu": 3,
+  "p_sucessao": 0.03,
+  "banda_histerese": 0.1
+}

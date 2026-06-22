@@ -1,0 +1,103 @@
+{
+  "indicadores": {
+    "gini_renda_trabalho": {
+      "valor": 0.530154893414728,
+      "alvo": "0,52 ±0,02",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "gini_patrimonio": {
+      "valor": 0.8020125300296943,
+      "alvo": "0,82 ±0,02",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "mediana_renda": {
+      "valor": 42665.269894052166,
+      "alvo": "R$42-48k ±10%",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "mediana_patrimonio": {
+      "valor": 61622.48943479035,
+      "alvo": "R$55-70k ±15%",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "razao_media_top10_bottom40": {
+      "valor": 15.74865471732968,
+      "alvo": "11-16x",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "frac_faixa1": {
+      "valor": 0.45,
+      "alvo": "0,45-0,55",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "desemprego_inicial": {
+      "valor": 0.06,
+      "alvo": "0,05-0,10",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "pearson_ln": {
+      "valor": 0.6315890884318114,
+      "alvo": "0,55-0,65",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "spearman": {
+      "valor": 0.6072727272727272,
+      "alvo": "0,55-0,68",
+      "ok": true,
+      "tipo": "gate",
+      "nota": ""
+    },
+    "share_top1_renda": {
+      "valor": 0.10943482244430223,
+      "alvo": "25-30%*",
+      "ok": false,
+      "tipo": "info",
+      "nota": "[D4](i) priorizou Gini PNAD; ~14% e' o consistente c/ Gini 0,52"
+    },
+    "share_top1_patrimonio": {
+      "valor": 0.29822478360643767,
+      "alvo": "40-50%*",
+      "ok": false,
+      "tipo": "info",
+      "nota": "[D4](ii) priorizou Gini patr; conflita c/ faixa4"
+    },
+    "frac_faixa4": {
+      "valor": 0.009,
+      "alvo": "0,004-0,006*",
+      "ok": false,
+      "tipo": "info",
+      "nota": "[D4](ii) inconsistente c/ share top1 patr p/ lognormal+Pareto unico"
+    },
+    "overlap_top10": {
+      "valor": 0.43,
+      "alvo": ">=0,50*",
+      "ok": false,
+      "tipo": "info",
+      "nota": "[D4](iii) limite da copula gaussiana p/ Pearson no alvo"
+    },
+    "overlap_top1": {
+      "valor": 0.1,
+      "alvo": ">=0,25*",
+      "ok": false,
+      "tipo": "info",
+      "nota": "[D4](iii) idem"
+    }
+  },
+  "aprovado": true
+}
