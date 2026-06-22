@@ -641,3 +641,23 @@ Fontes oficiais e estudos utilizados nos parâmetros da seção 4 e 5:
 - DQYDJ (2024) — *Correlation of Income and Net Worth in America*: correlação Pearson renda total × patrimônio líquido = 0,559 (Survey of Consumer Finances, EUA 2022–23). Referência internacional para país com concentração patrimonial menor que a brasileira.
 - Observatório de Política Fiscal FGV-IBRE / Nota Técnica 2025 — *Concentração de renda no Brasil: o que os dados do IRPF revelam?*: 90% do aumento da concentração no top 0,1% (2017–2023) vem de renda de capital, sendo 66% de dividendos. Top 1% passou de 20,4% para 24,3% da renda nacional.
 - Medeiros et al. — *A composição da renda no topo da distribuição: evolução no Brasil entre 2006 e 2012* (Unicamp Economia e Sociedade): no top 1%, menos da metade da renda vem do trabalho; mais de um terço vem do capital (lucros, dividendos, ganhos financeiros). Evidência indireta de correlação positiva forte entre renda e patrimônio no topo.
+
+# 11. Errata e notas de implementação
+
+> Esta seção foi adicionada **durante a implementação** (ver `parametros.py`,
+> `README.md` e o código). Documenta inconsistências numéricas encontradas na spec
+> e as decisões tomadas para resolvê-las. O texto técnico das seções 1–10 acima foi
+> preservado como registro original; quando ele divergir desta seção, **o código e
+> esta errata prevalecem**.
+
+| Ref. | Onde na spec | Problema | Resolução |
+|------|--------------|----------|-----------|
+| **[D1]** | §4.2 | `x_min_p = R$ 2,3M` é menor que o P99 do corpo log-normal (≈ R$ 4,97M); "substituir o top 1%" criaria uma **inversão/descontinuidade** de ranking, contradizendo a afirmação "não há saltos artificiais". | *Splice contínuo* corpo→cauda em `x_min`: substituem-se **todas** as famílias acima de `x_min` (fração = massa da cauda), mapeadas pelo percentil-dentro-da-cauda. Para a renda (`x_min_r = P99`) recai exatamente em "top 1%". |
+| **[D2]** | §5.6 | Afirma `E[1 − 1/n_herdeiros] = 0,604` para `n ~ Uniform{1,2,3,4}`. O correto é **0,479** (`E[1/n] = 25/48`). | Diluição efetiva ≈ `0,03 × 0,479 ≈ 1,44%/ano` (não 1,8%). Mantidos `p_sucessao = 3%` e `n ~ Uniform{1,2,3,4}`. |
+| **[D3]** | §5.1 | A elegibilidade compara `renda_anual/2,79` (anual per capita) com `LIMIAR` (R$/**mês** per capita) — faltava `/12`; ninguém ficaria elegível (quebra o S3). | Comparar `renda_anual / 2,79 / 12 < LIMIAR`. |
+| **[D4]** | §4.5 | Vários alvos são **mutuamente incompatíveis** para lognormal+Pareto: (i) Gini de renda 0,52 × share top 1% renda 27% (conceitos PNAD × WID); (ii) Gini patr. 0,82 × share top 1% patr. 40–50% × faixa 4 (0,4–0,6%); (iii) Pearson 0,55–0,65 × sobreposição de cauda ≥25%/≥50% (cópula gaussiana). | **Decisão: priorizar os Ginis (dispersão).** Calibração final `μ_r=10,66; σ_r=0,97; α_r=1,5; μ_p=11,0; σ_p=1,9; α_p=1,35; x_min_p=2,3M; ρ=0,60`. Shares de topo e sobreposição viram indicadores **informativos** (não-gate). A média do ensemble (30 seeds, n=10.000) passa os 9 gates. |
+| **[D5]** | §7.3 (fig.20) | A decomposição em "retorno / poupança / desemprego / educação" não tem identidade aditiva limpa (a poupança já embute o retorno do patrimônio). | Identidade `Δw = retorno + (trabalho×poupança) + sucessão` (shares somam 1). Desemprego e educação atuam via renda do trabalho e têm figuras próprias (6 e 24). |
+
+Notas menores não corrigidas (dentro de tolerância): o estado estacionário da cadeia
+de Markov de desemprego (≈ 8–9%) fica levemente acima da calibração inicial (7,9%),
+mas dentro do alvo 7–9%.
