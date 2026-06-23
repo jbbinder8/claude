@@ -99,10 +99,10 @@ def _gravar_params_raiz(cenarios_rodados: list[str], todos: dict,
         "rodada": ts,
         "n_familias": n_familias,
         "n_runs": n_runs,
+        "cenarios_rodados": cenarios_rodados,
         "cenarios": {
             cid: todos[cid].to_dict()
-            for cid in cenarios_rodados
-            if cid in todos
+            for cid in todos          # todos os definidos (S0–S7), não só os rodados
         },
     }
     caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.json")
