@@ -86,11 +86,38 @@ def _gravar_outputs(cid: str, cen: P.Cenario, res: dict, seed_base: int,
         res["run0"]["painel"].to_parquet(os.path.join(outdir, "microdados_run0.parquet"))
 
 
+def _gravar_params_raiz(cenarios_rodados: list[str], todos: dict,
+                        n_familias: int, n_runs: int) -> None:
+    """Salva snapshot dos parâmetros de todos os cenários rodados no output raiz.
+
+    Grava output/cenarios_params_<timestamp>.json para rastreabilidade histórica:
+    mesmo que a spec mude, o usuário sabe o que cada Sx significava em cada execução.
+    """
+    import datetime
+    ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    registro = {
+        "rodada": ts,
+        "n_familias": n_familias,
+        "n_runs": n_runs,
+        "cenarios": {
+            cid: todos[cid].to_dict()
+            for cid in cenarios_rodados
+            if cid in todos
+        },
+    }
+    caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.json")
+    with open(caminho, "w", encoding="utf-8") as f:
+        json.dump(registro, f, ensure_ascii=False, indent=2, default=_json_default)
+    print(f"[params] {caminho}")
+
+
 def rodar(cenarios: list[str], n_familias: int, n_runs: int,
           com_figuras: bool, com_microdados: bool) -> None:
     os.makedirs(OUTPUT, exist_ok=True)
     todos = P.cenarios_base(n_familias=n_familias)
     resultados = {}
+
+    _gravar_params_raiz(cenarios, todos, n_familias, n_runs)
 
     for cid in cenarios:
         cen = todos[cid]
