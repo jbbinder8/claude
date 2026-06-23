@@ -96,18 +96,18 @@ def _gravar_params_raiz(cenarios_rodados: list[str], todos: dict,
     import datetime
     ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    linhas = []
-    for cid, cen in todos.items():
-        d = cen.to_dict()
+    ids = list(todos.keys())
+    colunas = {}
+    for cid in ids:
+        d = todos[cid].to_dict()
         rm = d["retorno_media_faixa"]
         rd = d["retorno_dp_faixa"]
         limiar_str = "universal" if d["limiar"] == float("inf") else str(d["limiar"])
-        linhas.append({
-            "cenario":               cid,
+        colunas[cid] = {
             "nome":                  d["nome"],
             "rodado":                "sim" if cid in cenarios_rodados else "nao",
-            "n_familias":            n_familias,
-            "n_runs":                n_runs,
+            "n_familias":            str(n_familias),
+            "n_runs":                str(n_runs),
             "g_%aa":                 f"{d['g']*100:.1f}",
             "retorno_faixa1_%":      f"{rm[0]*100:.1f}",
             "retorno_faixa2_%":      f"{rm[1]*100:.1f}",
@@ -117,17 +117,44 @@ def _gravar_params_raiz(cenarios_rodados: list[str], todos: dict,
             "dp_retorno_faixa2_%":   f"{rd[1]*100:.1f}",
             "dp_retorno_faixa3_%":   f"{rd[2]*100:.1f}",
             "dp_retorno_faixa4_%":   f"{rd[3]*100:.1f}",
-            "transferencia_R$_mes":  d["transferencia_base"],
+            "transferencia_R$_mes":  str(d["transferencia_base"]),
             "limiar_R$_mes":         limiar_str,
-            "usa_renda_total":       d["limiar_usa_renda_total"],
-            "alpha_seguro":          d["alpha_seguro"],
-            "max_choques_edu":       d["max_choques_edu"],
+            "usa_renda_total":       str(d["limiar_usa_renda_total"]),
+            "alpha_seguro":          str(d["alpha_seguro"]),
+            "max_choques_edu":       str(d["max_choques_edu"]),
             "p_sucessao_%":          f"{d['p_sucessao']*100:.1f}",
             "banda_histerese_%":     f"{d['banda_histerese']*100:.0f}",
-        })
+        }
 
-    caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.csv")
-    pd.DataFrame(linhas).to_csv(caminho, index=False, encoding="utf-8")
+    params = list(next(iter(colunas.values())).keys())
+
+    # larguras de cada coluna para alinhamento fixo
+    w_param = max(len(p) for p in params)
+    w_cols  = {cid: max(len(cid), max(len(colunas[cid][p]) for p in params))
+               for cid in ids}
+
+    sep   = "+-" + "-" * w_param + "-+-" + "-+-".join("-" * w_cols[c] for c in ids) + "-+"
+    linha = lambda param, vals: (
+        "| " + param.ljust(w_param) + " | " +
+        " | ".join(vals[c].ljust(w_cols[c]) for c in ids) + " |"
+    )
+    header = "| " + "parametro".ljust(w_param) + " | " + \
+             " | ".join(c.ljust(w_cols[c]) for c in ids) + " |"
+
+    linhas_txt = [
+        f"rodada: {ts}",
+        "",
+        sep,
+        header,
+        sep,
+    ]
+    for p in params:
+        linhas_txt.append(linha(p, {cid: colunas[cid][p] for cid in ids}))
+    linhas_txt += [sep, ""]
+
+    caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.txt")
+    with open(caminho, "w", encoding="utf-8") as f:
+        f.write("\n".join(linhas_txt))
     print(f"[params] {caminho}")
 
 
