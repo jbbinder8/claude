@@ -1,0 +1,9 @@
+cenario,nome,rodado,n_familias,n_runs,g_%aa,retorno_faixa1_%,retorno_faixa2_%,retorno_faixa3_%,retorno_faixa4_%,dp_retorno_faixa1_%,dp_retorno_faixa2_%,dp_retorno_faixa3_%,dp_retorno_faixa4_%,transferencia_R$_mes,limiar_R$_mes,usa_renda_total,alpha_seguro,max_choques_edu,p_sucessao_%,banda_histerese_%
+S0,baseline,sim,500,5,0.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,0.0,universal,False,0.7,3,3.0,10
+S1,selic_baixa,nao,500,5,0.0,1.0,3.0,3.5,3.5,1.0,1.5,2.5,2.5,0.0,universal,False,0.7,3,3.0,10
+S2,renda_basica_universal,nao,500,5,0.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,600.0,universal,False,0.7,3,3.0,10
+S3,renda_basica_focalizada,nao,500,5,0.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,600.0,218.0,True,0.7,3,3.0,10
+S4,selic_baixa+renda_basica,nao,500,5,0.0,1.0,3.0,3.5,3.5,1.0,1.5,2.5,2.5,600.0,218.0,True,0.7,3,3.0,10
+S5,crescimento_alto,nao,500,5,2.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,0.0,universal,False,0.7,3,3.0,10
+S6,sem_sucessao,nao,500,5,0.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,0.0,universal,False,0.7,3,0.0,10
+S7,sucessao_forte,nao,500,5,0.0,1.0,3.0,5.0,5.0,1.0,1.5,2.5,2.5,0.0,universal,False,0.7,3,5.0,10

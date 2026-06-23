@@ -88,26 +88,46 @@ def _gravar_outputs(cid: str, cen: P.Cenario, res: dict, seed_base: int,
 
 def _gravar_params_raiz(cenarios_rodados: list[str], todos: dict,
                         n_familias: int, n_runs: int) -> None:
-    """Salva snapshot dos parâmetros de todos os cenários rodados no output raiz.
+    """Salva tabela CSV com os parâmetros de todos os cenários (S0–S7) no output raiz.
 
-    Grava output/cenarios_params_<timestamp>.json para rastreabilidade histórica:
-    mesmo que a spec mude, o usuário sabe o que cada Sx significava em cada execução.
+    Grava output/cenarios_params_<timestamp>.csv — uma linha por cenário, uma coluna
+    por parâmetro — para rastreabilidade histórica mesmo que a spec mude.
     """
     import datetime
     ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    registro = {
-        "rodada": ts,
-        "n_familias": n_familias,
-        "n_runs": n_runs,
-        "cenarios_rodados": cenarios_rodados,
-        "cenarios": {
-            cid: todos[cid].to_dict()
-            for cid in todos          # todos os definidos (S0–S7), não só os rodados
-        },
-    }
-    caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.json")
-    with open(caminho, "w", encoding="utf-8") as f:
-        json.dump(registro, f, ensure_ascii=False, indent=2, default=_json_default)
+
+    linhas = []
+    for cid, cen in todos.items():
+        d = cen.to_dict()
+        rm = d["retorno_media_faixa"]
+        rd = d["retorno_dp_faixa"]
+        limiar_str = "universal" if d["limiar"] == float("inf") else str(d["limiar"])
+        linhas.append({
+            "cenario":               cid,
+            "nome":                  d["nome"],
+            "rodado":                "sim" if cid in cenarios_rodados else "nao",
+            "n_familias":            n_familias,
+            "n_runs":                n_runs,
+            "g_%aa":                 f"{d['g']*100:.1f}",
+            "retorno_faixa1_%":      f"{rm[0]*100:.1f}",
+            "retorno_faixa2_%":      f"{rm[1]*100:.1f}",
+            "retorno_faixa3_%":      f"{rm[2]*100:.1f}",
+            "retorno_faixa4_%":      f"{rm[3]*100:.1f}",
+            "dp_retorno_faixa1_%":   f"{rd[0]*100:.1f}",
+            "dp_retorno_faixa2_%":   f"{rd[1]*100:.1f}",
+            "dp_retorno_faixa3_%":   f"{rd[2]*100:.1f}",
+            "dp_retorno_faixa4_%":   f"{rd[3]*100:.1f}",
+            "transferencia_R$_mes":  d["transferencia_base"],
+            "limiar_R$_mes":         limiar_str,
+            "usa_renda_total":       d["limiar_usa_renda_total"],
+            "alpha_seguro":          d["alpha_seguro"],
+            "max_choques_edu":       d["max_choques_edu"],
+            "p_sucessao_%":          f"{d['p_sucessao']*100:.1f}",
+            "banda_histerese_%":     f"{d['banda_histerese']*100:.0f}",
+        })
+
+    caminho = os.path.join(OUTPUT, f"cenarios_params_{ts}.csv")
+    pd.DataFrame(linhas).to_csv(caminho, index=False, encoding="utf-8")
     print(f"[params] {caminho}")
 
 
