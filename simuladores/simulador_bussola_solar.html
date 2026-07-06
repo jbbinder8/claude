@@ -33,6 +33,16 @@
   #tip{font-size:12.5px;color:var(--text);}
   #tip.night{color:#8aa0c8;}
   #tip.noon{color:#9af5b0;}
+  /* seletor de cidade */
+  #cidades{display:flex;gap:8px;margin:0 0 14px;}
+  #cidades .cidade{flex:1;display:flex;}
+  #cidades input{position:absolute;opacity:0;width:0;height:0;}
+  #cidades span{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;
+    background:#161d2a;border:1px solid var(--border);color:var(--dim);
+    padding:8px 4px;border-radius:9px;font-size:12px;line-height:1.2;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:background .12s,border-color .12s,color .12s;}
+  #cidades input:checked+span{background:#1f2a3d;border-color:var(--accent);color:#fff;font-weight:600;}
+  #cidades input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px;}
   /* presets */
   #presets{display:flex;gap:8px;margin:10px 0 4px;}
   #presets button{flex:1;background:#161d2a;border:1px solid var(--border);
@@ -67,7 +77,13 @@
 <body>
 <div id="wrap">
   <h1>🧭 Bússola da Sombra</h1>
-  <p class="sub">Curitiba · ano 2026 · horário oficial (UTC−3, sem horário de verão)</p>
+  <p class="sub"><span class="city-name">Curitiba</span> · ano 2026 · horário oficial (UTC−3, sem horário de verão)</p>
+
+  <div id="cidades" role="radiogroup" aria-label="Cidade">
+    <label class="cidade"><input type="radio" name="cidade" value="curitiba" checked><span>Curitiba</span></label>
+    <label class="cidade"><input type="radio" name="cidade" value="pontal"><span>Pontal do Paraná</span></label>
+    <label class="cidade"><input type="radio" name="cidade" value="foz"><span>Foz do Iguaçu</span></label>
+  </div>
 
   <!-- Sliders primeiro: ajuste e veja o resultado logo abaixo, sem rolar -->
   <div id="controls">
@@ -143,7 +159,7 @@
     sombra real — então o <b style="color:var(--north)">N</b> em vermelho marca o Norte verdadeiro.
     <div class="leg"><span class="swatch" style="background:var(--shadow)"></span> sombra (lado oposto ao sol)</div>
     <div class="leg"><span class="swatch" style="background:var(--sun)"></span> direção do sol</div>
-    <p style="margin-top:9px">No <b>meio-dia solar</b> (~12h15–12h25 em Curitiba) a sombra aponta exatamente
+    <p style="margin-top:9px">No <b>meio-dia solar</b> (~<span id="noonWindow">12h15–12h25</span> em <span class="city-name">Curitiba</span>) a sombra aponta exatamente
     para o <b>Sul</b>; o Norte fica diretamente atrás dela.</p>
   </div>
 
@@ -152,7 +168,13 @@
 
 <script>
 "use strict";
-const LAT=-25.4284, LON=-49.2733, TZ=-3, ANO=2026;
+const CIDADES={
+  curitiba:{nome:'Curitiba',         lat:-25.4284, lon:-49.2733},
+  pontal:  {nome:'Pontal do Paraná', lat:-25.6739, lon:-48.5119},
+  foz:     {nome:'Foz do Iguaçu',    lat:-25.5469, lon:-54.5882},
+};
+let LAT=CIDADES.curitiba.lat, LON=CIDADES.curitiba.lon;
+const TZ=-3, ANO=2026;
 const DIM=[31,28,31,30,31,30,31,31,30,31,30,31];          // 2026 não é bissexto
 const MES=['janeiro','fevereiro','março','abril','maio','junho','julho',
            'agosto','setembro','outubro','novembro','dezembro'];
@@ -327,6 +349,33 @@ document.getElementById('presets').addEventListener('click',e=>{
   render();
 });
 
+// ── Seletor de cidade ─────────────────────────────────────────────────────────
+const cityNameEls=document.querySelectorAll('.city-name');
+const noonWindowEl=document.getElementById('noonWindow');
+
+// janela anual do meio-dia solar (horário de relógio) para a cidade atual
+function janelaMeioDia(){
+  let mn=Infinity,mx=-Infinity;
+  for(let mo=1;mo<=12;mo++) for(let da=1;da<=DIM[mo-1];da+=5){
+    const n=((Math.round(eventos(mo,da).noon)%1440)+1440)%1440;
+    if(n<mn)mn=n; if(n>mx)mx=n;
+  }
+  const f=m=>fmtHM(m).replace(':','h');
+  return f(mn)+'–'+f(mx);
+}
+
+function setCidade(key){
+  const c=CIDADES[key]||CIDADES.curitiba;
+  LAT=c.lat; LON=c.lon;
+  cityNameEls.forEach(e=>e.textContent=c.nome);
+  if(noonWindowEl) noonWindowEl.textContent=janelaMeioDia();
+  render();
+}
+
+document.getElementById('cidades').addEventListener('change',e=>{
+  if(e.target.name==='cidade') setCidade(e.target.value);
+});
+
 // valores padrão = data/hora atuais ao carregar
 (function inicioAgora(){
   const n=new Date();
@@ -336,7 +385,7 @@ document.getElementById('presets').addEventListener('click',e=>{
   el.min.value = clamp(n.getMinutes(), 0, 59);
 })();
 
-render();
+setCidade('curitiba');
 </script>
 </body>
 </html>
