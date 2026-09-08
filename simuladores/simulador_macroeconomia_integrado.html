@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Laboratório macroeconômico: expectativas, políticas e choques em um modelo Novo-Keynesiano didático.">
+<title>MacroLab · Laboratório macroeconômico</title>
+<style>
+:root{--bg:#f4f6fa;--panel:#fff;--ink:#182940;--muted:#596b80;--border:#dce3eb;--blue:#1764db;--navy:#102641;--teal:#007f75;--orange:#c36b14;--purple:#8459c3;--red:#b13439;--soft:#eaf2ff;--shadow:0 3px 16px #15334d06}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.55}button,input,select{font:inherit}button,select{cursor:pointer}button{padding:9px 14px;border:1px solid var(--border);border-radius:7px;background:var(--panel);color:var(--ink);font-weight:600}button:hover{border-color:#98acc8;background:#f4f8ff}button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #3987e6;outline-offset:3px}button.primary{background:var(--blue);color:white;border-color:var(--blue)}button:disabled{cursor:default;opacity:.45}select{padding:8px 30px 8px 10px;background:white;border:1px solid var(--border);border-radius:6px;color:var(--ink);max-width:100%}input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;min-height:24px;margin:5px 0}input[type=checkbox]{accent-color:var(--blue)}a{color:var(--blue)}h1,h2,h3,p{margin:0}h1{font-size:27px;letter-spacing:-.8px;line-height:1.2}h2{font-size:21px;letter-spacing:-.4px}h3{font-size:16px}small,.small{font-size:13px}.muted{color:var(--muted)}.mono,output,.stat-value,.chart-value{font-variant-numeric:tabular-nums}.eyebrow{font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}.topbar{background:var(--navy);color:white;padding:17px 28px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.brand{display:flex;align-items:center;gap:12px}.brand-mark{font:700 27px Georgia,serif;width:40px;height:40px;border:1px solid #57718b;display:grid;place-items:center;border-radius:9px;color:#96c4ff}.brand-name{font-size:18px;font-weight:650;letter-spacing:.2px}.brand small{display:block;color:#b1c4da;font-size:12px}.top-meta{display:flex;align-items:center;gap:18px;font-size:12px;color:#c2d2e2}.status-dot{display:inline-block;width:7px;height:7px;background:#62d7b8;border-radius:50%;margin-right:7px}.topbar button{background:#223c59;border-color:#4b627d;color:white;font-size:13px}.page{max-width:1720px;margin:auto;padding:26px 28px 36px}.intro{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:22px}.intro p{margin-top:7px;color:var(--muted);max-width:780px}.mode{display:flex;background:#e5ebf3;border-radius:8px;padding:4px;gap:3px}.mode button{border:0;background:transparent;padding:7px 15px;font-size:13px}.mode button[aria-pressed=true]{background:white;box-shadow:0 1px 4px #0f294f15}.layout{display:grid;grid-template-columns:285px minmax(0,1fr);gap:24px;align-items:start}.sidebar{background:white;border:1px solid var(--border);border-radius:10px;overflow:hidden}.side-head{padding:19px;border-bottom:1px solid var(--border)}.side-head p{font-size:13px;color:var(--muted);margin-top:3px}.preset{display:grid;gap:7px;margin-top:14px}.control-group{padding:0 18px;border-bottom:1px solid var(--border)}.control-group summary{padding:16px 0;cursor:pointer;font-weight:650;list-style-position:inside}.control{padding-bottom:19px}.control-label{display:flex;align-items:start;justify-content:space-between;gap:8px;font-size:13px;font-weight:600}.control-label label{max-width:180px}.control-label output{white-space:nowrap;color:var(--blue)}.symbol{font-family:Georgia,serif;font-style:italic;font-weight:400;color:var(--muted);margin-left:4px}.bounds{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}.control p{font-size:12px;color:var(--muted);line-height:1.4;margin-top:4px}.side-foot{padding:17px 18px;font-size:12px;background:#f8faff;color:var(--muted)}.side-foot button{width:100%;margin-bottom:9px;font-size:12px}.checkrow{display:flex;gap:8px;align-items:center;margin-bottom:16px;font-size:13px}.workspace{min-width:0}.tabs{display:flex;border-bottom:1px solid var(--border);gap:21px;margin-bottom:20px;flex-wrap:wrap}.tabs button{border:0;border-bottom:3px solid transparent;border-radius:0;background:none;padding:9px 0 13px;font-size:13px;white-space:nowrap;color:var(--muted)}.tabs button[aria-selected=true]{border-color:var(--blue);color:var(--blue)}[hidden]{display:none!important}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 17px}.toolbar-label{font-size:13px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}.tag{font-size:11px;background:#edf3fb;color:#3d5c7d;padding:3px 7px;border-radius:4px;letter-spacing:.2px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:20px}.stat{background:white;border:1px solid var(--border);border-radius:9px;padding:17px 18px;box-shadow:var(--shadow)}.stat-label{font-size:12px;color:var(--muted)}.stat-value{font-size:28px;font-weight:600;letter-spacing:-.8px;line-height:1.45}.stat-delta{font-size:12px}.stat-delta.negative{color:var(--red)}.stat-delta.positive{color:var(--teal)}.legend{display:flex;align-items:center;gap:17px;flex-wrap:wrap;font-size:12px;margin-bottom:12px}.legend button{border:0;padding:3px 0;background:none;font-size:12px;font-weight:400;display:flex;align-items:center;gap:7px}.legend button[aria-pressed=false]{opacity:.45;text-decoration:line-through}.swatch{width:24px;border-top:2px solid var(--blue);display:inline-block}.chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.chart-card{background:white;border:1px solid var(--border);border-radius:9px;padding:17px 18px 9px;min-width:0;box-shadow:var(--shadow)}.chart-head{display:flex;justify-content:space-between;align-items:start;gap:12px}.chart-head h3{font-size:14px}.chart-head small{font-size:11px;color:var(--muted)}.chart-value{font-size:18px;font-weight:600;white-space:nowrap}.plot{width:100%;height:195px;position:relative}.plot svg{display:block;width:100%;height:100%;overflow:visible}.plot text{font-size:11px;fill:var(--muted)}.plot .grid{stroke:#e7edf4;stroke-width:1}.plot .trace{fill:none;stroke-linejoin:round;stroke-linecap:round}.plot .cursor{stroke:#a0aec0;stroke-width:1;stroke-dasharray:3 3}.plot .hit{fill:transparent;cursor:crosshair}.chart-tooltip{position:absolute;z-index:12;pointer-events:none;background:var(--navy);color:white;padding:10px 12px;border-radius:7px;box-shadow:0 4px 15px #10264125;font-size:12px;min-width:145px;max-width:220px}.chart-tooltip div{display:flex;justify-content:space-between;gap:14px}.chart-tooltip strong{font-weight:600}.panel{background:white;border:1px solid var(--border);border-radius:9px;padding:22px;margin-top:19px}.panel>p{color:var(--muted);margin-top:7px}.panel-title{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap}.scenario-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:13px}.scenario-row button{font-size:12px}.scenario-saved{font-size:12px;color:var(--muted);margin-top:8px;overflow-wrap:anywhere}.quarter{display:flex;align-items:center;gap:12px;max-width:390px;flex:1;min-width:220px}.quarter input{max-width:230px}.quarter output{font-size:13px;white-space:nowrap;font-weight:600}.explanation{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:13px}.explanation ol{padding-left:21px;margin:0}.explanation li{padding:4px 0;font-size:14px}.explanation .note{background:#f2f6fc;padding:15px;border-radius:7px;font-size:13px}.note p+p{margin-top:10px}.alerts:empty{display:none}.alert{background:#fff5e5;border-left:3px solid #ba7418;color:#714605;padding:11px 14px;font-size:13px;margin-bottom:10px;border-radius:4px}.alert.error{background:#fff0f0;color:#962c36;border-color:#bb3c43}.section-lead{margin-bottom:19px}.section-lead p{margin-top:6px;color:var(--muted);max-width:830px}.diagram{height:420px;position:relative;margin:22px 0 12px;min-width:0}.diagram svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}.node{position:absolute;transform:translate(-50%,-50%);width:112px;padding:9px 5px;line-height:1.2;background:white;border:1px solid var(--border);z-index:2;font-size:12px;text-align:center}.node b{font-family:Georgia,serif;font-size:20px;display:block;margin-bottom:4px}.node.exogenous{background:#edf8f5;border-color:#a8d8c9}.node.state{background:#f5f0fb;border-color:#cbb5e6}.node.shock{background:#fff6e8;border-color:#e6c896}.node.direct{outline:3px solid var(--blue);outline-offset:3px}.node.reached{box-shadow:0 0 0 2px #d5e5ff}.node.selected{border:2px solid var(--blue)}.edge{fill:none;stroke:#becbd9;stroke-width:1.3}.edge.active{stroke:var(--blue)}.edge.feedback{stroke:var(--orange);stroke-dasharray:5 4}.type-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}.type-legend span:before{content:'●';margin-right:5px;color:var(--blue)}.type-legend .exo:before{color:var(--teal)}.type-legend .state:before{color:var(--purple)}.type-legend .shock:before{color:var(--orange)}.type-legend .param:before{content:'◆';color:#687487}.follow-grid{display:grid;grid-template-columns:1fr 1fr;gap:25px;margin-top:14px}.follow-grid p{margin-top:5px;font-size:14px}.circuit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:15px 0}.circuit span{padding:8px 12px;border:1px solid var(--border);border-radius:6px}.circuit span.lit{background:var(--blue);color:white}.circuit em{font-style:normal;color:var(--muted)}.eq-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.equation{background:white;border:1px solid var(--border);border-radius:8px;padding:19px;min-width:0}.equation.affected{border-left:3px solid var(--blue)}.eq-number{font-size:11px;color:var(--muted);font-weight:650;letter-spacing:1px}.eq-kind{font-size:11px;color:var(--teal);margin:5px 0}.formula{font:17px/1.6 Georgia,"Times New Roman",serif;background:#f3f6fa;padding:11px 12px;margin:12px 0;border-radius:5px;overflow-wrap:anywhere}.eq-values{font:13px/1.6 "Segoe UI",Arial,sans-serif;background:#edf5ff;padding:9px 11px;margin:10px 0;border-radius:4px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.equation p{font-size:13px;color:var(--muted)}.eq-meta{margin-top:9px;font-size:12px;color:var(--muted)}.eq-meta b{color:var(--ink);font-weight:600}.method-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.method-grid .panel{margin:0}.method-grid p,.method-grid li{font-size:14px}.method-grid p+p{margin-top:10px}.wide{grid-column:1/-1}.method-grid ul{padding-left:19px;margin-bottom:0}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px;margin-top:12px}td,th{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left}th{font-weight:600;background:#f6f8fb}td:last-child{font-variant-numeric:tabular-nums}.test{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}.test b{display:block}.test.pass b{color:var(--teal)}.test.fail b{color:var(--red)}footer{margin:26px 0 0;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.loading{opacity:.55}body.basic .advanced{display:none!important}.inline-control{display:flex;align-items:center;gap:9px;font-size:13px;flex-wrap:wrap}.irf-settings{display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:18px 0}.irf-settings>label{display:grid;gap:5px;flex:1;min-width:160px}.irf-settings input{max-width:240px}.toast{font-size:12px;color:var(--teal);min-height:18px;margin-top:7px}abbr{text-decoration:underline dotted;text-underline-offset:3px;cursor:help}.fit-copy{overflow-wrap:anywhere}
+@media(min-width:1450px){.chart-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.plot{height:200px}}
+@media(max-width:1100px){.layout{grid-template-columns:255px minmax(0,1fr);gap:18px}.page{padding:22px 20px}.stat{padding:13px}.stat-value{font-size:23px}.stats{gap:9px}.eq-grid,.method-grid{grid-template-columns:1fr}.wide{grid-column:auto}.node{width:90px;font-size:11px}.explanation{grid-template-columns:1fr}.tabs{gap:16px}}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:1fr 1fr}.side-head,.side-foot{grid-column:1/-1}.control-group{border-right:1px solid var(--border)}.side-head{display:grid;grid-template-columns:1fr 1fr;gap:15px}.preset{margin:0}.side-foot button{width:auto;margin:0 10px 0 0}.top-meta>span:last-child{display:none}.stats{grid-template-columns:repeat(4,1fr)}.diagram{height:480px}.node{width:102px}.intro{align-items:start}.tabs{margin-top:2px}}
+@media(max-width:540px){.topbar{padding:14px 16px}.page{padding:21px 14px}.top-meta{gap:7px}.top-meta>span{display:none}h1{font-size:24px}.intro p{font-size:14px}.sidebar{grid-template-columns:1fr}.side-head{grid-template-columns:1fr}.preset{margin-top:3px}.stats{grid-template-columns:1fr 1fr}.chart-grid,.eq-grid,.follow-grid,.explanation{grid-template-columns:1fr}.chart-card{padding:16px 13px 8px}.plot{height:208px}.tabs{gap:16px}.panel{padding:17px}.diagram{height:660px}.node{width:88px;font-size:11px}.node b{font-size:18px}.stat-value{font-size:26px}.quarter{min-width:100%;max-width:100%}.quarter input{max-width:none}.mode button{padding:8px 14px}.side-foot button{margin-bottom:10px}.toolbar-label{max-width:100%}.formula{font-size:16px}.irf-settings{gap:12px}.topbar button{padding:8px}.legend{gap:12px}.control{padding-bottom:22px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+@media print{.sidebar,.topbar button,.mode,.tabs,.scenario-row,.irf-settings{display:none!important}.layout{display:block}.page{padding:0}.chart-card,.equation,.panel{break-inside:avoid}.plot{height:180px}body{background:white}.chart-grid{grid-template-columns:1fr 1fr}}
+body:not(.brazil) .br-only{display:none!important}.economy-picker{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:15px 18px;background:white;border:1px solid var(--border);border-radius:9px;margin-bottom:20px}.brazil-banner{padding:17px 19px;border:1px solid #b5d6ce;border-left:4px solid var(--teal);border-radius:8px;background:#f1faf7;margin-bottom:20px}.brazil-snapshot{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin:12px 0}.br-method p{margin:10px 0}.br-method li{margin:7px 0}.control-label{flex-wrap:wrap}.br-method .formula{line-height:1.6}@media(max-width:600px){.brazil-snapshot{grid-template-columns:1fr 1fr}.economy-picker select{width:100%}}
+</style>
+</head>
+<body class="basic">
+<header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true">Μ</span><div><div class="brand-name">MACRO<span style="color:#9ac5ff">LAB</span></div><small>Laboratório de economia dinâmica</small></div></div><div class="top-meta"><span><i class="status-dot"></i>Execução local · sem conexão</span><span>Modelo trimestral / v1.0</span><button id="resetTop">Restaurar estado estacionário</button></div></header>
+<div class="page"><div class="intro"><div><h1>Uma economia. Equações conectadas.</h1><p>Altere um choque e acompanhe produto, preços e políticas ao longo do tempo.</p></div><div class="mode" aria-label="Nível de exploração"><button id="basicMode" aria-pressed="true">Básico</button><button id="advancedMode" aria-pressed="false">Avançado</button></div></div>
+<div class="economy-picker"><label for="economySelect"><b>Economia do experimento</b></label><select id="economySelect"><option value="br" selected>Brasil · simulação didática calibrada</option><option value="lab">Laboratório · economia em equilíbrio</option></select><span class="small muted">O modo Básico/Avançado controla o nível de detalhe.</span></div><div class="layout"><aside class="sidebar" aria-label="Controles da economia"><div class="side-head"><div><h3>Configure o experimento</h3><p>O ponto de partida é o equilíbrio.</p></div><label class="preset small">Experimento pronto<select id="preset"></select></label></div><div id="controls" style="display:contents"></div><div class="side-foot"><button id="reset">Restaurar estado estacionário</button><p>Parâmetros recalibram a base. Choques ocorrem no trimestre 0. A comparação usa a mesma calibração, sem choques.</p></div></aside>
+<main class="workspace"><nav class="tabs" role="tablist" aria-label="Áreas do laboratório"><button id="tab-dashboard" role="tab" aria-controls="dashboard" aria-selected="true">Visão geral</button><button id="tab-mechanism" class="advanced" role="tab" aria-controls="mechanism" aria-selected="false">Conexões</button><button id="tab-equations" class="advanced" role="tab" aria-controls="equations" aria-selected="false">Equações</button><button id="tab-irf" class="advanced" role="tab" aria-controls="irf" aria-selected="false">Resposta a choques</button><button id="tab-method" role="tab" aria-controls="method" aria-selected="false">Metodologia</button></nav>
+<section id="brazilBanner" class="brazil-banner"><div class="panel-title"><h3>Brasil · retrato em 06/09/2026</h3><button id="viewBrazilSources">Dados, fontes e hipóteses</button></div><div id="brazilSnapshot" class="brazil-snapshot"></div><p id="brazilChanged" class="small muted"></p><p class="small">T−1: posição herdada aproximada. T0: primeiro trimestre simulado. A linha-base também se ajusta. Coeficientes são hipóteses didáticas, não estimativas do BCB.</p></section><div id="alerts" class="alerts" role="alert"></div><div id="globalStatus" class="small muted" aria-live="polite" style="margin-bottom:10px"></div>
+<section id="dashboard" role="tabpanel" aria-labelledby="tab-dashboard"><div class="toolbar"><div class="toolbar-label"><span class="eyebrow">Trajetórias da economia</span><span class="tag" id="scenarioName">Estado estacionário</span></div><label class="toolbar-label">Horizonte<select id="horizon"><option value="20">20 trimestres</option><option value="40" selected>40 trimestres</option><option value="80">80 trimestres</option><option value="120">120 trimestres</option></select></label></div>
+<div class="toolbar"><label class="quarter"><span class="small muted">Inspecionar</span><input id="quarter" type="range" min="0" max="39" step="1" value="0" aria-label="Trimestre inspecionado"><output id="quarterValue">T0</output></label><span class="small muted">Clique no gráfico para selecionar um trimestre.</span></div>
+<div class="stats" id="stats"></div><div class="legend" id="legend" aria-label="Séries exibidas"></div><div class="chart-grid" id="charts"></div>
+<section class="panel"><div class="panel-title"><h3>Como o choque se propagou?</h3><span class="tag" id="explainQuarter">Impacto · T0</span></div><div id="explanation" class="explanation"></div></section>
+<section class="panel"><div class="panel-title"><h3>Compare duas hipóteses</h3><span class="small muted">Salve a configuração atual em A ou B.</span></div><div class="scenario-row"><button id="saveA">Salvar cenário A</button><button id="loadA" disabled>Carregar A</button><button id="saveB">Salvar cenário B</button><button id="loadB" disabled>Carregar B</button><button id="clearScenarios">Limpar A e B</button></div><div id="savedDetails" class="scenario-saved"></div><div id="toast" class="toast" aria-live="polite"></div></section>
+</section>
+<section id="mechanism" role="tabpanel" aria-labelledby="tab-mechanism" hidden><div class="section-lead"><h2>Por onde o efeito passa?</h2><p>Selecione uma variável. As setas mostram dependências das equações; a solução é conjunta, e não uma sequência de cálculos causais.</p></div><div class="type-legend"><span>Endógena</span><span class="exo">Exógena</span><span class="state">Estado</span><span class="shock">Choque</span><span class="param">Parâmetro (nos controles)</span></div><div id="diagram" class="diagram"></div><p class="small muted">Contorno azul: origem selecionada ou alterada. Azul: transmissão direta e indireta. Tracejado laranja: retorno ao circuito. Espessura indica distância no circuito, não efeito causal estimado. K e B são estados e também variáveis endógenas.</p><section class="panel" id="follow"></section><section class="panel"><div class="panel-title"><h3>A determinação simultânea</h3><button id="animate">Percorrer o circuito</button></div><div id="circuit" class="circuit"></div><p>Os juros afetam decisões privadas e voltam a responder à inflação e ao hiato gerados por essas decisões. Todas as equações do horizonte são resolvidas juntas. A animação destaca conexões; não representa iterações do método numérico.</p></section></section>
+<section id="equations" role="tabpanel" aria-labelledby="tab-equations" hidden><div class="section-lead"><h2 id="equationHeading">As 15 equações do laboratório</h2><p>Valores na calibração atual, em <b id="eqQuarter">T0</b>. O azul identifica as equações ligadas à última alteração. Os números abaixo usam unidades trimestrais internas.</p></div><div class="toolbar"><label class="toolbar-label">Trimestre<input id="eqTime" type="range" min="0" max="39" value="0" aria-label="Trimestre das equações"></label><span class="small muted">ĉ e k̂: desvios relativos; v e g: desvios / PIB de referência; p: inflação − meta.</span></div><div id="eqGrid" class="eq-grid"></div></section>
+<section id="irf" role="tabpanel" aria-labelledby="tab-irf" hidden><div class="section-lead"><h2>Resposta a choques — IRF</h2><p>Uma função impulso-resposta isola uma inovação em T0 e compara sua trajetória com a economia sem choque. Novas inovações são zero; a persistência propaga o impulso.</p></div><div class="panel" style="margin-top:0"><div class="irf-settings"><label class="small">Choque isolado<select id="irfShock"></select></label><label class="small">Magnitude <output id="irfMagnitudeText">1,00</output><input id="irfMagnitude" type="range" min="-3" max="3" step="0.1" value="1"></label><label class="small">Perfil<select id="irfProfile"><option value="persistent">Persistente</option><option value="temporary">Temporário (1 trimestre)</option></select></label></div><p class="small muted" id="irfInfo"></p></div><div class="legend" style="margin-top:17px"><span><i class="swatch"></i> Resposta ao impulso isolado</span><span class="muted">Linha tracejada: resposta zero</span></div><div class="chart-grid" id="irfCharts"></div></section>
+<section id="method" role="tabpanel" aria-labelledby="tab-method" hidden><div class="section-lead"><h2>Como este modelo funciona?</h2><p>Um laboratório de mecanismos, com aproximações explícitas e verificações reproduzíveis.</p></div><div id="classicMethod"><div class="method-grid">
+<section class="panel"><h3>1. O que está sendo modelado</h3><p>Núcleo Novo-Keynesiano linearizado: Euler do consumo, Phillips com expectativas e regra de Taylor. Recursos e capital conectam as decisões privadas à produção. Investimento e potencial usam formas reduzidas.</p><p>É um modelo didático híbrido, e não um DSGE integralmente microfundamentado. Não há oferta ótima de trabalho, salários, lucros, custo de ajuste ou Tobin q. O trabalho ajusta para produzir a demanda; o potencial assume trabalho de referência constante.</p><p>Economia fechada; impostos de montante fixo; ausência de efeito riqueza fiscal e de limite inferior de juros. Não há estimação, dados de países nem intervalos de confiança.</p></section>
+<section class="panel"><h3>2. Equilíbrio e unidades</h3><p>PIB trimestral = 100; investimento = 20; gasto público ajustável; consumo = 100 − I − G. Capital = I/δ e produtividade de referência = 100/K<sup>α</sup>, com trabalho = 1.</p><p>β = 1/(1+r*) liga desconto e juro real trimestral. A taxa nominal estacionária satisfaz Fisher exata. Taxas na tela são anualizadas por <b>4 × taxa trimestral</b>, sem composição. Coeficientes de Taylor e Phillips usam taxas trimestrais.</p><p>Dívida/PIB = B/(4Y): estoque real dividido pelo fluxo de PIB anualizado. Assim, 60% corresponde a B = 240. Tributos de equilíbrio = G + r*B.</p></section>
+<section class="panel"><h3>3. Expectativas sem valores inventados</h3><p>O choque é surpresa em T0. A partir daí, todos conhecem seu decaimento e não há novas inovações: E<sub>t</sub>z<sub>t+1</sub> coincide com o valor futuro da trajetória resolvida. É uma simulação de previsão perfeita condicional; não simula distribuição de incerteza.</p><p>O sistema linear é resolvido conjuntamente para 600 trimestres. Consumo, inflação e investimento em desvios chegam a zero na fronteira; o capital inicial está predeterminado. Um segundo cálculo com 840 trimestres mede a sensibilidade da janela exibida à fronteira.</p><p>O algoritmo elimina blocos de quatro incógnitas por trimestre: consumo, inflação, investimento e capital. As demais variáveis são recuperadas por substituição. Não se afirma que toda calibração satisfaz as condições de Blanchard–Kahn.</p></section>
+<section class="panel"><h3>4. O significado da linearização</h3><p>Cobb–Douglas em níveis: Y = AK<sup>α</sup>L<sup>1−α</sup>. No motor: ŷ = â + αk̂ + (1−α)ℓ̂. Essa é uma aproximação de primeira ordem em torno do equilíbrio. Níveis exibidos usam Ȳ(1+ŷ), preservando exatamente a identidade de recursos e a acumulação de capital.</p><p>O potencial Y* é uma referência tecnológica a trabalho constante; não é o produto natural de um DSGE completo de preços flexíveis. A relação de investimento com juros e produto futuro é explicitamente reduzida.</p><p>Fisher nos desvios usa r̃ = ĩ − E p. A dívida usa a identidade real exata como bloco contábil separado. Desvios grandes podem invalidar a interpretação local; não são recortados para parecer estáveis.</p></section>
+<section class="panel wide"><h3>Ajustes feitos na especificação original</h3><ul><li><b>Taylor:</b> adotamos i = ī + φπ(π − π*) + φx x + m. Aqui φπ é a reação total: o limiar usual é 1. Na fórmula original com +π corrente, a reação total seria 1 + φπ e o alerta sugerido estaria incorreto.</li><li><b>Desconto e juro neutro:</b> β e r* são controles vinculados. Dois valores independentes violariam a Euler no equilíbrio.</li><li><b>Produção e demanda:</b> trabalho endógeno fecha Cobb–Douglas linearizada; não impomos simultaneamente produto fixado pela oferta e pela demanda.</li><li><b>Fiscal:</b> tributos de referência são calculados para estabilizar a dívida. Um ajuste tributário adicional é permitido e muda sua trajetória; ele não afeta diretamente o consumo neste fechamento.</li><li><b>Transmissão:</b> narrativas seguem os resultados calculados. Uma expansão fiscal pode elevar o estoque da dívida e reduzir dívida/PIB no impacto, por inflação e crescimento do denominador.</li><li><b>Horizonte:</b> 20–120 trimestres são janelas de visualização da mesma solução longa. A escolha da janela não redefine expectativas.</li><li><b>Parâmetros:</b> alterá-los compara economias recalibradas. Para uma mudança inesperada da política, use o choque monetário. Uma alteração permanente de meta não é simulada como choque de regime.</li></ul></section>
+<section class="panel"><h3>Estado estacionário atual</h3><div id="steadyTable" class="table-wrap"></div></section><section class="panel"><h3>Variáveis e papéis</h3><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Elementos</th></tr></thead><tbody><tr><td>Endógenas</td><td>C, I, Y, L, x, π, i, r, T, Y*</td></tr><tr><td>Estados endógenos</td><td>K herdado; B herdada</td></tr><tr><td>Estados exógenos</td><td>a, g, u, m, z, d em AR(1)</td></tr><tr><td>Inovações</td><td>ε em T0; zero nos demais trimestres</td></tr><tr><td>Parâmetros</td><td>β, σ, α, δ, κ, φπ, φx, aᵣ, aᵧ, ρ, φB, φY</td></tr></tbody></table></div><p>Estado é informação herdada; não é o oposto de variável endógena. Uma variável pode pertencer às duas categorias.</p></section>
+<section class="panel wide"><div class="panel-title"><h3>Validação do motor</h3><button id="runTests">Executar testes internos</button></div><p id="diagnostics" class="small muted"></p><div id="tests"></div></section>
+<section class="panel wide"><h3>Referências de apoio</h3><p>Os links documentam os mecanismos e o método geral; a calibração e os blocos reduzidos deste laboratório são escolhas didáticas.</p><ul><li><a href="https://www.frbsf.org/research-and-insights/publications/economic-letter/2001/05/the-science-and-art-of-monetary-policy/" target="_blank" rel="noopener">Federal Reserve Bank of San Francisco — The Science (and Art) of Monetary Policy</a>: princípio de Taylor.</li><li><a href="https://archives.dynare.org/manual/Deterministic-simulation.html" target="_blank" rel="noopener">Manual Dynare — Deterministic simulation</a>: trajetórias com previsão perfeita e condições de fronteira. O HTML usa um solver próprio, sem Dynare.</li><li><a href="https://www.bankofengland.co.uk/-/media/boe/files/working-paper/2002/monetary-policy-and-stagflation-in-the-uk.pdf" target="_blank" rel="noopener">Bank of England — Monetary policy and stagflation in the UK</a>: Euler, Phillips e política monetária.</li></ul></section>
+</div></div>
+<div id="brazilMethod" class="br-method">
+<section class="panel" style="margin-top:0"><h3>O que este Modo Brasil permite</h3><p>Comparar choques partindo de um retrato brasileiro datado, com inflação e juros herdados, canal cambial e ajuste fiscal. É uma extensão semiestrutural do laboratório; não reproduz o Samba, não foi estimada e não deve ser interpretada como projeção oficial.</p><p>A mesma configuração inicial é usada na base e no experimento. Assim, um PIB em T0 abaixo de 100 pode resultar do ajuste já em curso no modelo; o efeito de um novo choque é a diferença contra a base, não contra 100.</p></section>
+<section class="panel"><h3>Dados observados e sua transformação</h3><p>Consulta em 06/09/2026. As fontes têm frequências e datas distintas; esta versão usa um snapshot aproximado, sem atualização automática. Dados de preços e juros alimentam T−1; não se impõem seus valores à primeira previsão T0.</p><div id="brazilSources" class="table-wrap"></div></section>
+<section class="panel"><h3>Hipóteses que podem ser alteradas</h3><ul><li>Juro real neutro de 5% a.a. e referência fiscal de dívida de 70%: hipóteses de longo prazo, não dados correntes ou metas oficiais.</li><li>PIB inicial = 100; capital = Ī/δ; trabalho = 1; hiato inicial = 0; câmbio real = 100. São normalizações e hipóteses, não medições da capacidade ociosa ou da taxa de câmbio de equilíbrio.</li><li>Participações da demanda aproximadas a partir de 2025. Saldo externo de referência +0,5% do PIB é uma hipótese de fechamento. Consumo é a parcela residual, e variação de estoques é omitida.</li><li>Coeficientes de Taylor, Phillips, inércia, câmbio, importações e fiscal são didáticos. Seus controles ficam no modo Avançado. Não foram ajustados econometricamente aos dados brasileiros.</li><li>O juro externo e o prêmio de referência são constantes. Não há conta financeira, carteira da dívida, crédito direcionado, preços administrados separados ou crescimento tendencial.</li></ul></section>
+<section class="panel"><h3>Expectativas, inércia e condições iniciais</h3><p>As trajetórias são resolvidas conjuntamente para 600 períodos; a janela exibe de 20 a 120. Um segundo cálculo com 840 períodos verifica sensibilidade à fronteira. As seis incógnitas são consumo, inflação, investimento, capital, juro nominal e câmbio real.</p><p>Consumo e inflação combinam memória e valores futuros da solução. Juros respondem gradualmente pela regra de Taylor. O câmbio real responde à persistência própria e ao juro real acima do neutro. Essas equações reduzidas não equivalem a um DSGE integralmente microfundamentado.</p><p>A inflação herdada é uma proxy construída do IPCA em 12 meses. Expectativas futuras são internas ao modelo; não copiamos Focus nem apresentamos a inflação trimestral anualizada como IPCA acumulado futuro em 12 meses. O juro real no ponto T−1 é apenas uma proxy deflacionada por essa inflação, não uma expectativa observada.</p><p>Desmarcar “Choques persistentes” faz as novas inovações desaparecerem após T0. A inércia das variáveis e o ajuste fiscal herdado permanecem: são mecanismos diferentes.</p></section>
+<section class="panel"><h3>Unidades, dívida e resultado primário</h3><p>Taxas anuais são convertidas por (1+a/100)^(1/4)−1 e exibidas por 100[(1+t)^4−1]. Os choques de juros e custos mantêm unidades de p.p. anualizados lineares: magnitude/400 no motor. Por isso, +1 nesses controles não impõe +1 p.p. exato à taxa anual composta de equilíbrio.</p><p>A dívida líquida de 69,1% do PIB ancora um estoque real de 276,4 com PIB trimestral 100. Usamos B/(4Y) como aproximação da razão estoque/fluxo; o denominador não replica a metodologia do PIB em 12 meses do BCB. Sem tendência de crescimento, não há diluição por crescimento potencial.</p><p>A receita fiscal T é uma receita líquida efetiva: tributos menos transferências e outras despesas primárias não incluídas em G. O primário inicial de −0,67% é representado por G−T=0,67 por trimestre. Não dividimos essa razão novamente por quatro: numerador e denominador anuais são ambos convertidos em fluxos trimestrais.</p><p>Um desvio fiscal herdado decai até a regra de longo prazo. Todos os passivos usam um único juro, aproximado pela taxa de política. Sem carteiras, indexação, ativos e ajustes patrimoniais, a dívida simulada é uma proxy ancorada na DLSP, não uma reconstrução contábil oficial.</p></section>
+<section class="panel"><h3>Equilíbrio de referência atual</h3><div id="brazilSteady" class="table-wrap"></div><p>Estes valores não são o retrato observado. Definem a referência à qual as equações se referem.</p></section>
+<section class="panel"><h3>Referência para os mecanismos</h3><p>O <a href="https://www.bcb.gov.br/controleinflacao/sistema-analise-projecoes" target="_blank" rel="noopener">sistema de análise e projeções do BCB</a> combina modelos, dados e condicionantes externos. Esta extensão apenas incorpora canais inspirados nessa organização, com dimensões e calibração próprias. Os testes abaixo avaliam coerência matemática e sinais de referência; não medem precisão preditiva.</p></section>
+</div></section>
+<footer><span>MacroLab · Modelo didático, sem finalidade de previsão econômica.</span><span id="footerState">15 equações · 40 trimestres</span></footer>
+</main></div></div>
+<script>
+/* ECONOMIC MODEL — Núcleo Novo-Keynesiano linearizado com blocos reduzidos.
+   Unidades internas: taxas trimestrais decimais; c,k,y são desvios relativos;
+   v e g são desvios de I e G divididos por Ybar. Sem arredondamento no motor.
+   Expectativas: trajetória determinística após inovação surpresa em t=0,
+   sem novas inovações. Solução conjunta em blocos, não atualização causal.
+   A contabilidade da dívida usa juros nominais contratados no período anterior
+   e inflação realizada corrente; é um satélite não linear, sem efeito riqueza.
+*/
+const DEFAULTS = Object.freeze({horizon:40,piTarget:3,rStar:3,phiPi:1.5,phiX:0.125,
+ sigma:1.5,alpha:0.33,delta:0.025,ar:2,ay:0.12,kappa:0.08,rhoA:0.85,rhoU:0.65,
+ rhoOther:0.7,gShare:20,phiB:0.035,phiY:0.15,debtInitial:60,taxShift:0,
+ shockA:0,shockG:0,shockU:0,shockM:0,shockZ:0,shockD:0,persistent:true});
+const SHOCK_KEYS=['shockA','shockG','shockU','shockM','shockZ','shockD'];
+function calculateSteadyState(p){
+ const Y=100,I=20,G=p.gShare,C=Y-I-G,K=I/p.delta,r=p.rStar/400,pi=p.piTarget/400;
+ const i=(1+r)*(1+pi)-1,B=0.6*4*Y,A=Y/Math.pow(K,p.alpha);
+ return {Y,I,G,C,K,L:1,A,r,pi,i,B,T:G+r*B,beta:1/(1+r),sC:C/Y,sI:I/Y};
+}
+function applyShock(p,n){
+ const names=['a','g','u','m','z','d'],scales=[100,100,400,400,100,100];
+ return Array.from({length:n+1},(_,t)=>Object.fromEntries(names.map((key,j)=>{
+ const rho=p.persistent?(j===0?p.rhoA:j===2?p.rhoU:p.rhoOther):0;
+ return [key,p[SHOCK_KEYS[j]]/scales[j]*(t===0?1:Math.pow(rho,t))];
+ })));
+}
+// Solve a 4x4 block against multiple right-hand sides with partial pivoting.
+function solveSmall(A,R){
+ const n=4,m=R[0].length,W=A.map((row,i)=>[...row,...R[i]]);
+ for(let k=0;k<n;k++){
+  let pivot=k;for(let i=k+1;i<n;i++)if(Math.abs(W[i][k])>Math.abs(W[pivot][k]))pivot=i;
+  if(Math.abs(W[pivot][k])<1e-12)throw Error('Solução singular: esta calibração não determina uma trajetória numericamente confiável.');
+  [W[k],W[pivot]]=[W[pivot],W[k]];const div=W[k][k];for(let j=k;j<n+m;j++)W[k][j]/=div;
+  for(let i=0;i<n;i++)if(i!==k){const a=W[i][k];for(let j=k;j<n+m;j++)W[i][j]-=a*W[k][j];}
+ }
+ return W.map(row=>row.slice(n));
+}
+function zeroBlock(){return Array.from({length:4},()=>[0,0,0,0]);}
+// z_t = [c_t, p_t, v_t, k_t]. L z_(t-1)+D z_t+U z_(t+1)=rhs_t.
+// Equations: Euler; Phillips; reduced investment; inherited capital.
+function makeBlocks(p,ss,q,t){
+ const {sC,beta,sI}=ss,{sigma,phiX,phiPi,kappa,alpha,ay,ar,delta}=p;
+ const D=[
+  [1+phiX*sC/sigma,phiPi/sigma,phiX/sigma,-phiX*alpha/sigma],
+  [-kappa*sC,1,-kappa,kappa*alpha],
+  [ar*phiX*sC,ar*phiPi,1+ar*phiX,-ar*phiX*alpha],
+  [0,0,0,1]
+ ];
+ const U=[[-1,-1/sigma,0,0],[0,-beta,0,0],[-ay*sC,-ar,-ay,0],[0,0,0,0]];
+ const L=zeroBlock();if(t>0){L[3][2]=-delta/sI;L[3][3]=-(1-delta);}
+ const ex=q[t],next=q[t+1];
+ const rhs=[ex.d-(phiX*(ex.g-ex.a)+ex.m)/sigma,
+  kappa*(ex.g-ex.a)+ex.u,ay*next.g-ar*(phiX*(ex.g-ex.a)+ex.m)+ex.z,0];
+ return {L,D,U,rhs};
+}
+function solveModel(p,n=600){
+ const ss=calculateSteadyState(p),q=applyShock(p,n),H=[],f=[];
+ // Block Thomas elimination: O(n) small dense blocks; no library required.
+ for(let t=0;t<n;t++){
+  const {L,D,U,rhs}=makeBlocks(p,ss,q,t);
+  if(t>0)for(let i=0;i<4;i++)for(let k=0;k<4;k++){
+   rhs[i]-=L[i][k]*f[t-1][k];
+   for(let j=0;j<4;j++)D[i][j]-=L[i][k]*H[t-1][k][j];
+  }
+  const sol=solveSmall(D,U.map((row,i)=>[...row,rhs[i]]));
+  H[t]=sol.map(row=>row.slice(0,4));f[t]=sol.map(row=>row[4]);
+ }
+ const z=Array.from({length:n+1},()=>[0,0,0,0]);
+ // Terminal jump variables c_N=p_N=v_N=0. k_N in this dummy block is UNUSED:
+ // U's fourth column is zero. Capital is free to converge after the display.
+ for(let t=n-1;t>=0;t--)z[t]=f[t].map((v,i)=>v-H[t][i].reduce((s,h,j)=>s+h*z[t+1][j],0));
+ let residual=0;
+ for(let t=0;t<n;t++){
+  const {L,D,U,rhs}=makeBlocks(p,ss,q,t);
+  for(let i=0;i<4;i++){
+   let v=-rhs[i];for(let j=0;j<4;j++)v+=D[i][j]*z[t][j]+U[i][j]*z[t+1][j]+(t?L[i][j]*z[t-1][j]:0);
+   residual=Math.max(residual,Math.abs(v));
+  }
+ }
+ if(!z.slice(0,p.horizon).flat().every(Number.isFinite))throw Error('Trajetória não finita. Reduza a persistência ou restaure a calibração.');
+ return {ss,q,z,residual,n};
+}
+function simulateEconomy(p,n=600){
+ const solution=solveModel(p,n),{ss,q,z}=solution;
+ let Bprev=p.debtInitial/100*4*ss.Y,iprev=ss.i;
+ const rows=[];
+ for(let t=0;t<p.horizon;t++){
+  const [c,pp,v,k]=z[t],next=z[t+1],ex=q[t],y=ss.sC*c+v+ex.g,yp=ex.a+p.alpha*k,x=y-yp;
+  const id=p.phiPi*pp+p.phiX*x+ex.m,rd=id-next[1];
+  const Y=ss.Y*(1+y),C=ss.C*(1+c),I=ss.I+ss.Y*v,G=ss.G+ss.Y*ex.g,K=ss.K*(1+k);
+  const pi=ss.pi+pp,i=ss.i+id,r=ss.r+rd;
+  const T=ss.T+p.phiB*(Bprev-ss.B)+p.phiY*(Y-ss.Y)+p.taxShift;
+  const interest=(1+iprev)/(1+pi)-1,B=(1+interest)*Bprev+G-T;
+  const labor=(y-ex.a-p.alpha*k)/(1-p.alpha);
+  rows.push({t,c,pp,v,k,y,yp,x,id,rd,Y,C,I,G,K,Yp:ss.Y*(1+yp),L:1+labor,A:ss.A*(1+ex.a),
+   inflation:400*pi,nominal:400*i,real:400*r,gap:100*x,debt:100*B/(4*Y),B,T,
+   pi,i,r,labor,expectedPi:next[1],expectedC:next[0],expectedY:ss.sC*next[0]+next[2]+q[t+1].g,
+   kNext:(1-p.delta)*k+p.delta/ss.sI*v,Bprev,iprev,interest,...ex});
+  Bprev=B;iprev=i;
+ }
+ return {...solution,p:{...p},rows};
+}
+function noShockParameters(p){const q={...p,debtInitial:60,taxShift:0};SHOCK_KEYS.forEach(k=>q[k]=0);return q;}
+function validateParameters(p,result,terminalError=0){
+ const alerts=[];
+ if(p.phiPi<=1)alerts.push('φπ ≤ 1: a resposta total à inflação não satisfaz o critério usual do Princípio de Taylor. Pode haver indeterminação. A condição terminal seleciona uma trajetória; não prova unicidade.');
+ if(p.phiB<=result.ss.r)alerts.push('A resposta dos impostos à dívida é menor ou igual ao juro real estacionário: o componente autônomo da dívida não converge.');
+ if(result.rows.some(v=>v.C<=0||v.I<=0||v.Y<=0||v.K<=0))alerts.push('Há consumo, investimento, produto ou capital não positivo. A aproximação local perdeu interpretação econômica; os valores não foram truncados.');
+ if(result.rows.some(v=>Math.abs(v.y)>0.1||Math.abs(v.c)>0.1||Math.abs(v.v/result.ss.sI)>0.2))alerts.push('Desvios grandes: a linearização é local. Interprete magnitudes com cautela, sobretudo investimento acima de 20% de desvio.');
+ if(result.rows.some(v=>Math.abs(v.debt)>150))alerts.push('Dívida/PIB superior a 150% em magnitude. Examine a regra fiscal e o denominador; isso não é uma previsão de inadimplência.');
+ if(result.rows.some(v=>v.debt<0))alerts.push('Dívida negativa representa ativos líquidos do governo neste exercício.');
+ if(result.rows.some(v=>v.nominal<0))alerts.push('Juro nominal negativo: este modelo não impõe limite inferior de juros.');
+ if(result.residual>1e-7)alerts.push('Resíduo numérico elevado. A solução deve ser tratada como não validada.');
+ if(terminalError>1e-5)alerts.push('Sensibilidade à condição terminal: aumentar o horizonte de solução altera a janela exibida. Não trate esta trajetória como solução estável de horizonte infinito.');
+ return alerts;
+}
+const PRESETS={
+ neutral:{name:'Estado estacionário',changes:{}},
+ monetary:{name:'Aumento de juros',changes:{shockM:1}},
+ fiscal:{name:'Expansão fiscal',changes:{shockG:2}},
+ supply:{name:'Petróleo / custos',changes:{shockU:1}},
+ technology:{name:'Ganho de produtividade',changes:{shockA:1}},
+ recession:{name:'Recessão de demanda',changes:{shockD:-0.5}},
+ hawk:{name:'BC mais agressivo',changes:{shockU:1,phiPi:2.5}},
+ dove:{name:'BC mais tolerante',changes:{shockU:1,phiPi:1.1}}
+};
+function runInternalTests(){
+ const results=[],add=(name,ok,detail)=>results.push({name,ok,detail});
+ const base=simulateEconomy({...DEFAULTS});
+ add('Estado estacionário',base.rows.every(v=>Math.abs(v.Y-100)<1e-10&&Math.abs(v.debt-60)<1e-9),'Y=100; C=60; I=20; G=20; dívida/PIB anual=60%.');
+ const m=simulateEconomy({...DEFAULTS,shockM:1}),f=simulateEconomy({...DEFAULTS,shockG:2}),s=simulateEconomy({...DEFAULTS,shockU:1}),a=simulateEconomy({...DEFAULTS,shockA:1});
+ add('Aperto monetário',m.rows[0].y<0&&m.rows[0].c<0&&m.rows[0].v<0&&m.rows[0].pp<0,'No impacto: produto, consumo, investimento e inflação caem. Não há rigidez que force atraso da inflação.');
+ add('Expansão fiscal',f.rows[0].y>0&&f.rows[0].x>0&&f.rows[0].pp>0&&f.rows[0].id>0,'No impacto: produto, hiato, inflação e juros sobem.');
+ add('Choque de custos',s.rows[0].y<0&&s.rows[0].pp>0,'Produto cai e inflação sobe. Petróleo é apenas uma interpretação de u, sem setor energético.');
+ add('Produtividade',a.rows[0].yp>0&&a.rows[0].y>0&&a.rows[0].pp<0,'Potencial e produto sobem; inflação cai.');
+ const hawk=simulateEconomy({...DEFAULTS,shockU:1,phiPi:2.5});
+ add('Reação do BC',hawk.rows[0].pp<s.rows[0].pp&&2.5*0.01>DEFAULTS.phiPi*0.01,'φπ maior eleva a resposta condicional e reduz a inflação neste choque; juros de equilíbrio não precisam subir mais em todo caso.');
+ const all=[base,m,f,s,a,hawk];
+ add('Recursos, capital e dívida',all.every(r=>r.rows.every((v,t)=>Math.abs(v.Y-v.C-v.I-v.G)<1e-9&&Math.abs(v.B-((1+v.iprev)/(1+v.pi)*v.Bprev+v.G-v.T))<1e-9&&(!t||Math.abs(v.K-((1-r.p.delta)*r.rows[t-1].K+r.rows[t-1].I))<1e-8))),'Identidades conferidas em todos os períodos dos casos de referência.');
+ add('Sistema simultâneo',all.every(r=>r.residual<1e-9),'Resíduo máximo das quatro condições reduzidas abaixo de 10⁻⁹.');
+ const long=simulateEconomy({...DEFAULTS,shockA:1},840);
+ const err=Math.max(...long.rows.map((v,t)=>Math.abs(v.Y-a.rows[t].Y)));
+ add('Condição terminal',err<1e-5,`Comparação entre 600 e 840 trimestres: diferença máxima do PIB ${err.toExponential(2)}.`);
+ return results;
+}
+if(typeof module!=='undefined'&&module.exports)module.exports={DEFAULTS,SHOCK_KEYS,PRESETS,calculateSteadyState,solveModel,simulateEconomy,noShockParameters,validateParameters,runInternalTests};
+
+/* BRAZIL EXTENSION — semiestrutural, calibração didática, snapshot 06/09/2026.
+   Observations are dated inputs, NOT estimated structural parameters.
+   Six jointly solved variables [c,p,v,k,i,e]; e is a REAL exchange-rate index
+   deviation, not BRL/USD. Sources and transformations are embedded in the UI.
+   All monetary levels use compounded annual rates in Brazil mode.
+*/
+const BRAZIL_DEFAULTS=Object.freeze({...DEFAULTS,economy:'br',piTarget:3,rStar:5,gShare:18.9,
+ debtInitial:69.1,phiB:.035,phiPi:1.8,phiX:.125,sigma:2,ar:1.1,ay:.08,kappa:.05,
+ initialInflation:4.44,initialNominal:14,initialPrimary:-.67,debtTarget:70,
+ investmentShare:16.8,nxShare:.5,inflationInertia:.4,rateInertia:.7,consumptionInertia:.25,
+ exchangePersistence:.7,exchangeSensitivity:1.5,passThrough:.025,nxSensitivity:.12,importLeakage:.15,
+ fiscalPersistence:.9,shockE:0});
+const BRAZIL_SOURCES=[
+ {name:'Selic meta',value:'14,00% a.a.',period:'Vigente desde 06/08/2026',use:'Juro nominal herdado (T−1). Conversão composta para trimestre.',url:'https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=45693&tipo=Comunicado',source:'BCB · Comunicado 45.693'},
+ {name:'IPCA em 12 meses',value:'4,44%',period:'Julho/2026 · divulgado em 11/08/2026',use:'Proxy do ritmo inicial: trimestre equivalente (1+0,0444)^(1/4)−1. Não é IPCA trimestral observado nem expectativa Focus.',url:'https://www.gov.br/fazenda/pt-br/central-de-conteudo/publicacoes/conjuntura-economica/inflacao/defeso-eleitoral-2026/informativo-ipca-jul2026.html',source:'Fazenda/SPE · dados IBGE'},
+ {name:'Dívida líquida do setor público',value:'69,1% do PIB',period:'Julho/2026 · divulgado em 31/08/2026',use:'Âncora do estoque inicial. Trajetória é proxy simplificada da DLSP, sem carteira de ativos, swaps ou indexadores.',url:'https://www.bcb.gov.br/content/estatisticas/hist_estatisticasfiscais/202608_Texto_de_estatisticas_fiscais.pdf',source:'BCB · Estatísticas fiscais'},
+ {name:'Resultado primário consolidado',value:'−0,67% do PIB',period:'12 meses até julho/2026',use:'Proxy anual convertida em fluxo trimestral uniforme: −0,67 unidade por trimestre, para PIB trimestral 100. Mesma cobertura ampla da DLSP.',url:'https://www.bcb.gov.br/content/estatisticas/hist_estatisticasfiscais/202608_Texto_de_estatisticas_fiscais.pdf',source:'BCB · Estatísticas fiscais'},
+ {name:'DBGG (apenas contexto)',value:'82,5% do PIB',period:'Julho/2026',use:'Não usada como estoque do modelo; é dívida BRUTA do governo geral, com cobertura diferente do primário consolidado.',url:'https://www.bcb.gov.br/content/estatisticas/hist_estatisticasfiscais/202608_Texto_de_estatisticas_fiscais.pdf',source:'BCB · Estatísticas fiscais'},
+ {name:'Meta de inflação',value:'3,00%',period:'Regime contínuo desde janeiro/2025',use:'Âncora nominal de longo prazo; independente da inflação inicial.',url:'https://www.bcb.gov.br/controleinflacao/historicometas',source:'BCB · Histórico de metas'},
+ {name:'Composição da demanda',value:'I 16,8%; G ≈18,9%; C ≈63,8%',period:'Contas anuais de 2025 · divulgação em março/2026',use:'I usa FBCF/PIB; G aproxima R$2,4/12,7 tri. C fecha a identidade com saldo externo hipotético de +0,5%. Não é composição observada em setembro.',url:'https://agenciadenoticias.ibge.gov.br/agencia-sala-de-imprensa/2013-agencia-de-noticias/releases/45968-pib-cresce-2-3-em-2025-e-fecha-o-ano-em-r-12-7-trilhoes',source:'IBGE · Contas nacionais'},
+ {name:'Atividade recente (contexto)',value:'PIB +0,5% no trimestre',period:'2º trimestre/2026 · divulgado em 01/09/2026',use:'Contexto datado, não usado como hiato. Produto potencial e tendência exigiriam estimação. PIB inicial do modelo é índice 100.',url:'https://agenciagov.ebc.com.br/noticias/202609/pib-cresce-0-5-no-segundo-trimestre-aponta-ibge',source:'Agência Gov · release IBGE'}
+];
+const toQuarter=annual=>Math.pow(1+annual/100,.25)-1;
+const toAnnual=quarterly=>100*(Math.pow(1+quarterly,4)-1);
+const isBrazil=cfg=>cfg.economy==='br';
+const classicSteady=calculateSteadyState,classicSolve=solveModel,classicSimulate=simulateEconomy,classicNoShock=noShockParameters;
+function brazilSteady(p){
+ const Y=100,I=p.investmentShare,G=p.gShare,NX=p.nxShare,C=Y-I-G-NX,K=I/p.delta;
+ const r=toQuarter(p.rStar),pi=toQuarter(p.piTarget),i=(1+r)*(1+pi)-1,B=p.debtTarget*4;
+ return {Y,I,G,NX,C,K,A:Y/Math.pow(K,p.alpha),L:1,r,pi,i,B,T:G+r*B,beta:1/(1+r),sC:C/Y,sI:I/Y};
+}
+calculateSteadyState=function(p){return isBrazil(p)?brazilSteady(p):classicSteady(p);};
+function brazilInitial(p,ss){return [0,toQuarter(p.initialInflation)-ss.pi,0,0,toQuarter(p.initialNominal)-ss.i,0];}
+// Named scalar residuals centralize all six simultaneous conditions.
+function brazilConditions(p,ss,lag,now,next,ex){
+ const [c,pp,v,k,id,e]=now,den=1+p.importLeakage;
+ const y=(ss.sC*c+v+ex.g+p.nxSensitivity*e)/den;
+ const yn=(ss.sC*next[0]+next[2]+ex.gNext+p.nxSensitivity*next[5])/den;
+ const x=y-ex.a-p.alpha*k;
+ // Exact first derivatives of gross Fisher around the stationary rates.
+ const rd=id/(1+ss.pi)-(1+ss.r)/(1+ss.pi)*next[1];
+ return [
+  c-p.consumptionInertia*lag[0]-(1-p.consumptionInertia)*next[0]+rd/(p.sigma*(1+ss.r))-ex.d,
+  pp-p.inflationInertia*lag[1]-(1-p.inflationInertia)*ss.beta*next[1]-p.kappa*x-p.passThrough*(e-lag[5])-ex.u,
+  v-p.ay*yn+p.ar*rd-ex.z,
+  k-(1-p.delta)*lag[3]-p.delta/ss.sI*lag[2],
+  id-p.rateInertia*lag[4]-(1-p.rateInertia)*(p.phiPi*pp+p.phiX*x)-ex.m,
+  e-p.exchangePersistence*lag[5]+p.exchangeSensitivity*rd-ex.fx
+ ];
+}
+function brazilLinearBlocks(p,ss){
+ const empty=()=>Array(6).fill(0),ex={a:0,g:0,gNext:0,u:0,m:0,z:0,d:0,fx:0};
+ return [0,1,2].map(which=>{
+  const columns=Array.from({length:6},(_,j)=>{const args=[empty(),empty(),empty()];args[which][j]=1;return brazilConditions(p,ss,...args,ex);});
+  return Array.from({length:6},(_,i)=>columns.map(col=>col[i]));
+ });
+}
+function solveDenseBlock(A,R){
+ const n=A.length,m=R[0].length,W=A.map((r,i)=>[...r,...R[i]]);
+ for(let k=0;k<n;k++){
+  let pivot=k;for(let i=k+1;i<n;i++)if(Math.abs(W[i][k])>Math.abs(W[pivot][k]))pivot=i;
+  if(Math.abs(W[pivot][k])<1e-12)throw Error('Calibração Brasil singular; ajuste as reações ou restaure o retrato.');
+  [W[k],W[pivot]]=[W[pivot],W[k]];const d=W[k][k];for(let j=k;j<n+m;j++)W[k][j]/=d;
+  for(let i=0;i<n;i++)if(i!==k){const f=W[i][k];for(let j=k;j<n+m;j++)W[i][j]-=f*W[k][j];}
+ }return W.map(r=>r.slice(n));
+}
+function solveBrazil(p,n=600){
+ const ss=brazilSteady(p),q=applyShock(p,n),initial=brazilInitial(p,ss),[L,D,U]=brazilLinearBlocks(p,ss),H=[],f=[];
+ // m/u sliders remain linearized quarterly innovations in p.p. annualized /4.
+ // This is explicitly different from the compounded display of rate LEVELS.
+ q.forEach((ex,t)=>{ex.fx=p.shockE/100*Math.pow(p.persistent?p.rhoOther:0,t);ex.gNext=q[t+1]?.g||0;});
+ for(let t=0;t<n;t++){
+  const empty=Array(6).fill(0),rhs=brazilConditions(p,ss,empty,empty,empty,q[t]).map(v=>-v),Dnow=D.map(r=>[...r]);
+  if(t===0){for(let i=0;i<6;i++)for(let j=0;j<6;j++)rhs[i]-=L[i][j]*initial[j];}
+  else for(let i=0;i<6;i++)for(let k=0;k<6;k++){
+   rhs[i]-=L[i][k]*f[t-1][k];for(let j=0;j<6;j++)Dnow[i][j]-=L[i][k]*H[t-1][k][j];
+  }
+  const sol=solveDenseBlock(Dnow,U.map((row,i)=>[...row,rhs[i]]));H[t]=sol.map(r=>r.slice(0,6));f[t]=sol.map(r=>r[6]);
+ }
+ const z=Array.from({length:n+1},()=>Array(6).fill(0));
+ for(let t=n-1;t>=0;t--)z[t]=f[t].map((v,i)=>v-H[t][i].reduce((sum,h,j)=>sum+h*z[t+1][j],0));
+ let residual=0;for(let t=0;t<n;t++)residual=Math.max(residual,...brazilConditions(p,ss,t?z[t-1]:initial,z[t],z[t+1],q[t]).map(Math.abs));
+ if(!z.slice(0,p.horizon).flat().every(Number.isFinite))throw Error('Trajetória Brasil não finita. Restaure a calibração.');
+ return {ss,q,z,initial,residual,n};
+}
+solveModel=function(p,n=600){return isBrazil(p)?solveBrazil(p,n):classicSolve(p,n);};
+function simulateBrazil(p,n=600){
+ const sol=solveBrazil(p,n),{ss,q,z,initial}=sol,rows=[];
+ let Bprev=4*p.debtInitial,iprev=toQuarter(p.initialNominal);
+ const fiscalInitial=ss.G+p.initialPrimary-ss.T-p.phiB*(Bprev-ss.B);
+ for(let t=0;t<p.horizon;t++){
+  const [c,pp,v,k,id,e]=z[t],next=z[t+1],lag=t?z[t-1]:initial,ex=q[t];
+  const y=(ss.sC*c+v+ex.g+p.nxSensitivity*e)/(1+p.importLeakage),yp=ex.a+p.alpha*k,x=y-yp;
+  const nx=p.nxSensitivity*e-p.importLeakage*y,rd=id/(1+ss.pi)-(1+ss.r)/(1+ss.pi)*next[1];
+  const Y=100*(1+y),C=ss.C*(1+c),I=ss.I+100*v,G=ss.G+100*ex.g,K=ss.K*(1+k),NX=ss.NX+100*nx;
+  const pi=ss.pi+pp,i=ss.i+id,r=ss.r+rd,fiscalWedge=fiscalInitial*Math.pow(p.fiscalPersistence,t+1);
+  const T=ss.T+p.phiB*(Bprev-ss.B)+p.phiY*(Y-100)+p.taxShift+fiscalWedge;
+  const interest=(1+iprev)/(1+pi)-1,B=(1+interest)*Bprev+G-T,labor=(y-ex.a-p.alpha*k)/(1-p.alpha);
+  rows.push({t,c,pp,v,k,y,yp,x,id,rd,e,nx,Y,C,I,G,K,NX,Yp:100*(1+yp),L:1+labor,A:ss.A*(1+ex.a),
+   inflation:toAnnual(pi),nominal:toAnnual(i),real:toAnnual(r),gap:100*x,debt:100*B/(4*Y),exchange:100*(1+e),primary:100*(T-G)/Y,
+   B,T,pi,i,r,labor,expectedPi:next[1],expectedC:next[0],expectedY:(ss.sC*next[0]+next[2]+q[t+1].g+p.nxSensitivity*next[5])/(1+p.importLeakage),
+   kNext:(1-p.delta)*k+p.delta/ss.sI*v,Bprev,iprev,interest,fiscalWedge,lagP:lag[1],lagI:lag[4],lagC:lag[0],lagE:lag[5],...ex});
+  Bprev=B;iprev=i;
+ }
+ if(!rows.every(row=>Object.values(row).every(Number.isFinite)))throw Error('Valores não finitos no bloco Brasil.');
+ return {...sol,p:{...p},rows};
+}
+simulateEconomy=function(p,n=600){return isBrazil(p)?simulateBrazil(p,n):classicSimulate(p,n);};
+noShockParameters=function(p){if(!isBrazil(p))return classicNoShock(p);const cfg={...p,taxShift:0,shockE:0};SHOCK_KEYS.forEach(k=>cfg[k]=0);return cfg;};
+const classicValidation=validateParameters;
+validateParameters=function(p,result,terminalError=0){
+ const messages=classicValidation(p,result,terminalError);
+ if(isBrazil(p)&&result.rows.some(r=>r.exchange<=0))messages.push('Índice cambial não positivo: a aproximação local perdeu interpretação econômica. Os resultados não foram truncados.');
+ return messages;
+};
+function brazilTests(){
+ const out=[],add=(name,ok,detail)=>out.push({name,ok,detail}),p={...BRAZIL_DEFAULTS},base=simulateBrazil(p);
+ const shock=simulateBrazil({...p,shockG:2}),temp=simulateBrazil({...p,shockG:2,persistent:false});
+ add('Brasil · gasto inicial invariável',Math.abs(shock.rows[0].G-temp.rows[0].G)<1e-12&&Math.abs(shock.rows[0].G-base.rows[0].G-2)<1e-12,'Mesmo impulso de G em T0 com ou sem persistência. A trajetória-base compartilha as condições iniciais.');
+ add('Brasil · base fora do equilíbrio',Math.abs(base.rows[0].nominal-toAnnual(base.ss.i))>.1&&Math.abs(base.rows[0].Y-100)>.001,'Juro e inflação herdados geram transição sem novos choques.');
+ add('Brasil · contabilidade aberta',base.rows.concat(shock.rows).every(r=>Math.abs(r.Y-r.C-r.I-r.G-r.NX)<1e-9),'Y=C+I+G+NX em todos os trimestres.');
+ add('Brasil · juros e inflação compostos',Math.abs(toAnnual(toQuarter(14))-14)<1e-10&&Math.abs(toAnnual(toQuarter(4.44))-4.44)<1e-10,'Conversões de taxas anuais e trimestrais são inversas.');
+ const longer=solveBrazil(p,840),err=Math.max(...base.z.slice(0,p.horizon).flatMap((r,t)=>r.map((v,j)=>Math.abs(v-longer.z[t][j]))));
+ add('Brasil · solução e fronteira',base.residual<1e-9&&err<1e-7,`6 condições por trimestre; resíduo ${base.residual.toExponential(2)}; fronteira ${err.toExponential(2)}.`);
+ const monetary=simulateBrazil({...p,shockM:1}),fx=simulateBrazil({...p,shockE:5});
+ add('Brasil · canais monetário e cambial',monetary.rows[0].Y<base.rows[0].Y&&monetary.rows[0].inflation<base.rows[0].inflation&&fx.rows[0].exchange>base.rows[0].exchange&&fx.rows[0].inflation>base.rows[0].inflation,'Aperto monetário reduz produto e inflação relativamente à base; depreciação pressiona preços.');
+ return out;
+}
+if(typeof module!=='undefined'&&module.exports)Object.assign(module.exports,{BRAZIL_DEFAULTS,BRAZIL_SOURCES,toQuarter,toAnnual,brazilTests,calculateSteadyState,solveModel,simulateEconomy,noShockParameters,validateParameters});
+
+/* PRESENTATION — controls, charts, equations and explanations. */
+const $=id=>document.getElementById(id);
+const fmt=(v,n=2)=>Number.isFinite(v)?v.toLocaleString('pt-BR',{minimumFractionDigits:n,maximumFractionDigits:n}):'não finito';
+const signed=(v,n=2)=>(v>1e-10?'+':'')+fmt(Math.abs(v)<1e-10?0:v,n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let p={...DEFAULTS},current,base,irfResult,irfBase,quarter=0,lastChanged='',selectedNode='i',activePanel='dashboard',terminalError=0;
+let saved={A:null,B:null},savedRuns={},scenarioLabel='Estado estacionário',revision=0,animationTimer=null;
+let visibleSeries={base:true,current:true,A:true,B:true};
+const SERIES={base:{name:'Base sem choque',color:'#9aa9ba',dash:'5 4'},current:{name:'Atual',color:'#1764db',dash:''},A:{name:'Cenário A',color:'#007f75',dash:'8 3'},B:{name:'Cenário B',color:'#c36b14',dash:'2 4'}};
+// [key, label, symbol, min, max, step, unit, explanation, basic-visible]
+const CONTROL_GROUPS=[
+ ['Choques em T0',[
+ ['shockA','Produtividade','εA',-3,3,.1,'%', 'Inovação de produtividade relativa à referência. Positiva amplia a capacidade.',true],
+ ['shockG','Gastos públicos','εG',-5,5,.1,'% do PIB','Variação de G como proporção do PIB trimestral de referência.',true],
+ ['shockU','Custos / inflação','εu',-3,3,.1,'p.p. a.a.','Inovação na Phillips; 1 p.p. anualizado equivale a 0,25 p.p. trimestral.',true],
+ ['shockM','Política monetária','εm',-3,3,.1,'p.p. a.a.','Deslocamento da regra de juros, antes das respostas endógenas.',true],
+ ['shockZ','Investimento','εz',-3,3,.1,'% do PIB','Deslocamento da demanda por investimento, dividido pelo PIB de referência.',true],
+ ['shockD','Demanda / preferência','εd',-2,2,.1,'%','Deslocamento da Euler em unidades de desvio do consumo; não é variação direta do PIB.',true],
+ ['rhoOther','Persistência dos demais choques','ρ',0,.95,.05,'','Coeficiente AR(1) de gastos, política monetária, investimento e demanda.',false]
+ ]],
+ ['Política monetária',[
+ ['phiPi','Reação à inflação','φπ',0,3,.1,'','Resposta TOTAL da taxa nominal à inflação. O critério usual do Princípio de Taylor é φπ > 1.',true],
+ ['phiX','Reação ao hiato','φx',0,.5,.025,'','Resposta do juro trimestral ao hiato em desvio relativo. 0,125 equivale a 0,5 na regra anualizada.',false],
+ ['piTarget','Meta de inflação','π*',0,6,.25,'% a.a.','Recalibra a inflação estacionária; não é uma mudança inesperada de regime.',false],
+ ['rStar','Juro real neutro','r*',.5,6,.25,'% a.a.','Juro de equilíbrio. Alterá-lo recalcula β = 1/(1+r*/400).',false]
+ ]],
+ ['Famílias',[
+ ['beta','Fator de desconto','β',1/(1+6/400),1/(1+.5/400),.000001,'','Paciência intertemporal. Controle vinculado: atualiza r* = 400(1/β−1).',false],
+ ['sigma','Curvatura da utilidade','σ',.5,4,.1,'','A elasticidade intertemporal é 1/σ. Quanto maior σ, menor a resposta do consumo ao juro real.',false]
+ ]],
+ ['Empresas',[
+ ['alpha','Participação do capital','α',.2,.5,.01,'','Elasticidade do produto ao capital na Cobb–Douglas linearizada.',false],
+ ['delta','Depreciação trimestral','δ',.01,.06,.005,'','Fração do capital depreciada por trimestre. Recalibra K̄ = Ī/δ.',false],
+ ['ar','Investimento: juros','aᵣ',.2,5,.1,'','Redução de I/Ȳ por unidade de aumento do juro real trimestral.',false],
+ ['ay','Investimento: produto futuro','aᵧ',0,.4,.02,'','Sensibilidade reduzida de I/Ȳ ao produto esperado em desvio relativo.',false],
+ ['rhoA','Persistência da produtividade','ρA',0,.95,.05,'','Fração do choque de produtividade que permanece a cada trimestre.',false]
+ ]],
+ ['Inflação',[
+ ['kappa','Inclinação da Phillips','κ',.01,.2,.01,'','Quanto a inflação trimestral reage ao hiato. Pressão de demanda maior aumenta a inflação.',false],
+ ['rhoU','Persistência do custo','ρu',0,.95,.05,'','Fração do choque de custos que permanece no trimestre seguinte.',false]
+ ]],
+ ['Política fiscal',[
+ ['gShare','Gasto público de referência','Ḡ/Ȳ',15,30,.5,'%','Recalibra Ḡ e C̄, com investimento fixo em 20% do PIB.',true],
+ ['taxShift','Ajuste adicional de tributos','τ',-2,2,.1,'% do PIB','Ajuste permanente de T/Ȳ. Positivo arrecada mais; não há efeito renda no consumo deste modelo.',false],
+ ['phiB','Resposta fiscal à dívida','φB',0,.1,.005,'','Tributos adicionais por unidade real da dívida herdada acima da referência.',false],
+ ['phiY','Resposta fiscal ao produto','φY',0,.5,.025,'','Tributos adicionais por unidade do produto acima de 100.',false],
+ ['debtInitial','Dívida inicial / PIB anualizado','B₋₁/(4Ȳ)',20,150,5,'%','Condição inicial. A referência de longo prazo é 60%; o ajuste passa pelos impostos.',false]
+ ]]
+];
+const controlMeta=Object.fromEntries(CONTROL_GROUPS.flatMap(g=>g[1]).map(c=>[c[0],c]));
+function controlValue(key){return key==='beta'?calculateSteadyState(p).beta:(p[key]??BRAZIL_DEFAULTS[key]);}
+function controlText(c,value=controlValue(c[0])){return fmt(value,c[0]==='beta'?5:c[5]<.1?3:2)+(c[6]?' '+c[6]:'');}
+function buildControls(){
+ $('controls').innerHTML=CONTROL_GROUPS.map(([name,controls],i)=>`<details class="control-group ${name.startsWith('Brasil')?'br-only':''} ${controls.some(c=>c[8])?'':'advanced'}" ${i<2?'open':''}><summary>${name}</summary>${i===0?'<label class="checkrow"><input id="persistent" type="checkbox" checked>Choques persistentes (AR(1))</label>':''}${controls.map(c=>`<div class="control ${c[8]?'':'advanced'}"><div class="control-label"><label for="${c[0]}">${c[1]} <abbr class="symbol" title="${esc(c[7])}">${c[2]}</abbr></label><output id="value-${c[0]}">${controlText(c)}</output></div><input id="${c[0]}" type="range" min="${c[3]}" max="${c[4]}" step="${c[5]}" value="${controlValue(c[0])}" aria-describedby="help-${c[0]}"><div class="bounds"><span>${fmt(c[3],c[5]<.1?3:1)}</span><span>${fmt(c[4],c[5]<.1?3:1)}</span></div><p id="help-${c[0]}">${c[7]}</p></div>`).join('')}</details>`).join('');
+ Object.values(controlMeta).forEach(c=>$(c[0]).addEventListener('input',e=>{
+  if(c[0]==='beta')p.rStar=isBrazil(p)?100*(Math.pow(1/Number(e.target.value),4)-1):400*(1/Number(e.target.value)-1);else p[c[0]]=Number(e.target.value);
+  lastChanged=c[0];selectedNode=(PARAM_NODES[c[0]]||['i'])[0];scenarioLabel='Experimento personalizado';$('preset').value='custom';syncControls();scheduleUpdate();
+ }));
+ $('persistent').addEventListener('change',e=>{p.persistent=e.target.checked;lastChanged='persistent';scenarioLabel='Experimento personalizado';$('preset').value='custom';scheduleUpdate();});
+}
+function syncControls(){
+ Object.values(controlMeta).forEach(c=>{
+  // Linked sliders display the exact shared model value in the output; the thumb
+  // can lie between discrete steps after updating the other linked control.
+  const v=controlValue(c[0]);$(c[0]).value=v;$('value-'+c[0]).textContent=controlText(c,v);
+ });$('persistent').checked=p.persistent;$('horizon').value=p.horizon;
+}
+let updateTimer;
+function scheduleUpdate(){clearTimeout(updateTimer);updateTimer=setTimeout(refresh,90);}
+function refresh(){
+ const token=++revision;
+ try{
+  current=simulateEconomy(p);base=simulateEconomy(noShockParameters(p));
+  const longer=solveModel(p,840);
+  terminalError=Math.max(...current.z.slice(0,p.horizon).flatMap((row,t)=>row.map((v,j)=>Math.abs(v-longer.z[t][j]))));
+  savedRuns={};for(const key of ['A','B'])if(saved[key]&&isBrazil(saved[key].p)===isBrazil(p))savedRuns[key]=simulateEconomy({...saved[key].p,horizon:p.horizon});
+  quarter=Math.min(quarter,p.horizon-1);$('quarter').max=p.horizon-1;$('eqTime').max=p.horizon-1;
+  $('scenarioName').textContent=scenarioLabel;$('footerState').textContent=`${isBrazil(p)?17:15} equações · ${p.horizon} trimestres · ${isBrazil(p)?'taxas anuais compostas':'taxas anualizadas por 4×'}`;
+  const alerts=validateParameters(p,current,terminalError);
+  $('alerts').innerHTML=alerts.map(s=>`<div class="alert">${esc(s)}</div>`).join('');
+  $('globalStatus').textContent=alerts.length?`${alerts.length} observação(ões) sobre esta calibração.`:`Solução calculada · base com os mesmos parâmetros · choque em T0`;
+  updateLegend();updateSelected();updateSteadyState();updateSaved();updateCharts();updateIRF();
+  $('diagnostics').textContent=`Calibração atual: resíduo máximo ${current.residual.toExponential(2)}. Sensibilidade da janela a 600 vs. 840 trimestres: ${terminalError.toExponential(2)} em desvios. Contagem: 4 incógnitas reduzidas × 600 períodos, com 4 condições por período. Dívida e tributos são recuperados sequencialmente, pois não realimentam o núcleo.`;
+  if(activePanel==='mechanism')drawDiagram();
+ }catch(e){
+  if(token!==revision)return;
+  $('alerts').innerHTML=`<div class="alert error">${esc(e.message)} Abaixo, a última solução válida foi removida para não exibir dados antigos.</div>`;
+  ['stats','charts','eqGrid','irfCharts','explanation','steadyTable','diagnostics'].forEach(id=>$(id).innerHTML='');
+  current=null;base=null;irfResult=null;$('globalStatus').textContent='Não foi possível validar esta calibração.';
+ }
+}
+const METRICS=[
+ ['Y','PIB real','índice · referência = 100','Y',true],['inflation','Inflação','% a.a. · anualização simples','π',true],
+ ['nominal','Juro nominal','% a.a. · anualização simples','i',true],['C','Consumo','unidades reais','C',true],
+ ['I','Investimento','unidades reais','I',true],['G','Gasto público','unidades reais','G',true],
+ ['debt','Dívida / PIB anualizado','% · B / (4Y)','B',true],['gap','Hiato do produto','% · aproximação de primeira ordem','x',false],
+ ['real','Juro real esperado','% a.a. · aproximação de Fisher','r',false],['K','Estoque de capital','unidades reais · herdado em T0','K',false],
+ ['Yp','Produto potencial','índice · trabalho de referência fixo','Yp',false],['A','Produtividade','nível de A · calibração atual','A',false],
+ ['L','Trabalho','índice · referência = 1','L',false],['T','Tributos','unidades reais por trimestre','T',false]
+];
+function metricFormat(key,v){return fmt(v,key==='A'||key==='L'?3:2);}
+function updateLegend(){
+ $('legend').innerHTML=Object.entries(SERIES).filter(([k])=>!['A','B'].includes(k)||(saved[k]&&isBrazil(saved[k].p)===isBrazil(p))).map(([k,s])=>`<button type="button" data-series="${k}" aria-pressed="${visibleSeries[k]}"><span class="swatch" style="border-color:${s.color};border-top-style:${s.dash?'dashed':'solid'}"></span>${s.name}</button>`).join('');
+ $('legend').querySelectorAll('button').forEach(b=>b.onclick=()=>{const k=b.dataset.series;visibleSeries[k]=!visibleSeries[k];updateLegend();updateCharts();});
+}
+function updateSelected(){
+ if(!current)return;
+ $('quarter').value=quarter;$('eqTime').value=quarter;$('quarterValue').textContent='T'+quarter;$('eqQuarter').textContent='T'+quarter;
+ const row=current.rows[quarter],b=base.rows[quarter];
+ $('stats').innerHTML=[['Y','PIB real',''],['inflation','Inflação','%'],['nominal','Juro nominal','%'],['debt','Dívida / PIB','%']].map(([key,label,unit])=>{
+  const diff=row[key]-b[key];return `<article class="stat"><div class="stat-label">${label} · T${quarter}</div><div class="stat-value">${fmt(row[key])}<span style="font-size:17px">${unit}</span></div><div class="stat-delta ${Math.abs(diff)<1e-9?'muted':diff>0?'positive':'negative'}">${signed(diff)} ${key==='Y'?'unid.':'p.p.'} vs. base</div></article>`;
+ }).join('');
+ document.querySelectorAll('[data-chart-value]').forEach(el=>{el.textContent=metricFormat(el.dataset.chartValue,row[el.dataset.chartValue]);});
+ explainTransmission();updateEquations();updateFollow();
+}
+function baselinePoint(run,key){
+ const ss=run.ss;
+ return ({Y:ss.Y,C:ss.C,I:ss.I,G:ss.G,debt:run.p.debtInitial,gap:0,inflation:400*ss.pi,nominal:400*ss.i,real:400*ss.r,K:ss.K,Yp:ss.Y,A:ss.A,L:1,T:ss.T})[key];
+}
+function chartSeries(key,irf=false){
+ if(irf){
+  const rate=['inflation','nominal','real','debt','gap'].includes(key);
+  return [{...SERIES.base,key:'zero',values:Array.from({length:p.horizon+1},(_,t)=>({x:t-1,y:0}))},
+   {...SERIES.current,key:'impulse',name:'Resposta',values:[{x:-1,y:0},...irfResult.rows.map((row,t)=>({x:t,y:rate?row[key]-irfBase.rows[t][key]:100*(row[key]/irfBase.rows[t][key]-1)}))]}];
+ }
+ const runs={base,current,...savedRuns};
+ return Object.entries(runs).filter(([k])=>visibleSeries[k]).map(([k,run])=>({...SERIES[k],key:k,values:[{x:-1,y:baselinePoint(run,key)},...run.rows.map(row=>({x:row.t,y:row[key]}))]}));
+}
+function chartCard(m,irf=false){return `<article class="chart-card"><div class="chart-head"><div><h3>${m[1]}</h3><small>${irf?(['inflation','nominal','debt'].includes(m[0])?'p.p. em relação à base':'% em relação à base'):m[2]}</small></div><span class="chart-value" ${irf?'':`data-chart-value="${m[0]}"`}>${irf?'':metricFormat(m[0],current.rows[quarter][m[0]])}</span></div><div class="plot" data-key="${m[0]}" data-irf="${irf}"></div></article>`;}
+function updateCharts(){
+ if(!current)return;
+ const advanced=!document.body.classList.contains('basic');
+ $('charts').innerHTML=METRICS.filter(m=>m[4]||advanced).map(m=>chartCard(m)).join('');
+ if(activePanel==='dashboard')$('charts').querySelectorAll('.plot').forEach(drawChart);
+}
+function drawChart(el){
+ const key=el.dataset.key,isIRF=el.dataset.irf==='true';if(!current||(isIRF&&!irfResult))return;
+ const series=chartSeries(key,isIRF),W=el.clientWidth,H=el.clientHeight;
+ if(W<50)return;
+ const margin={l:51,r:11,t:17,b:34},pw=W-margin.l-margin.r,ph=H-margin.t-margin.b;
+ const nums=series.flatMap(s=>s.values.map(v=>v.y)).filter(Number.isFinite);
+ let lo=nums.length?Math.min(...nums):0,hi=nums.length?Math.max(...nums):1;
+ const minSpread=isIRF?.12:(['inflation','nominal','real','gap'].includes(key)?.4:Math.max(Math.abs(hi)*.006,.06));
+ if(hi-lo<minSpread){const mid=(hi+lo)/2;lo=mid-minSpread/2;hi=mid+minSpread/2;}
+ const pad=(hi-lo)*.13;lo-=pad;hi+=pad;
+ const X=t=>margin.l+(t+1)/p.horizon*pw,Y=v=>margin.t+(hi-v)/(hi-lo)*ph;
+ const axisFmt=v=>Math.abs(v)>=10000?fmt(v/1000,1)+'k':fmt(v,(hi-lo)<.1?3:(hi-lo)<2?2:1);
+ let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(METRICS.find(m=>m[0]===key)[1])}: trajetória entre T−1 e T${p.horizon-1}"><title>${esc(METRICS.find(m=>m[0]===key)[1])}</title><desc>Use o controle Inspecionar para ler os valores de cada trimestre. T−1 é a posição anterior ao choque.</desc>`;
+ for(let j=0;j<4;j++){const v=lo+(hi-lo)*j/3,yy=Y(v);svg+=`<line class="grid" x1="${margin.l}" x2="${W-margin.r}" y1="${yy}" y2="${yy}"/><text x="${margin.l-8}" y="${yy+4}" text-anchor="end">${axisFmt(v)}</text>`;}
+ const ticks=W<300?[0,Math.floor(p.horizon/2),p.horizon-1]:[0,Math.floor(p.horizon/3),Math.floor(2*p.horizon/3),p.horizon-1];
+ ticks.forEach(t=>svg+=`<text x="${X(t)}" y="${H-15}" text-anchor="${t===p.horizon-1?'end':'middle'}">T${t}</text>`);
+ svg+=`<line x1="${X(0)}" x2="${X(0)}" y1="${margin.t}" y2="${H-margin.b}" stroke="#d9e4f3" stroke-dasharray="2 3"/>`;
+ series.forEach(s=>{const pts=s.values.filter(v=>Number.isFinite(v.y));svg+=`<path class="trace" stroke="${s.color}" stroke-width="${s.key==='current'||s.key==='impulse'?2.5:1.8}" stroke-dasharray="${s.dash}" d="${pts.map((v,i)=>(i?'L':'M')+X(v.x).toFixed(2)+','+Y(v.y).toFixed(2)).join(' ')}"/>`;});
+ svg+=`<line class="cursor" x1="${X(quarter)}" x2="${X(quarter)}" y1="${margin.t}" y2="${H-margin.b}"/><g class="hover-marks"></g><rect class="hit" x="${margin.l}" y="${margin.t}" width="${pw}" height="${ph}"/></svg><div class="chart-tooltip" hidden></div>`;
+ el.innerHTML=svg;const hit=el.querySelector('.hit'),tip=el.querySelector('.chart-tooltip'),guide=el.querySelector('.cursor'),marks=el.querySelector('.hover-marks');
+ const show=e=>{
+  const rect=el.getBoundingClientRect(),px=Math.max(margin.l,Math.min(W-margin.r,e.clientX-rect.left));
+  const t=Math.max(-1,Math.min(p.horizon-1,Math.round((px-margin.l)/pw*p.horizon-1)));
+  guide.setAttribute('x1',X(t));guide.setAttribute('x2',X(t));
+  tip.innerHTML=`<strong>${t<0?'Antes do choque':`Trimestre ${t}`}</strong>`+series.map(s=>`<div><span>${s.name}</span><b>${fmt(s.values[t+1].y,isIRF?3:2)}</b></div>`).join('');tip.hidden=false;
+  marks.innerHTML=series.map(s=>`<circle cx="${X(t)}" cy="${Y(s.values[t+1].y)}" r="3.5" fill="${s.color}" stroke="white"/>`).join('');
+  tip.style.left=Math.max(0,Math.min(W-tip.offsetWidth,px+12))+'px';tip.style.top='8px';return t;
+ };
+ hit.addEventListener('pointermove',show);hit.addEventListener('pointerleave',()=>{tip.hidden=true;marks.innerHTML='';guide.setAttribute('x1',X(quarter));guide.setAttribute('x2',X(quarter));});
+ hit.addEventListener('click',e=>{quarter=Math.max(0,show(e));updateSelected();document.querySelectorAll('.plot').forEach(drawChart);});
+}
+function shockSummary(config){const active=[...SHOCK_KEYS,...(isBrazil(config)?['shockE']:[])].filter(k=>config[k]!==0);return active.length?active.map(k=>controlMeta[k][1]+': '+signed(config[k])+' '+controlMeta[k][6]).join(' · '):'Sem inovações exógenas';}
+function direction(v){return Math.abs(v)<1e-8?'permanece na base':v>0?'sobe':'cai';}
+function explainTransmission(){
+ if(isBrazil(p))return brazilExplanation();
+ const r=current.rows[quarter],b=base.rows[quarter];
+ $('explainQuarter').textContent=(quarter===0?'Impacto':'Transição')+' · T'+quarter;
+ const active=SHOCK_KEYS.filter(k=>p[k]!==0),intro=active.length?`${shockSummary(p)}. ${p.persistent?'Os processos decaem pelas persistências configuradas.':'As inovações duram um trimestre; os efeitos endógenos podem persistir.'}`:'Nenhum choque exógeno está ativo. Use um exemplo pronto ou ajuste os controles.';
+ const observations=[
+  `O potencial ${direction(r.Yp-b.Yp)} (${signed(r.Yp-b.Yp)} unid.); depende de produtividade e capital herdado.`,
+  `Consumo: ${signed(r.C-b.C)} unid.; investimento: ${signed(r.I-b.I)} unid.; gasto público: ${signed(r.G-b.G)} unid. Essas parcelas somam a variação do produto.`,
+  `O PIB ${direction(r.Y-b.Y)} (${signed(r.Y-b.Y)} unid.) e o hiato fica em ${signed(r.gap)}%. Hiato ${r.x>1e-9?'positivo pressiona':r.x< -1e-9?'negativo reduz':'nulo não adiciona pressão sobre'} a inflação.`,
+  `Na Phillips, expectativas contribuem ${signed(400*current.ss.beta*r.expectedPi)} p.p., hiato ${signed(400*p.kappa*r.x)} p.p. e custos ${signed(400*r.u)} p.p. para a inflação acima da meta.`,
+  `O juro nominal ${direction(r.nominal-b.nominal)} (${signed(r.nominal-b.nominal)} p.p.); o real esperado ${direction(r.real-b.real)} (${signed(r.real-b.real)} p.p.). O real combina política e inflação futura.`,
+  `O capital do próximo trimestre varia ${signed(100*r.kNext)}% frente à referência, levando os efeitos do investimento para a oferta futura.`
+ ];
+ $('explanation').innerHTML=`<div><p class="small" style="margin-bottom:10px">${esc(intro)}</p><ol>${observations.map(s=>`<li>${s}</li>`).join('')}</ol></div><div class="note"><b>Dívida: estoque e proporção</b><p>O estoque real ${direction(r.B-b.B)} (${signed(r.B-b.B)} unid.). Dívida/PIB ${direction(r.debt-b.debt)} (${signed(r.debt-b.debt)} p.p.). O saldo primário é ${fmt(r.T-r.G)} unid.; inflação realizada altera o valor real da dívida herdada.</p><p><b>O futuro já participa do presente.</b> Em T${quarter}, a inflação esperada para T${quarter+1} é ${fmt(400*(current.ss.pi+r.expectedPi))}% a.a. e o consumo esperado desvia ${signed(100*r.expectedC)}% da referência. Esses valores vêm da solução conjunta.</p><p>${active.length>1?'Há múltiplos choques ativos. A narrativa descreve o efeito líquido; isole um choque na aba IRF para examinar um canal.':'Os sinais acima são calculados, não impostos. Ausência de inércia na Phillips permite resposta imediata dos preços.'}</p>${p.taxShift||p.debtInitial!==60?'<p>O ajuste tributário e a dívida inicial também alteram a contabilidade fiscal; não geram efeito renda no consumo deste fechamento.</p>':''}</div>`;
+}
+const NODES={A:['A','Produtividade','exogenous'],K:['K','Capital','state'],Yp:['Y*','Potencial',''],x:['x','Hiato',''],pi:['π','Inflação',''],i:['i','Juro nominal',''],G:['G','Gasto público','exogenous'],I:['I','Investimento',''],C:['C','Consumo',''],D:['DA','Demanda',''],Y:['Y','Produto',''],r:['r','Juro real',''],u:['u','Custos','shock'],m:['m','Choque monetário','shock'],z:['z','Choque de I','shock'],d:['d','Preferência','shock'],B:['B','Dívida real','state'],T:['T','Tributos','']};
+const EDGES=[['A','Yp','Cobb–Douglas potencial'],['K','Yp','Capital produtivo'],['Yp','x','Subtrai a referência de oferta'],['Y','x','Produto relativo ao potencial'],['x','pi','Phillips: pressão de demanda'],['pi','i','Taylor: reação à inflação'],['x','i','Taylor: reação ao hiato'],['i','r','Fisher: juro nominal'],['pi','r','Inflação futura esperada'],['r','C','Euler: substituição intertemporal'],['r','I','Investimento sensível ao juro'],['I','K','Acumulação no período seguinte'],['C','D','Componente da demanda'],['I','D','Componente da demanda'],['G','D','Componente público'],['D','Y','Identidade de recursos'],['Y','I','Produto futuro esperado'],['u','pi','Choque de custos'],['m','i','Deslocamento de Taylor'],['z','I','Choque de investimento'],['d','C','Choque de preferência'],['G','B','Gasto financiado'],['i','B','Juro nominal contratado anteriormente'],['pi','B','Erosão real da dívida herdada'],['B','T','Resposta fiscal à dívida herdada'],['Y','T','Receita cíclica'],['T','B','Tributos reduzem dívida']];
+const PARAM_NODES={shockA:['A'],shockG:['G'],shockU:['u'],shockM:['m'],shockZ:['z'],shockD:['d'],phiPi:['i'],phiX:['i'],piTarget:['pi'],rStar:['r'],beta:['C','pi'],sigma:['C'],alpha:['Yp'],delta:['K'],ar:['I'],ay:['I'],rhoA:['A'],rhoU:['u'],rhoOther:['G','m','z','d'],gShare:['G'],phiB:['T'],phiY:['T'],taxShift:['T'],debtInitial:['B'],kappa:['pi']};
+function reachable(starts){const distance=Object.fromEntries(starts.map(s=>[s,0])),queue=[...starts];while(queue.length){const n=queue.shift();EDGES.filter(e=>e[0]===n).forEach(e=>{if(distance[e[1]]===undefined){distance[e[1]]=distance[n]+1;queue.push(e[1]);}});}return distance;}
+function drawDiagram(){
+ const root=$('diagram'),w=root.clientWidth;if(!w)return;
+ const keys=Object.keys(NODES).filter(k=>isBrazil(p)||!['e','NX'].includes(k)),cols=w>760?6:w>430?4:3,rows=Math.ceil(keys.length/cols),height=rows*(cols===3?108:112);
+ root.style.height=height+'px';const dx=w/cols,dy=height/rows,pos={};keys.forEach((k,j)=>pos[k]={x:dx*(j%cols+.5),y:dy*(Math.floor(j/cols)+.5)});
+ const distance=reachable([selectedNode]);
+ let html=`<svg aria-hidden="true"><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8faccb"/></marker></defs>`;
+ EDGES.forEach(([a,b],idx)=>{
+  const s=pos[a],t=pos[b],vx=t.x-s.x,vy=t.y-s.y,len=Math.hypot(vx,vy),offset=cols===3?48:57;
+  const sx=s.x+vx/len*offset,sy=s.y+vy/len*27,tx=t.x-vx/len*offset,ty=t.y-vy/len*27;
+  const active=distance[a]!==undefined,feedback=active&&distance[b]<=distance[a],curve=(idx%2?1:-1)*Math.min(30,len*.15);
+  html+=`<path class="edge ${active?'active':''} ${feedback?'feedback':''}" style="opacity:${active?.75:.22};stroke-width:${active?Math.max(1,2.8-.28*distance[a]):1}" d="M ${sx} ${sy} Q ${(sx+tx)/2-vy/len*curve} ${(sy+ty)/2+vx/len*curve} ${tx} ${ty}" marker-end="url(#arrow)"/>`;
+ });html+='</svg>';
+ keys.forEach(k=>{const node=NODES[k],point=pos[k];html+=`<button class="node ${node[2]} ${k===selectedNode?'selected direct':distance[k]!==undefined?'reached':''}" data-node="${k}" style="left:${point.x}px;top:${point.y}px" aria-pressed="${k===selectedNode}" aria-label="Seguir ${node[1]}"><b>${node[0]}</b>${node[1]}</button>`;});root.innerHTML=html;
+ root.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedNode=b.dataset.node;lastChanged='node';drawDiagram();updateFollow();updateEquations();});updateFollow();
+}
+function updateFollow(){
+ if(!current)return;const node=NODES[selectedNode],r=current.rows[quarter];
+ const inEdges=EDGES.filter(e=>e[1]===selectedNode),out=EDGES.filter(e=>e[0]===selectedNode);
+ const key={e:'exchange',pi:'inflation',i:'nominal',r:'real',x:'gap',Yp:'Yp',D:'Y'}[selectedNode]||selectedNode;
+ const val=r[key];
+ $('follow').innerHTML=`<div class="panel-title"><h3>Seguindo ${node[0]} · ${node[1]}</h3><span class="tag">T${quarter}${Number.isFinite(val)?' · '+fmt(val,3):''}</span></div><div class="follow-grid"><div><span class="eyebrow">De onde vem?</span>${inEdges.length?inEdges.map(e=>`<p><b>${NODES[e[0]][0]}</b> → ${esc(e[2])}</p>`).join(''):'<p>Inovação em T0 e persistência do processo exógeno.</p>'}${selectedNode==='C'?'<p>A Euler também usa o consumo futuro esperado e σ.</p>':''}${selectedNode==='pi'?'<p>A Phillips também usa inflação futura esperada, β e κ.</p>':''}${selectedNode==='i'?'<p>Também depende de meta, taxa de equilíbrio, φπ e φx.</p>':''}${selectedNode==='K'?'<p>O capital inicial é predeterminado e δ governa a depreciação.</p>':''}</div><div><span class="eyebrow">Para onde vai?</span>${out.map(e=>`<p><b>${NODES[e[1]][0]}</b> ← ${esc(e[2])}</p>`).join('')}</div></div>`;
+}
+const eq=(number,name,kind,formula,meaning,uses,determines,params,numeric,nodes)=>({number,name,kind,formula,meaning,uses,determines,params,numeric,nodes});
+function equationData(){
+ if(isBrazil(p))return brazilEquationData();
+ const q=current.rows[quarter],s=current.ss,t=quarter,F=v=>fmt(v,6),qprev=quarter?current.q[quarter-1]:{a:0,u:0,g:0,m:0,z:0,d:0};
+ const rhoA=p.persistent?p.rhoA:0,rhoU=p.persistent?p.rhoU:0,rho=p.persistent?p.rhoOther:0;
+ return [
+ eq(1,'Produção','Tecnologia · primeira ordem','ŷₜ = âₜ + αk̂ₜ + (1−α)ℓ̂ₜ','A versão linearizada de Cobb–Douglas determina o trabalho necessário para atender à demanda.','ŷ, â, k̂','ℓ̂ (trabalho residual)','α',`${F(q.y)} = ${F(q.a)} + ${F(p.alpha*q.k)} + ${F((1-p.alpha)*q.labor)}; L = ${F(q.L)}`,['A','K','Y']),
+ eq(2,'Acumulação de capital','Identidade de estoque','Kₜ₊₁ = (1−δ)Kₜ + Iₜ','Investimento amplia o estoque disponível no próximo trimestre. K é herdado no período corrente.','Kₜ, Iₜ','Kₜ₊₁','δ',`${F(s.K*(1+q.kNext))} = ${F((1-p.delta)*q.K)} + ${F(q.I)}`,['K','I']),
+ eq(3,'Recursos','Identidade contábil','Yₜ = Cₜ + Iₜ + Gₜ','A produção de uma economia fechada atende ao consumo, investimento e gasto público. No motor: ŷ = sC ĉ + v + g.','C, I, G','Y','sC = C̄/Ȳ; Ī/Ȳ = 0,20',`${F(q.Y)} = ${F(q.C)} + ${F(q.I)} + ${F(q.G)}`,['C','I','G','D','Y']),
+ eq(4,'Euler do consumo','Condição de otimização · primeira ordem','ĉₜ = Eₜĉₜ₊₁ − r̃ₜ/σ + dₜ','Famílias escolhem entre consumir hoje e poupar para amanhã. Um juro real maior reduz o consumo corrente relativamente ao futuro. d é um deslocamento de preferência.','Eĉₜ₊₁, r̃, d','ĉ, junto ao sistema','σ; β fixa r* no equilíbrio',`${F(q.c)} = ${F(q.expectedC)} − (${F(q.rd)}/${F(p.sigma)}) + ${F(q.d)}`,['C','r','d']),
+ eq(5,'Investimento','Aproximação reduzida','vₜ = aᵧEₜŷₜ₊₁ − aᵣr̃ₜ + zₜ','Maior produto esperado estimula investimento; maior juro real o desestimula. v = (I−Ī)/Ȳ. Não é uma condição estrutural completa de Tobin q.','Eŷₜ₊₁, r̃, z','v','aᵧ, aᵣ',`${F(q.v)} = ${F(p.ay*q.expectedY)} − (${F(p.ar*q.rd)}) + ${F(q.z)}; I = ${F(q.I)}`,['I','Y','r','z']),
+ eq(6,'Phillips Novo-Keynesiana','Equação estrutural simplificada','pₜ = βEₜpₜ₊₁ + κxₜ + uₜ','A inflação em desvio da meta depende das expectativas, da pressão do hiato e dos custos. Usa o potencial reduzido deste laboratório.','Epₜ₊₁, x, u','p = π−π*','β, κ',`${F(q.pp)} = ${F(s.beta*q.expectedPi)} + ${F(p.kappa*q.x)} + ${F(q.u)}; π anual = ${fmt(q.inflation)}%`,['pi','x','u']),
+ eq(7,'Produto potencial','Referência de oferta reduzida','ŷ*ₜ = âₜ + αk̂ₜ','Produto tecnológico com trabalho mantido no nível de referência. Não é um equilíbrio completo de preços flexíveis.','â, k̂','ŷ*','α',`${F(q.yp)} = ${F(q.a)} + ${F(p.alpha*q.k)}; Y* = ${F(q.Yp)}`,['Yp','A','K']),
+ eq(8,'Hiato do produto','Definição · primeira ordem','xₜ = ŷₜ − ŷ*ₜ','Aproximação de log(Y/Y*). Como os níveis são reconstruídos linearmente, não é exatamente (Y−Y*)/Y* para desvios grandes.','ŷ, ŷ*','x','—',`${F(q.x)} = ${F(q.y)} − (${F(q.yp)}); hiato = ${fmt(q.gap)}%`,['x','Y','Yp']),
+ eq(9,'Fisher','Aproximação nos desvios','r̃ₜ = ĩₜ − Eₜpₜ₊₁','O juro real esperado desconta a inflação futura do juro nominal. Os níveis estacionários satisfazem (1+ī)=(1+r*)(1+π*); os desvios usam a aproximação usual.','ĩ, Epₜ₊₁','r̃','r*, π*',`${F(q.rd)} = ${F(q.id)} − (${F(q.expectedPi)}); r anual = ${fmt(q.real)}%`,['r','i','pi']),
+ eq(10,'Regra de Taylor','Regra de política','ĩₜ = φπ pₜ + φx xₜ + mₜ','O banco central responde à inflação acima da meta e ao hiato. φπ é a resposta total, sem adicionar novamente a inflação corrente.','p, x, m','ĩ','φπ, φx; ī recalibrado',`${F(q.id)} = ${F(p.phiPi*q.pp)} + ${F(p.phiX*q.x)} + ${F(q.m)}; i anual = ${fmt(q.nominal)}%`,['i','pi','x','m']),
+ eq(11,'Orçamento público real','Identidade contábil exata · satélite','Bₜ = [(1+iₜ₋₁)/(1+πₜ)] Bₜ₋₁ + Gₜ − Tₜ','B mede dívida nominal deflacionada pelo preço corrente. O juro foi contratado no período anterior; a inflação atual altera seu custo real realizado.','Bₜ₋₁, iₜ₋₁, πₜ, G, T','Bₜ','B inicial; i₋₁ = ī',`${F(q.B)} = ${F((1+q.iprev)/(1+q.pi)*q.Bprev)} + ${F(q.G)} − ${F(q.T)}`,['B','i','pi','G','T']),
+ eq(12,'Tributos','Regra fiscal','Tₜ = T̄ + φB(Bₜ₋₁−B̄) + φY(Yₜ−Ȳ) + τ','A arrecadação reage à dívida herdada e ao ciclo. T̄=Ḡ+r*B̄ fecha o equilíbrio. τ é um ajuste adicional constante, com Ȳ=100.','Bₜ₋₁, Y','T','φB, φY, τ; B̄=240',`${F(q.T)} = ${F(s.T)} + ${F(p.phiB*(q.Bprev-s.B))} + ${F(p.phiY*(q.Y-s.Y))} + ${F(p.taxShift)}`,['T','B','Y']),
+ eq(13,'Produtividade','Processo exógeno AR(1)','âₜ = ρA âₜ₋₁ + εA,ₜ','A inovação ocorre apenas em T0; sua persistência afeta toda a trajetória esperada.','âₜ₋₁, εA','âₜ','ρA (zero no perfil temporário)',`${F(q.a)} = ${F(rhoA*qprev.a)} + ${F(t===0?p.shockA/100:0)}`,['A']),
+ eq(14,'Custos','Processo exógeno AR(1)','uₜ = ρu uₜ₋₁ + εu,ₜ','Um choque de custos pode elevar inflação e reduzir produto. Não existe setor de petróleo explícito.','uₜ₋₁, εu','uₜ','ρu (zero no perfil temporário)',`${F(q.u)} = ${F(rhoU*qprev.u)} + ${F(t===0?p.shockU/400:0)}`,['u']),
+ eq(15,'Demais processos','Equação vetorial · 4 AR(1)','sₜ = ρ sₜ₋₁ + εₛ,ₜ; s = (g, m, z, d)','Gasto público, política monetária, investimento e preferência têm inovações independentes. g e z são desvios divididos por Ȳ; m é taxa trimestral e d é desvio da Euler.','sₜ₋₁, εₛ','g, m, z, d','ρ (zero no perfil temporário)',['g','m','z','d'].map((key,j)=>`${key}: ${F(q[key])} = ${F(rho*qprev[key])} + ${F(t===0?p[['shockG','shockM','shockZ','shockD'][j]]/[100,400,100,100][j]:0)}`).join(' · '),['G','m','z','d'])
+ ];
+}
+function updateEquations(){
+ if(!current)return;
+ const starts=lastChanged==='node'?[selectedNode]:(PARAM_NODES[lastChanged]||[]),distance=reachable(starts);
+ $('eqGrid').innerHTML=equationData().map(e=>`<article class="equation ${e.nodes.some(n=>distance[n]!==undefined)?'affected':''}"><span class="eq-number">${String(e.number).padStart(2,'0')} / ${esc(e.name.toUpperCase())}</span><div class="eq-kind">${esc(e.kind)}</div><div class="formula">${esc(e.formula)}</div><p>${esc(e.meaning)}</p><div class="eq-values">T${quarter}: ${esc(e.numeric)}</div><div class="eq-meta"><b>Usa:</b> ${esc(e.uses)}<br><b>Determina:</b> ${esc(e.determines)}<br><b>Parâmetros:</b> ${esc(e.params)}</div></article>`).join('');
+}
+function updateSteadyState(){
+ const s=current.ss;const entries=[['PIB trimestral','Ȳ',s.Y],['Consumo','C̄',s.C],['Investimento','Ī',s.I],['Gasto público','Ḡ',s.G],['Capital','K̄',s.K],['Trabalho','L̄',s.L],['Produtividade','Ā',s.A],['Dívida real','B̄',s.B],['Tributos','T̄',s.T],['Inflação (% a.a.)','π*',modelAnnual(s.pi)],['Juro nominal (% a.a.)','ī',modelAnnual(s.i)],['Juro real (% a.a.)','r*',modelAnnual(s.r)],['Fator de desconto','β',s.beta]];
+ $('steadyTable').innerHTML='<table><thead><tr><th>Grandeza</th><th>Símbolo</th><th>Valor</th></tr></thead><tbody>'+entries.map(([name,sym,v])=>`<tr><td>${name}</td><td>${sym}</td><td>${fmt(v,sym==='β'?6:3)}</td></tr>`).join('')+'</tbody></table>';
+}
+function updateIRF(){
+ if(!current)return;
+ const key=$('irfShock').value,magnitude=Number($('irfMagnitude').value),persist=$('irfProfile').value==='persistent';
+ const cfg={...noShockParameters(p),[key]:magnitude,persistent:persist};irfResult=simulateEconomy(cfg);irfBase=simulateEconomy(noShockParameters(cfg));
+ $('irfMagnitudeText').textContent=signed(magnitude)+' '+controlMeta[key][6];
+ $('irfInfo').textContent=`Choque isolado: ${controlMeta[key][1]}, ${signed(magnitude)} ${controlMeta[key][6]}. Mantém os parâmetros estruturais atuais; zera os demais choques, o ajuste tributário e o desvio inicial da dívida. Janela: ${p.horizon} trimestres. ${persist?'Usa as persistências dos controles.':'A inovação desaparece após T0.'}`;
+ $('irfCharts').innerHTML=['Y','inflation','C','I','nominal','debt'].map(key=>chartCard(METRICS.find(m=>m[0]===key),true)).join('');
+ if(activePanel==='irf')$('irfCharts').querySelectorAll('.plot').forEach(drawChart);
+}
+function storeScenarios(){try{localStorage.setItem('macrolab-v1-scenarios',JSON.stringify(saved));return true;}catch{return false;}}
+function loadSaved(){try{const data=JSON.parse(localStorage.getItem('macrolab-v1-scenarios'));for(const k of ['A','B'])if(data?.[k]?.p){const cfg=data[k].p;const safe=Object.keys(DEFAULTS).every(key=>key==='persistent'?typeof cfg[key]==='boolean':typeof cfg[key]==='number'&&Number.isFinite(cfg[key]));if(safe&&[20,40,80,120].includes(cfg.horizon))saved[k]={p:{...cfg},label:String(data[k].label||'Cenário salvo').slice(0,100)};}}catch{}}
+function updateSaved(){
+ for(const k of ['A','B'])$('load'+k).disabled=!saved[k];
+ $('savedDetails').innerHTML=['A','B'].map(k=>saved[k]?`<div><b>${k} · ${isBrazil(saved[k].p)?'Brasil':'Laboratório'} · ${esc(saved[k].label)}</b>${isBrazil(saved[k].p)!==isBrazil(p)?' (linha oculta: modelo diferente)':''} — ${esc(shockSummary(saved[k].p))}; φπ=${fmt(saved[k].p.phiPi)}, Ḡ/Ȳ=${fmt(saved[k].p.gShare)}%, meta=${fmt(saved[k].p.piTarget)}%.</div>`:`<div>${k} · nenhum cenário salvo</div>`).join('')+'<div>As linhas A/B mantêm suas próprias calibrações. A janela usa o horizonte atual. Salvar substitui apenas o espaço escolhido.</div>';
+}
+function setMode(advanced){document.body.classList.toggle('basic',!advanced);$('basicMode').setAttribute('aria-pressed',!advanced);$('advancedMode').setAttribute('aria-pressed',advanced);if(!advanced&&!['dashboard','method'].includes(activePanel))switchPanel('dashboard');updateCharts();}
+function switchPanel(name){
+ activePanel=name;document.querySelectorAll('[role=tabpanel]').forEach(s=>s.hidden=s.id!==name);document.querySelectorAll('[role=tab]').forEach(b=>b.setAttribute('aria-selected',b.getAttribute('aria-controls')===name));
+ if(animationTimer){clearInterval(animationTimer);animationTimer=null;$('animate').textContent='Percorrer o circuito';}
+ if(name==='dashboard')updateCharts();if(name==='irf')updateIRF();if(name==='mechanism')drawDiagram();
+}
+function resetEconomy(){p=modeDefaults();quarter=0;lastChanged='';scenarioLabel=isBrazil(p)?'Brasil · retrato de referência':'Estado estacionário';selectedNode='i';$('preset').value='neutral';syncControls();refresh();$('toast').textContent='Economia restaurada. Os cenários A/B continuam salvos para comparação.';}
+function showTests(){const tests=[...runInternalTests(),...brazilTests()];$('tests').innerHTML=tests.map(t=>`<div class="test ${t.ok?'pass':'fail'}"><b>${t.ok?'✓':'✕'} ${esc(t.name)}</b>${esc(t.detail)}</div>`).join('');$('runTests').textContent=`${tests.filter(t=>t.ok).length}/${tests.length} testes aprovados · executar novamente`;}
+function initialize(){
+ $('preset').innerHTML=Object.entries(PRESETS).map(([key,val])=>`<option value="${key}">${val.name}</option>`).join('')+'<option value="custom" disabled>Experimento personalizado</option>';
+ $('irfShock').innerHTML=SHOCK_KEYS.map(k=>`<option value="${k}" ${k==='shockM'?'selected':''}>${controlMeta[k][1]}</option>`).join('');
+ buildControls();loadSaved();
+ $('preset').onchange=e=>{const preset=PRESETS[e.target.value];if(!preset)return;p={...modeDefaults(),horizon:p.horizon,...preset.changes};quarter=0;lastChanged=Object.keys(preset.changes)[0]||'';selectedNode=(PARAM_NODES[lastChanged]||['i'])[0];scenarioLabel=preset.name;syncControls();refresh();};
+ $('horizon').onchange=e=>{p.horizon=Number(e.target.value);refresh();};
+ ['quarter','eqTime'].forEach(id=>$(id).oninput=e=>{quarter=Number(e.target.value);updateSelected();if(activePanel==='dashboard')document.querySelectorAll('#charts .plot').forEach(drawChart);});
+ $('basicMode').onclick=()=>setMode(false);$('advancedMode').onclick=()=>setMode(true);
+ document.querySelectorAll('[role=tab]').forEach(b=>b.onclick=()=>switchPanel(b.getAttribute('aria-controls')));
+ $('reset').onclick=resetEconomy;$('resetTop').onclick=resetEconomy;
+ for(const k of ['A','B']){
+  $('save'+k).onclick=()=>{if(!current)return;saved[k]={p:{...p},label:scenarioLabel};const stored=storeScenarios();refresh();$('toast').textContent=`Cenário ${k} salvo${stored?' neste navegador.': ' nesta sessão (armazenamento local indisponível).'}`;};
+  $('load'+k).onclick=()=>{if(!saved[k])return;p={...saved[k].p,horizon:p.horizon};scenarioLabel=saved[k].label+' · '+k;lastChanged='';$('preset').value='custom';syncControls();refresh();};
+ }
+ $('clearScenarios').onclick=()=>{saved={A:null,B:null};storeScenarios();refresh();$('toast').textContent='Cenários A e B removidos.';};
+ ['irfShock','irfMagnitude','irfProfile'].forEach(id=>$(id).addEventListener('input',updateIRF));
+ $('runTests').onclick=showTests;
+ const cycle=['i','r','C e I','Y','x','π','i'];$('circuit').innerHTML=cycle.map((s,i)=>`${i?'<em aria-hidden="true">→</em>':''}<span>${s}</span>`).join('');
+ $('animate').onclick=()=>{const items=$('circuit').querySelectorAll('span');if(animationTimer){clearInterval(animationTimer);animationTimer=null;items.forEach(n=>n.classList.remove('lit'));$('animate').textContent='Percorrer o circuito';return;}let n=0;$('animate').textContent='Parar animação';const step=()=>{items.forEach((el,i)=>el.classList.toggle('lit',i===n));if(n++>=items.length){clearInterval(animationTimer);animationTimer=null;$('animate').textContent='Percorrer o circuito';}};step();animationTimer=setInterval(step,window.matchMedia('(prefers-reduced-motion: reduce)').matches?1200:700);};
+ let resizeTimer;new ResizeObserver(()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{if(activePanel==='mechanism')drawDiagram();document.querySelectorAll(`#${activePanel} .plot`).forEach(drawChart);},80);}).observe(document.querySelector('.workspace'));
+ refresh();setTimeout(showTests,100);
+}
+/* Initialization follows the Brazil UI extension. */
+
+/* BRAZIL UI — switches the whole model, never only the displayed numbers. */
+const BR_CONTROLS=[
+ ['Brasil · condições herdadas',[
+ ['initialNominal','Selic inicial','i₋₁',0,25,.25,'% a.a.','Dado de partida: 14% vigente desde 06/08/2026. Não é o juro neutro. Alterações são hipóteses do usuário.',true],
+ ['initialInflation','Inflação inicial (proxy)','π₋₁',0,12,.1,'% a.a.','IPCA 12 meses de julho/2026: 4,44%. Usado como ritmo trimestral equivalente, não inflação trimestral observada.',true],
+ ['initialPrimary','Primário inicial (proxy)','SP₋₁',-5,5,.1,'% do PIB','Referência: −0,67% do PIB em 12 meses até julho/2026. Converte-se em fluxo trimestral uniforme.',false],
+ ['debtTarget','Referência fiscal de longo prazo','B̄/(4Ȳ)',30,120,1,'%','Hipótese: 70%. Não é meta oficial nem previsão da dívida brasileira.',false],
+ ['fiscalPersistence','Persistência do desvio fiscal herdado','ρf',0,.98,.02,'','Velocidade de ajuste do primário inicial à regra. Independente da caixa de persistência dos NOVOS choques.',false]
+ ]],
+ ['Brasil · transmissão e setor externo',[
+ ['shockE','Choque cambial real','εe',-10,10,.5,'%','Inovação no câmbio real em T0. Positivo deprecia; índice, sem cotação R$/US$. Resposta líquida é endógena.',true],
+ ['inflationInertia','Inércia da inflação','λπ',0,.7,.05,'','Peso da inflação herdada na Phillips híbrida. Hipótese, não coeficiente estimado para o Brasil.',false],
+ ['rateInertia','Suavização dos juros','λi',0,.9,.05,'','Peso do juro nominal anterior na regra de política. Hipótese didática.',false],
+ ['consumptionInertia','Inércia do consumo','h',0,.45,.05,'','Peso do consumo herdado. Extensão reduzida da Euler, não derivação completa de hábitos.',false],
+ ['exchangePersistence','Persistência cambial endógena','ρe',0,.95,.05,'','Memória do câmbio real. Independe da persistência da inovação εe.',false],
+ ['exchangeSensitivity','Câmbio: sensibilidade aos juros','χ',.1,3,.1,'','Juro real acima do neutro aprecia o câmbio. Regra reduzida; não paridade descoberta de juros.',false],
+ ['passThrough','Repasse cambial','κe',0,.1,.005,'','Resposta da inflação à variação do câmbio real. Aproximação reduzida, não repasse nominal estimado.',false],
+ ['nxSensitivity','Saldo externo: câmbio','ηe',0,.3,.01,'','Depreciação aumenta NX/Ȳ. Demanda externa constante no cenário-base.',false],
+ ['importLeakage','Importações: atividade','ηy',0,.4,.01,'','Produto maior eleva importações, reduzindo NX/Ȳ.',false],
+ ['investmentShare','Investimento de referência','Ī/Ȳ',10,25,.1,'%','16,8%: âncora de FBCF/PIB de 2025. Sem estoques e com depreciação calibrada.',false],
+ ['nxShare','Saldo externo de referência','NX̄/Ȳ',-5,5,.1,'%','Hipótese de fechamento: +0,5%. Não é observação do saldo externo brasileiro; recalcula C̄.',false]
+ ]]
+];
+CONTROL_GROUPS.push(...BR_CONTROLS);BR_CONTROLS.flatMap(g=>g[1]).forEach(c=>controlMeta[c[0]]=c);
+Object.assign(PARAM_NODES,{initialNominal:['i'],initialInflation:['pi'],initialPrimary:['T'],debtTarget:['B'],fiscalPersistence:['T'],shockE:['e'],inflationInertia:['pi'],rateInertia:['i'],consumptionInertia:['C'],exchangePersistence:['e'],exchangeSensitivity:['e'],passThrough:['pi'],nxSensitivity:['NX'],importLeakage:['NX'],investmentShare:['I'],nxShare:['NX']});
+NODES.e=['q','Câmbio real','state'];NODES.NX=['NX','Saldo externo',''];
+const BR_EDGES=[['r','e','Juro real acima do neutro aprecia o câmbio'],['e','pi','Repasse da variação cambial'],['e','NX','Competitividade externa'],['Y','NX','Importações respondem à atividade'],['NX','D','Componente externo da demanda']];
+const ORIGINAL_EDGES=EDGES.map(e=>[...e]);
+const ORIGINAL_METRICS=METRICS.map(m=>[...m]);
+let laboratoryConfig={...DEFAULTS},brazilConfig={...BRAZIL_DEFAULTS};
+p={...BRAZIL_DEFAULTS};scenarioLabel='Brasil · retrato de referência';
+function modeDefaults(){return isBrazil(p)?{...BRAZIL_DEFAULTS}:{...DEFAULTS};}
+function modelAnnual(value,cfg=p){return isBrazil(cfg)?toAnnual(value):400*value;}
+const originalRefresh=refresh;
+refresh=function(){syncBrazilPresentation();originalRefresh();updateBrazilSnapshot();};
+function syncBrazilPresentation(){
+ const br=isBrazil(p);document.body.classList.toggle('brazil',br);$('economySelect').value=br?'br':'lab';
+ $('resetTop').textContent=$('reset').textContent=br?'Restaurar retrato Brasil':'Restaurar estado estacionário';
+ document.querySelector('.side-head p').textContent=br?'Partida observada + hipóteses explícitas.':'O ponto de partida é o equilíbrio.';
+ document.querySelector('.side-foot p').textContent=br?'Base e cenário compartilham os dados herdados. A base também se ajusta. A caixa de persistência afeta somente os novos choques.':'Parâmetros recalibram a base. Choques ocorrem no trimestre 0. A comparação usa a mesma calibração, sem choques.';
+ $('brazilBanner').hidden=!br;$('brazilMethod').hidden=!br;$('classicMethod').hidden=br;
+ $('equationHeading').textContent=br?'As 17 equações do Modo Brasil':'As 15 equações do laboratório';
+ SERIES.base.name=br?'Brasil sem novo choque':'Base sem choque';
+ const irfKeys=[...SHOCK_KEYS,...(br?['shockE']:[])],chosen=$('irfShock').value;
+ $('irfShock').innerHTML=irfKeys.map(k=>`<option value="${k}" ${k===(irfKeys.includes(chosen)?chosen:'shockM')?'selected':''}>${controlMeta[k][1]}</option>`).join('');
+ EDGES.splice(0,EDGES.length,...ORIGINAL_EDGES,...(br?BR_EDGES:[]));
+ METRICS.splice(0,METRICS.length,...ORIGINAL_METRICS.map(m=>[...m]));
+ if(br){
+  for(const m of METRICS){if(['inflation','nominal','real'].includes(m[0]))m[2]='% a.a. · composição trimestral';if(m[0]==='debt'){m[1]='Dívida líquida / PIB · proxy';m[2]='% · âncora DLSP; estoque simplificado';}if(m[0]==='T')m[1]='Receita fiscal líquida · efetiva';}
+  METRICS.push(['exchange','Câmbio real','índice · referência = 100; alta = depreciação','e',true],['NX','Saldo externo','unidades reais · equação reduzida','NX',false],['primary','Resultado primário','% do PIB trimestral · proxy','T',false]);
+ }
+ const help={
+  rStar:br?'Hipótese de juro real neutro de longo prazo. Não é a Selic atual deflacionada; conversão anual composta.':controlMeta.rStar[7],
+  beta:br?'Vinculado ao juro neutro: β=(1+r*/100)^(−1/4). Não é estimado a partir da Selic observada.':controlMeta.beta[7],
+  debtInitial:br?'Dívida líquida inicial: 69,1% do PIB (julho/2026). A base preserva essa mesma condição.':controlMeta.debtInitial[7],
+  gShare:br?'Consumo do governo de referência: 18,9% do PIB, aproximação de 2025. Não inclui transferências ou juros.':controlMeta.gShare[7]
+ };Object.entries(help).forEach(([key,text])=>{if($('help-'+key))$('help-'+key).textContent=text;});
+}
+function updateBrazilSnapshot(){
+ if(!isBrazil(p)||!current)return;
+ $('footerState').textContent=`Modo Brasil · ${p.horizon} trimestres · snapshot 06/09/2026`;
+ $('globalStatus').textContent='Brasil · T−1 = posição herdada; T0 = primeiro trimestre simulado · comparação com trajetória-base em ajuste';
+ $('diagnostics').textContent=`Brasil: 6 incógnitas × 600 períodos; resíduo ${current.residual.toExponential(2)}; sensibilidade a 840 períodos ${terminalError.toExponential(2)}. Modelo semiestrutural não estimado; nenhuma validação de previsão histórica foi realizada.`;
+ $('brazilSnapshot').innerHTML=[['Selic herdada',fmt(p.initialNominal)+'% a.a.'],['IPCA inicial · proxy',fmt(p.initialInflation)+'%'],['Dívida líquida inicial',fmt(p.debtInitial)+'% PIB'],['Primário inicial · proxy',signed(p.initialPrimary)+'% PIB']].map(([a,b])=>`<div><span class="small muted">${a}</span><br><b>${b}</b></div>`).join('');
+ const changed=['initialNominal','initialInflation','debtInitial','initialPrimary'].some(k=>Math.abs(p[k]-BRAZIL_DEFAULTS[k])>1e-8);
+ $('brazilChanged').textContent=changed?'Condições iniciais editadas: os valores acima são hipóteses do usuário; a tabela de fontes preserva os dados oficiais.':'Retrato datado: Selic de agosto/2026 e inflação/dívida/primário de julho/2026. Não é uma observação conjunta de um trimestre.';
+ $('brazilSteady').innerHTML=$('steadyTable').innerHTML.replace('Tributos','Receita líquida efetiva');
+ $('irfInfo').textContent=$('irfInfo').textContent.replace('zera os demais choques, o ajuste tributário e o desvio inicial da dívida','zera os demais novos choques e o ajuste tributário; preserva inflação, juros, dívida e desvio fiscal herdados na base');
+}
+const originalIRF=updateIRF;
+updateIRF=function(){originalIRF();if(isBrazil(p)&&current){$('irfInfo').textContent=$('irfInfo').textContent.replace('zera os demais choques, o ajuste tributário e o desvio inicial da dívida','zera os demais novos choques e o ajuste tributário; preserva inflação, juros, dívida e desvio fiscal herdados na base');}};
+const originalBaselinePoint=baselinePoint;
+baselinePoint=function(run,key){
+ if(!isBrazil(run.p))return originalBaselinePoint(run,key);
+ const s=run.ss,cfg=run.p;return ({Y:100,C:s.C,I:s.I,G:s.G,K:s.K,Yp:100,A:s.A,L:1,gap:0,
+  debt:cfg.debtInitial,inflation:cfg.initialInflation,nominal:cfg.initialNominal,
+  real:100*((1+cfg.initialNominal/100)/(1+cfg.initialInflation/100)-1),exchange:100,NX:s.NX,primary:cfg.initialPrimary,T:s.G+cfg.initialPrimary})[key];
+};
+function brazilExplanation(){
+ const r=current.rows[quarter],b=base.rows[quarter],d=key=>r[key]-b[key];
+ $('explainQuarter').textContent=`T${quarter} · diferença contra a base Brasil`;
+ $('explanation').innerHTML=`<div><p class="small">${esc(shockSummary(p))}</p><ol><li>G muda ${signed(d('G'))} unidade(s) em relação à base. Com +2% do PIB de referência, o impulso inicial é +2 com qualquer persistência.</li><li>Consumo varia ${signed(d('C'))}, investimento ${signed(d('I'))} e NX ${signed(d('NX'))} unidades. Com G, essas parcelas somam ${signed(d('Y'))} de efeito sobre o PIB.</li><li>O hiato difere ${signed(d('gap'))} p.p. da base. A inflação varia ${signed(d('inflation'))} p.p., combinando hiato, memória, expectativas, custos e repasse cambial.</li><li>Juro nominal: ${signed(d('nominal'))} p.p.; real esperado: ${signed(d('real'))} p.p. A suavização mantém parte da taxa anterior.</li><li>O câmbio real varia ${signed(d('exchange'))} ponto(s) de índice. Alta significa depreciação e afeta os preços e a demanda externa líquida.</li><li>A dívida líquida simulada varia ${signed(d('debt'))} p.p. do PIB contra a base, após juros reais realizados e saldo primário.</li></ol></div><div class="note"><b>A base já está em movimento</b><p>Sem o novo choque, o PIB seria ${fmt(b.Y)} e o juro nominal ${fmt(b.nominal)}% a.a. em T${quarter}. O cenário atual gera ${fmt(r.Y)} e ${fmt(r.nominal)}% a.a. A diferença isola o experimento, sem atribuir a ele o ajuste já provocado pelas condições herdadas.</p><p><b>Expectativas:</b> a inflação esperada para o próximo trimestre, anualizada por composição, é ${fmt(toAnnual(current.ss.pi+r.expectedPi))}%. Vem da solução conjunta; não é uma projeção Focus.</p><p>O índice do PIB mede desvios em torno de uma referência fixa. Esta versão não projeta crescimento tendencial, a cotação do dólar ou o IPCA acumulado futuro em 12 meses.</p></div>`;
+}
+function brazilEquationData(){
+ const r=current.rows[quarter],s=current.ss,F=v=>fmt(v,6),cfg=p;
+ const rows=[
+ ['Produção','Tecnologia linearizada','ŷ = â + αk̂ + (1−α)ℓ̂','Trabalho ajusta à demanda; não há mercado de trabalho estrutural.',`${F(r.y)} = ${F(r.a)} + ${F(p.alpha*r.k)} + ${F((1-p.alpha)*r.labor)}`,'ŷ, â, k̂','ℓ̂','α',['Y','A','K']],
+ ['Capital','Identidade','Kₜ₊₁ = (1−δ)Kₜ + Iₜ','Capital é predeterminado no período.',`${F(s.K*(1+r.kNext))} = ${F((1-p.delta)*r.K)} + ${F(r.I)}`,'K, I','K futuro','δ',['K','I']],
+ ['Recursos abertos','Identidade','Y = C + I + G + NX','G é consumo do governo; I representa FBCF. Estoques são omitidos; NX de referência é hipótese.',`${F(r.Y)} = ${F(r.C)} + ${F(r.I)} + ${F(r.G)} + ${F(r.NX)}`,'C, I, G, NX','Y','Participações',['Y','C','I','G','NX']],
+ ['Consumo com inércia','Aproximação reduzida da Euler','ĉ = hĉ₋₁ + (1−h)Eĉ₊₁ − r̃/[σ(1+r*)] + d','Extensão de memória didática; não condição exata de um problema completo com hábitos.',`${F(r.c)} = ${F(p.consumptionInertia*r.lagC)} + ${F((1-p.consumptionInertia)*r.expectedC)} − (${F(r.rd/(p.sigma*(1+s.r)))}) + ${F(r.d)}`,'ĉ₋₁, Eĉ₊₁, r̃, d','ĉ','h, σ',['C','r','d']],
+ ['Investimento','Aproximação reduzida','v = aᵧEŷ₊₁ − aᵣr̃ + z','v=(I−Ī)/Ȳ; perspectiva de demanda e custo de capital.',`${F(r.v)} = ${F(p.ay*r.expectedY)} − (${F(p.ar*r.rd)}) + ${F(r.z)}`,'Eŷ, r̃, z','v','aᵧ, aᵣ',['I','Y','r','z']],
+ ['Phillips híbrida','Aproximação semiestrutural','p = λπp₋₁ + (1−λπ)βEp₊₁ + κx + κe(e−e₋₁) + u','Memória, expectativas e repasse cambial. p=π−π* em taxas trimestrais; e é câmbio REAL, aproximação do canal de custos.',`${F(r.pp)} = ${F(p.inflationInertia*r.lagP)} + ${F((1-p.inflationInertia)*s.beta*r.expectedPi)} + ${F(p.kappa*r.x)} + ${F(p.passThrough*(r.e-r.lagE))} + ${F(r.u)}`,'p₋₁, Ep₊₁, x, e, u','p','λπ, β, κ, κe',['pi','x','e','u']],
+ ['Potencial','Referência reduzida','ŷ* = â + αk̂','Sem tendência de crescimento e com trabalho de referência fixo.',`${F(r.yp)} = ${F(r.a)} + ${F(p.alpha*r.k)}`,'â, k̂','ŷ*','α',['Yp','A','K']],
+ ['Hiato','Definição linearizada','x = ŷ − ŷ*','O hiato inicial é zero por hipótese de normalização, não por estimação do hiato brasileiro.',`${F(r.x)} = ${F(r.y)} − (${F(r.yp)})`,'ŷ, ŷ*','x','—',['x','Y','Yp']],
+ ['Fisher','Primeira ordem em torno de taxas positivas','r̃ = ĩ/(1+π*) − [(1+r*)/(1+π*)]Ep₊₁','Derivadas exatas do juro real bruto na referência. Níveis exibidos são anualizados por composição.',`${F(r.rd)} = ${F(r.id/(1+s.pi))} − (${F((1+s.r)/(1+s.pi)*r.expectedPi)})`,'ĩ, Ep₊₁','r̃','r*, π*',['r','i','pi']],
+ ['Taylor com suavização','Regra de política','ĩ = λiĩ₋₁ + (1−λi)(φπp + φx x) + m','A Selic herdada não é o juro de equilíbrio. φπ é a reação total de longo prazo, condicionada ao restante do sistema.',`${F(r.id)} = ${F(p.rateInertia*r.lagI)} + ${F((1-p.rateInertia)*(p.phiPi*r.pp+p.phiX*r.x))} + ${F(r.m)}`,'ĩ₋₁, p, x, m','ĩ','λi, φπ, φx',['i','pi','x','m']],
+ ['Dívida real','Identidade contábil simplificada','B = [(1+i₋₁)/(1+π)]B₋₁ + G − T','Proxy ancorada na DLSP: um só custo de financiamento, sem ativos detalhados, indexadores ou ajustes patrimoniais. Não replica a metodologia da DLSP.',`${F(r.B)} = ${F((1+r.iprev)/(1+r.pi)*r.Bprev)} + ${F(r.G)} − ${F(r.T)}`,'B₋₁, i₋₁, π, G, T','B','Condição inicial',['B','i','pi','G','T']],
+ ['Receita fiscal líquida efetiva','Regra com condição inicial','T = T̄ + φB(B₋₁−B̄) + φY(Y−Ȳ) + f + τ','T é receita líquida de transferências e de outras despesas primárias, não carga tributária bruta. fₜ=ρf^(t+1)f₋₁ liga o primário inicial à referência.',`${F(r.T)} = ${F(s.T)} + ${F(p.phiB*(r.Bprev-s.B))} + ${F(p.phiY*(r.Y-100))} + ${F(r.fiscalWedge)} + ${F(p.taxShift)}`,'B₋₁, Y, f','T','φB, φY, ρf, τ',['T','B','Y']],
+ ['Produtividade','AR(1)','âₜ = ρA âₜ₋₁ + εA,ₜ','Inovação apenas em T0; taxa de decaimento escolhida no painel.',`âₜ=${F(r.a)}; ρA efetivo=${F(p.persistent?p.rhoA:0)}`,'â₋₁, εA','â','ρA',['A']],
+ ['Custos','AR(1)','uₜ = ρu uₜ₋₁ + εu,ₜ','Não simula petróleo ou preços administrados separadamente.',`uₜ=${F(r.u)}; ρu efetivo=${F(p.persistent?p.rhoU:0)}`,'u₋₁, εu','u','ρu',['u']],
+ ['Demais inovações','AR(1) vetorial','sₜ = ρsₜ₋₁ + εₛ,ₜ; s=(g,m,z,d,fx)','A caixa de persistência atua nestas inovações, não apaga inércia ou condições herdadas. m e u: magnitude/400, p.p. anualizados lineares no choque.',`g=${F(r.g)}; m=${F(r.m)}; z=${F(r.z)}; d=${F(r.d)}; fx=${F(r.fx)}`,'s₋₁, εs','s','ρ',['G','m','z','d','e']],
+ ['Câmbio real','Aproximação reduzida','e = ρe e₋₁ − χr̃ + fx','Alta de juros reais em relação ao neutro aprecia o câmbio. O juro externo e o prêmio de referência são constantes e absorvidos no intercepto; não é UIP.',`${F(r.e)} = ${F(p.exchangePersistence*r.lagE)} − (${F(p.exchangeSensitivity*r.rd)}) + ${F(r.fx)}`,'e₋₁, r̃, fx','e','ρe, χ',['e','r']],
+ ['Saldo externo','Aproximação reduzida','nx = ηe e − ηy ŷ; NX=NX̄+Ȳnx','Depreciação melhora competitividade; atividade aumenta importações. Sem conta financeira ou acumulação de ativos externos.',`${F(r.nx)} = ${F(p.nxSensitivity*r.e)} − (${F(p.importLeakage*r.y)}); NX=${F(r.NX)}`,'e, ŷ','nx','ηe, ηy',['NX','e','Y']]
+ ];
+ return rows.map((a,i)=>eq(i+1,a[0],a[1],a[2],a[3],a[5],a[6],a[7],a[4],a[8]));
+}
+function initializeBrazil(){
+ // Keep validation visible in both methodologies; its original section belonged
+ // to the classic panel before the Brazil extension was added.
+ $('method').appendChild($('diagnostics').closest('section'));
+ $('economySelect').onchange=e=>{
+  if(isBrazil(p))brazilConfig={...p};else laboratoryConfig={...p};
+  const horizon=p.horizon;p={...(e.target.value==='br'?brazilConfig:laboratoryConfig),horizon};
+  quarter=0;lastChanged='';selectedNode='i';scenarioLabel=isBrazil(p)?'Brasil · cenário atual':'Laboratório · cenário atual';
+  $('preset').value='custom';syncControls();refresh();
+ };
+ $('viewBrazilSources').onclick=()=>switchPanel('method');
+ $('brazilSources').innerHTML='<table><thead><tr><th>Dado</th><th>Valor / referência</th><th>Como é usado</th></tr></thead><tbody>'+BRAZIL_SOURCES.map(s=>`<tr><td><a href="${s.url}" target="_blank" rel="noopener">${s.name}</a><br><small>${s.source}</small></td><td><b>${s.value}</b><br><small>${s.period}</small></td><td>${s.use}</td></tr>`).join('')+'</tbody></table>';
+ syncControls();refresh();
+}
+
+if(typeof document!=='undefined'){initialize();initializeBrazil();}
+</script>
+</body></html>
